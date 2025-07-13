@@ -1,6 +1,6 @@
 # Riichi Mahjong League
 
-A Progressive Web App for tracking games, rankings, and scheduling within a friend group.
+A Progressive Web App for tracking games, rankings, and scheduling within a friend group. Built with **Turborepo + Vercel + Supabase + Next.js** for optimal monorepo development.
 
 ## 🚀 Quick Start
 
@@ -14,6 +14,64 @@ npm install
 npm run build
 npm run dev
 ```
+
+## ⚙️ Development Commands
+
+### **Development**
+```bash
+npm run dev              # Start all services in parallel
+npm run dev:web          # Web app only (http://localhost:3000)
+npm run dev:rating       # Python rating engine only (http://localhost:8000)
+```
+
+### **Building & Testing**
+```bash
+npm run build            # Build all packages (Turborepo orchestrated)
+npm run lint             # Lint all packages (ESLint + Ruff)
+npm run type-check       # TypeScript validation across workspace
+npm run test             # Run all tests (Frontend + Python)
+npm run clean            # Clean all build artifacts
+```
+
+### **Database**
+```bash
+npx supabase start       # Start local Supabase (Docker required)
+npx supabase db reset    # Reset local database to latest migration
+npx supabase db push     # Deploy local changes to remote (production)
+npx supabase status      # Check connection status
+```
+
+### **Deployment**
+```bash
+git push origin main     # Auto-deploy to Vercel (GitHub integration)
+vercel --prod           # Manual deployment (if needed)
+vercel logs --follow    # Monitor deployment logs
+```
+
+## 🏗️ Architecture
+
+**Monorepo Structure:**
+```
+mj/
+├── apps/
+│   ├── web/            # Next.js 15 PWA + Tailwind CSS v4
+│   └── rating-engine/  # Python FastAPI + OpenSkill + uv
+├── packages/
+│   ├── database/       # Supabase client + TypeScript types
+│   ├── shared/         # Common utilities + types  
+│   └── ui/             # Shared React components
+├── docs/               # Project documentation
+├── supabase/          # Database schema + migrations
+└── turbo.json         # Turborepo configuration
+```
+
+**Tech Stack:**
+- **Frontend**: Next.js 15, React, TypeScript, Tailwind CSS v4, PWA
+- **Backend**: Supabase (PostgreSQL + Auth + Edge Functions)
+- **Rating Engine**: Python, FastAPI, OpenSkill, uv package manager
+- **Build System**: Turborepo (monorepo orchestration + caching)
+- **Deployment**: Vercel (monorepo-aware + GitHub integration)
+- **Database**: Supabase with infrastructure-as-code migrations
 
 ## 📚 Documentation
 

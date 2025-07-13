@@ -4,7 +4,20 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
+      "outputs": [".next/**", "!.next/cache/**", "dist/**", "build/**"]
+    },
+    "web#build": {
+      "dependsOn": ["^build"],
+      "env": [
+        "NEXT_PUBLIC_SUPABASE_URL",
+        "NEXT_PUBLIC_SUPABASE_ANON_KEY"
+      ],
+      "outputs": [".next/**", "!.next/cache/**"]
+    },
+    "rating-engine#build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"],
+      "inputs": ["src/**/*.py", "pyproject.toml", "uv.lock"]
     },
     "dev": {
       "cache": false,
@@ -17,10 +30,21 @@
       "dependsOn": ["^type-check"]
     },
     "test": {
-      "inputs": ["src/**/*.tsx", "src/**/*.ts", "test/**/*.ts", "test/**/*.tsx", "tests/**/*.py", "src/**/*.py"]
+      "dependsOn": ["^build"],
+      "inputs": [
+        "src/**/*.tsx", 
+        "src/**/*.ts", 
+        "test/**/*.ts", 
+        "test/**/*.tsx", 
+        "tests/**/*.py", 
+        "src/**/*.py",
+        "**/*.test.*",
+        "**/*.spec.*"
+      ]
     },
     "clean": {
       "cache": false
     }
-  }
+  },
+  "globalEnv": ["NODE_ENV"]
 }

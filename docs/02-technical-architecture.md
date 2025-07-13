@@ -49,36 +49,82 @@ _Tech stack, system design, and architectural decisions_
 | Technology    | Purpose              | Justification                      |
 | ------------- | -------------------- | ---------------------------------- |
 | **Turborepo** | Monorepo management  | Multi-package coordination         |
-| **pnpm**      | Package management   | Faster installs, workspace support |
-| **Vercel**    | Hosting & deployment | Auto-deploy, edge functions        |
+| **npm**       | Package management   | Workspace support, Node.js standard |
+| **Vercel**    | Hosting & deployment | Auto-deploy, monorepo awareness    |
 
 ---
 
 ## 📁 Project Structure
 
 ```
-riichi-league/
-├─ packages/
-│  ├─ web/                    # Next.js PWA
+mj/                          # Monorepo root
+├─ apps/
+│  ├─ web/                   # Next.js 15 PWA
 │  │  ├─ src/
-│  │  │  ├─ app/             # App Router pages
-│  │  │  ├─ components/      # Reusable UI components
-│  │  │  ├─ lib/             # Utilities, Supabase client
-│  │  │  └─ types/           # TypeScript definitions
-│  │  ├─ public/             # Static assets, PWA manifest
-│  │  └─ next.config.mjs     # Next.js + PWA config
+│  │  │  ├─ app/            # App Router pages  
+│  │  │  └─ components/     # Reusable UI components
+│  │  ├─ public/            # Static assets, PWA manifest
+│  │  ├─ vercel.json        # Vercel deployment config
+│  │  └─ next.config.ts     # Next.js + PWA configuration
 │  │
-│  └─ supabase/              # Database & migrations
-│     ├─ migrations/         # SQL schema files
-│     ├─ seed.sql           # Initial data
-│     └─ config.toml        # Supabase configuration
+│  └─ rating-engine/        # Python FastAPI service
+│     ├─ src/rating_engine/ # Rating calculation logic
+│     ├─ tests/             # Python test suite
+│     ├─ pyproject.toml     # Python dependencies (uv)
+│     └─ VERCEL_FLUID_TODO.md # Future deployment notes
 │
-├─ api/                      # Python rating functions
-│  ├─ skill.py              # OpenSkill rating calculation
-│  ├─ requirements.txt      # Python dependencies
-│  └─ vercel.json          # Vercel function config
+├─ packages/                 # Shared libraries
+│  ├─ database/             # Supabase client + TypeScript types
+│  ├─ shared/               # Common utilities + types
+│  └─ ui/                   # Shared React components
 │
-├─ docs/                     # Project documentation
+├─ supabase/                # Database infrastructure
+│  ├─ migrations/           # SQL schema files (infrastructure-as-code)
+│  └─ config.toml          # Supabase configuration
+│
+├─ docs/                    # Project documentation
+├─ turbo.json              # Turborepo configuration
+└─ package.json            # Root workspace configuration
+```
+
+## 🚀 Deployment Architecture
+
+### Current Setup (Production Ready)
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Git Push      │───▶│  Vercel Build   │───▶│   Production    │
+│                 │    │                 │    │                 │
+│ • Auto-detects  │    │ • turbo build   │    │ • PWA optimized │
+│   changed apps  │    │   --filter=web  │    │ • Edge deployed │
+│ • Triggers only │    │ • Workspace     │    │ • Supabase      │
+│   affected      │    │   optimized     │    │   connected     │
+│   builds        │    │ • Cache enabled │    │                 │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+### Turborepo Integration Benefits
+
+- ✅ **Smart builds**: Only builds when relevant files change
+- ✅ **Workspace awareness**: Understands package dependencies  
+- ✅ **Caching**: Local + remote cache for faster builds
+- ✅ **Parallel execution**: Multiple packages build simultaneously
+
+### Future: Python Service Deployment
+
+When Vercel Fluid becomes generally available:
+
+```
+┌─────────────────┐    ┌─────────────────┐
+│   Monorepo      │───▶│  Related        │  
+│   Deployment    │    │  Projects       │
+│                 │    │                 │
+│ • Web App       │    │ • Python API    │
+│ • Shared Config │    │ • Webhooks      │
+│ • Environment   │    │ • Edge Compute  │
+│   Variables     │    │                 │
+└─────────────────┘    └─────────────────┘
+```
 ├─ turbo.json               # Turborepo configuration
 ├─ pnpm-workspace.yaml     # Workspace definition
 └─ .env.example            # Environment variables

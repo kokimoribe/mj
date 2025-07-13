@@ -5,7 +5,9 @@
   "main": "index.ts",
   "types": "index.ts",
   "scripts": {
-    "type-check": "tsc --noEmit"
+    "build": "tsc --build",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf dist *.tsbuildinfo"
   },
   "devDependencies": {
     "@types/node": "^24.0.13",

@@ -368,28 +368,53 @@ supabase migration new "migrate_old_games_format"
 
 ## Production Deployment
 
-### Environment Setup
+### Vercel Deployment (Monorepo)
+
+The project uses **GitHub-integrated Vercel deployment** with Turborepo optimization:
 
 ```bash
-# Vercel for frontend
-vercel deploy
+# Automatic deployment
+git push origin main          # Triggers auto-deploy to Vercel
 
-# Supabase for backend
-supabase link --project-ref your-project-ref
-supabase db push
+# Manual deployment (if needed)
+vercel --prod
+vercel logs --follow         # Monitor deployment logs
+```
 
-# Python service (Railway/Heroku)
-git push railway main
+### Deployment Architecture
+
+```
+GitHub Repository → Vercel Integration → Turborepo Build
+     ↓                      ↓                    ↓
+  Git Push            Auto Trigger        turbo build --filter=web
+     ↓                      ↓                    ↓
+  Webhook             Build Process       Next.js Production Build
+     ↓                      ↓                    ↓
+  Success             Deploy to CDN       Live Production Site
 ```
 
 ### Environment Variables
 
+**Required for Production:**
 ```bash
-# Production .env
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+```
+
+**Optional (for advanced features):**
+```bash
 SUPABASE_SERVICE_ROLE_KEY=your-service-key
-PYTHON_RATING_ENGINE_URL=https://your-rating-engine.railway.app
+PYTHON_RATING_ENGINE_URL=https://your-rating-engine.vercel.app
+```
+
+### Database Deployment
+
+```bash
+# Deploy schema changes to production
+npx supabase db push
+
+# Deploy to specific environment
+npx supabase db push --db-url $DATABASE_URL
 ```
 
 ---
@@ -419,24 +444,72 @@ curl http://localhost:8000/health
 npm run build
 ```
 
+### Build Issues
+
+**Local Build Testing:**
+```bash
+# Test build locally first
+npm run build
+
+# Debug specific workspace
+npx turbo build --filter=web --verbose
+
+# Check for TypeScript errors
+npm run type-check
+```
+
+**Vercel Build Failures:**
+```bash
+# Check Vercel logs
+vercel logs --follow
+
+# Test build command locally
+npx turbo build --filter=web
+```
+
+### Environment Issues
+
+**Missing Environment Variables:**
+```bash
+# Check Vercel environment variables
+vercel env ls
+
+# Pull production environment locally
+vercel env pull .env.local
+```
+
+**Supabase Connection:**
+```bash
+# Check local Supabase status
+npx supabase status
+
+# Test database connection
+node -e "console.log(process.env.NEXT_PUBLIC_SUPABASE_URL)"
+```
+
+### Monorepo Detection Issues
+
+**If Vercel doesn't detect monorepo properly:**
+1. Ensure `.vercel/repo.json` exists at project root
+2. Check project is linked: `vercel projects ls`
+3. Verify `apps/web/vercel.json` has correct build command:
+   ```json
+   {
+     "buildCommand": "turbo build --filter=web",
+     "framework": "nextjs"
+   }
+   ```
+
+### Performance Optimization
+
+**Turborepo Caching:**
+- **Local**: `.turbo/` cache speeds up repeated builds
+- **Remote**: Vercel provides shared cache across deployments
+- **Selective Building**: Only changed packages rebuild
+
+**Build Times:**
+- **Cold Build**: ~60-90 seconds (all packages)
+- **Incremental**: ~15-30 seconds (cached dependencies)  
+- **Development**: ~2-5 seconds (hot reload)
+
 ---
-
-## LLM Agent Guidelines
-
-### For Code Changes
-
-1. **Read Schema First**: Always check `docs/03-database-schema.md`
-2. **Understand Phases**: Know which phase features you're implementing
-3. **Source vs Derived**: Never modify derived tables directly
-4. **Python Functions**: Rating logic belongs in Python, not SQL
-5. **Test Thoroughly**: Changes affect competitive league data
-
-### Development Flow
-
-1. **Schema Changes**: Update migrations first
-2. **Backend Logic**: Implement in Python rating engine
-3. **Frontend Components**: Build UI consuming the data
-4. **Integration**: Test end-to-end workflow
-5. **Documentation**: Update relevant docs
-
-This setup guide provides everything needed to develop and extend the Riichi Mahjong League application across all planned phases.

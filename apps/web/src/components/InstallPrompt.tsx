@@ -59,7 +59,7 @@ export default function InstallPrompt() {
         <strong>PWA Status:</strong> Ready for installation
         <br />
         <span className="text-xs">
-          On mobile: Use browser menu → "Add to Home Screen"
+          On mobile: Use browser menu → &ldquo;Add to Home Screen&rdquo;
           <br />
           On desktop: Look for install icon in address bar
         </span>

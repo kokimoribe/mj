@@ -1,0 +1,13 @@
+{
+  "name": "rating-engine",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "cd ../.. && $HOME/.local/bin/uv run --project apps/rating-engine uvicorn rating_engine.main:app --reload --port 8000 --host 0.0.0.0",
+    "build": "$HOME/.local/bin/uv build --project .",
+    "lint": "$HOME/.local/bin/uv run --project . ruff check src/ tests/",
+    "type-check": "$HOME/.local/bin/uv run --project . mypy src/",
+    "test": "$HOME/.local/bin/uv run --project . pytest",
+    "format": "$HOME/.local/bin/uv run --project . ruff format src/ tests/"
+  }
+}

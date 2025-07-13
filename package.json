@@ -1,0 +1,31 @@
+{
+  "name": "riichi-mahjong-league",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Riichi Mahjong League tracking system with OpenSkill ratings",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "turbo build",
+    "dev": "turbo dev --parallel",
+    "dev:web": "turbo dev --filter=web",
+    "dev:rating": "turbo dev --filter=rating-engine",
+    "lint": "turbo lint",
+    "type-check": "turbo type-check",
+    "test": "turbo test",
+    "clean": "turbo clean",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\""
+  },
+  "devDependencies": {
+    "@turbo/gen": "^1.10.12",
+    "prettier": "^3.0.0",
+    "turbo": "^2.5.4",
+    "typescript": "^5.0.0"
+  },
+  "packageManager": "npm@10.2.4",
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

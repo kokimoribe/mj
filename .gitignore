@@ -226,3 +226,31 @@ pids
 *.pid
 *.seed
 *.pid.lock
+
+# Interim documentation and temporary files (not needed for Phase 0 operation)
+ALL_PROBLEMS_RESOLVED.md
+CLEANUP_REPORT.md
+IMPROVEMENT_NOTES.md
+NEXT_CONFIG_ISSUE_RESOLVED.md
+PHASE_0_TASK_01_COMPLETE.md
+PWA_UPGRADE_COMPLETE.md
+SETUP_STATUS.md
+TESTING_ISSUES_RESOLVED.md
+llm-implementation-prompt.md
+
+# Archive directory (historical documentation backup)
+archive/
+
+# Generated PWA files that should be built, not committed
+apps/web/public/sw.js
+apps/web/public/workbox-*.js
+
+# VSCode settings (individual developer preferences)
+.vscode/
+
+# Generated source files in wrong location
+apps/rating-engine/src/main.py
+apps/rating-engine/src/rating.py
+
+# TypeScript type declaration directories that aren't needed
+apps/web/types/

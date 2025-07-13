@@ -1,12 +1,13 @@
 # Feature Roadmap
 
-*Development phases and implementation priorities for Riichi Mahjong League*
+_Development phases and implementation priorities for Riichi Mahjong League_
 
 ## Development Philosophy
 
 This project follows a **phased approach** to deliver value incrementally while maintaining code quality and user experience. Each phase builds on the previous one, allowing for early feedback and iterative improvements.
 
 ### Design Principles
+
 - **MVP First**: Start with core functionality, add features gradually
 - **Data-Driven**: Use real usage patterns to guide feature priorities
 - **Mobile-First**: PWA designed for smartphone use during games
@@ -16,9 +17,11 @@ This project follows a **phased approach** to deliver value incrementally while 
 ---
 
 ## Phase 0: Basic Read-Only PWA with Leaderboard
-*Status: **READY FOR IMPLEMENTATION** - Target: 2-3 weeks*
+
+_Status: **READY FOR IMPLEMENTATION** - Target: 2-3 weeks_
 
 ### Core Features
+
 - 🎯 **PWA Leaderboard**: Mobile-optimized leaderboard showing current season rankings
 - 🎯 **OpenSkill Ratings**: Display player ratings calculated with margin-of-victory weights
 - 🎯 **Player Profiles**: Individual player statistics and rating progression charts
@@ -26,6 +29,7 @@ This project follows a **phased approach** to deliver value incrementally while 
 - 🎯 **Season Stats**: Overview of current season progress and player activity
 
 ### Technical Implementation
+
 - 🎯 Next.js 15 PWA with iOS optimization
 - 🎯 Supabase database with source/derived table architecture
 - 🎯 Python OpenSkill service for rating calculations
@@ -33,12 +37,14 @@ This project follows a **phased approach** to deliver value incrementally while 
 - 🎯 Mobile-first responsive design
 
 ### Data Entry Method
+
 - **Admin Manual Entry**: Commissioner manually enters final scores into database
 - **No Webapp Writes**: Phase 0 focuses purely on display functionality
 - **Source Data**: Games, players, and final scores stored in source tables
 - **Derived Cache**: Ratings and statistics computed by Python service
 
 ### Success Metrics
+
 - 🎯 PWA installable on iOS devices
 - 🎯 Leaderboard displays accurate OpenSkill ratings
 - 🎯 Game history and player profiles functional
@@ -48,9 +54,11 @@ This project follows a **phased approach** to deliver value incrementally while 
 ---
 
 ## Phase 0.5: Configuration Playground ⭐
-*Status: **PLANNED** - Target: 3-4 weeks*
+
+_Status: **PLANNED** - Target: 3-4 weeks_
 
 ### Revolutionary Features
+
 - 🎯 **Interactive Configuration UI**: Sliders and controls for all rating parameters
 - 🎯 **Live Rating Preview**: See how rule changes affect current rankings in real-time
 - 🎯 **Smart Caching System**: Hash-based caching for instant configuration switching
@@ -59,6 +67,7 @@ This project follows a **phased approach** to deliver value incrementally while 
 - 🎯 **Configuration Templates**: Pre-built configs like "High Stakes", "Beginner Friendly", etc.
 
 ### User Experience Innovation
+
 - 🎯 **"What-If" Scenarios**: Players can see how different rules would affect their ranking
 - 🎯 **Parameter Education**: Interactive tooltips explaining what each setting does
 - 🎯 **Configuration History**: Track and compare different rule sets over time
@@ -66,6 +75,7 @@ This project follows a **phased approach** to deliver value incrementally while 
 - 🎯 **A/B Testing UI**: Admins can test rule changes before making them official
 
 ### Technical Architecture
+
 - 🎯 **Configuration Hash System**: SHA-256 based configuration identification
 - 🎯 **Intelligent Cache Invalidation**: Automatic cache cleanup when source data changes
 - 🎯 **Performance Monitoring**: Track cache hit rates and computation times
@@ -73,6 +83,7 @@ This project follows a **phased approach** to deliver value incrementally while 
 - 🎯 **Configuration Validation**: Real-time parameter validation with helpful error messages
 
 ### Success Metrics
+
 - [ ] Cache hit rate >90% for common configurations
 - [ ] Average configuration switch time <500ms
 - [ ] Users experiment with configurations (>50% engagement)
@@ -82,9 +93,11 @@ This project follows a **phased approach** to deliver value incrementally while 
 ---
 
 ## Phase 1: Live Game Tracking
-*Status: **IN PLANNING** - Target: 4-6 weeks*
+
+_Status: **IN PLANNING** - Target: 4-6 weeks_
 
 ### New Features
+
 - 🎯 **Hand-by-Hand Entry**: Track individual hands during play
 - 🎯 **Real-Time Scoring**: Live score updates as hands are played
 - 🎯 **Game History**: Detailed hand logs and game replays
@@ -93,6 +106,7 @@ This project follows a **phased approach** to deliver value incrementally while 
 - 🎯 **Wind Tracking**: Automatic dealer rotation and wind assignments
 
 ### User Experience Improvements
+
 - 🎯 **Quick Entry Interface**: Fast input for common hand types
 - 🎯 **Error Prevention**: Validation and warnings for impossible scores
 - 🎯 **Undo Functionality**: Fix mistakes during live entry
@@ -100,6 +114,7 @@ This project follows a **phased approach** to deliver value incrementally while 
 - 🎯 **Auto-Save**: Never lose game progress
 
 ### Technical Enhancements
+
 - 🎯 **Hand Events Schema**: Extend database for detailed logging
 - 🎯 **Real-Time Sync**: WebSocket updates for live games
 - 🎯 **Advanced Statistics**: Complex queries for performance metrics
@@ -107,6 +122,7 @@ This project follows a **phased approach** to deliver value incrementally while 
 - 🎯 **Performance Optimization**: Fast queries for large datasets
 
 ### Success Metrics
+
 - [ ] Average hand entry time < 30 seconds
 - [ ] 95% accuracy in score tracking vs. manual counting
 - [ ] Zero data loss incidents during live games
@@ -115,9 +131,11 @@ This project follows a **phased approach** to deliver value incrementally while 
 ---
 
 ## Phase 2: Scheduling & Tournament Management
-*Status: **FUTURE** - Target: 6-8 weeks*
+
+_Status: **FUTURE** - Target: 6-8 weeks_
 
 ### New Features
+
 - 📅 **Game Scheduling**: Propose and coordinate game sessions
 - 📅 **Availability Tracking**: Players indicate when they can play
 - 📅 **Automatic Scheduling**: AI-powered optimal scheduling suggestions
@@ -126,6 +144,7 @@ This project follows a **phased approach** to deliver value incrementally while 
 - 📅 **Substitute Management**: Handle last-minute player changes
 
 ### Advanced Features
+
 - 📅 **Tournament Mode**: Multi-session tournament tracking
 - 📅 **Location Management**: Track and suggest game venues
 - 📅 **Weather Integration**: Consider weather in scheduling decisions
@@ -133,6 +152,7 @@ This project follows a **phased approach** to deliver value incrementally while 
 - 📅 **Group Chat Integration**: Discord/Slack notifications
 
 ### Technical Infrastructure
+
 - 📅 **Scheduling Algorithm**: Optimize for player preferences and constraints
 - 📅 **Notification Service**: Push notifications and email alerts
 - 📅 **Calendar APIs**: Integration with external calendar systems
@@ -140,6 +160,7 @@ This project follows a **phased approach** to deliver value incrementally while 
 - 📅 **Background Jobs**: Automated scheduling and reminder tasks
 
 ### Success Metrics
+
 - [ ] 80% of games scheduled through the system
 - [ ] Average scheduling coordination time reduced by 70%
 - [ ] 90% player attendance rate for scheduled games
@@ -148,9 +169,11 @@ This project follows a **phased approach** to deliver value incrementally while 
 ---
 
 ## Phase 3: Advanced Analytics & Social Features
-*Status: **FUTURE** - Target: 4-6 weeks*
+
+_Status: **FUTURE** - Target: 4-6 weeks_
 
 ### Analytics Dashboard
+
 - 📊 **Performance Trends**: Rating progression over time
 - 📊 **Head-to-Head Records**: Player vs. player statistics
 - 📊 **Seasonal Analysis**: Compare performance across seasons
@@ -158,6 +181,7 @@ This project follows a **phased approach** to deliver value incrementally while 
 - 📊 **Export Capabilities**: CSV/PDF reports for external analysis
 
 ### Social Features
+
 - 👥 **Achievement System**: Badges for milestones and accomplishments
 - 👥 **Rivalry Tracking**: Special stats for frequent opponents
 - 👥 **Photo Gallery**: Game photos and memorable moments
@@ -165,6 +189,7 @@ This project follows a **phased approach** to deliver value incrementally while 
 - 👥 **Comments System**: Post-game discussions and reactions
 
 ### Gamification
+
 - 🏆 **Leaderboard Variety**: Multiple ranking categories
 - 🏆 **Seasonal Awards**: Formal recognition for top performers
 - 🏆 **Challenge System**: Special match types and objectives
@@ -176,6 +201,7 @@ This project follows a **phased approach** to deliver value incrementally while 
 ## Technical Debt & Infrastructure
 
 ### Ongoing Improvements
+
 - 🔧 **Performance Optimization**: Database query optimization
 - 🔧 **Code Quality**: Refactoring and test coverage improvements
 - 🔧 **Security Hardening**: Enhanced authentication and data protection
@@ -183,6 +209,7 @@ This project follows a **phased approach** to deliver value incrementally while 
 - 🔧 **Documentation**: Comprehensive API and system documentation
 
 ### Scalability Considerations
+
 - 🔧 **Database Optimization**: Indexing and query performance
 - 🔧 **Caching Strategy**: Redis for frequently accessed data
 - 🔧 **CDN Integration**: Fast asset delivery globally
@@ -194,18 +221,21 @@ This project follows a **phased approach** to deliver value incrementally while 
 ## Future Expansion Ideas
 
 ### League Network (Phase 4+)
+
 - 🌐 **Multi-League Support**: Connect multiple friend groups
 - 🌐 **Cross-League Play**: Inter-league tournaments and events
 - 🌐 **Global Rankings**: Compare against other leagues worldwide
 - 🌐 **Franchise Mode**: Seasonal team-based competition
 
 ### Advanced Integrations
+
 - 🔌 **Streaming Integration**: OBS overlays for stream broadcasting
 - 🔌 **Voice Integration**: Alexa/Google Assistant for score queries
 - 🔌 **Hardware Integration**: Automatic scoring with smart tables
 - 🔌 **VR/AR Features**: Immersive game replay and analysis
 
 ### Machine Learning
+
 - 🤖 **Play Style Analysis**: Identify strategic patterns and tendencies
 - 🤖 **Coaching Recommendations**: Personalized improvement suggestions
 - 🤖 **Fraud Detection**: Identify suspicious scoring patterns
@@ -216,30 +246,34 @@ This project follows a **phased approach** to deliver value incrementally while 
 ## Development Resources
 
 ### Phase 0.5 Estimates
-| Feature Area | Effort (weeks) | Priority | Dependencies |
-|--------------|----------------|----------|--------------|
-| Configuration Schema | 1 | High | Phase 0 complete |
-| Hash-based Caching | 1-2 | High | Configuration Schema |
-| Interactive UI Components | 2 | High | Configuration Schema |
-| Cache Performance Optimization | 1 | Medium | Caching System |
-| Configuration Templates | 1 | Low | Interactive UI |
+
+| Feature Area                   | Effort (weeks) | Priority | Dependencies         |
+| ------------------------------ | -------------- | -------- | -------------------- |
+| Configuration Schema           | 1              | High     | Phase 0 complete     |
+| Hash-based Caching             | 1-2            | High     | Configuration Schema |
+| Interactive UI Components      | 2              | High     | Configuration Schema |
+| Cache Performance Optimization | 1              | Medium   | Caching System       |
+| Configuration Templates        | 1              | Low      | Interactive UI       |
 
 ### Phase 1 Estimates
-| Feature Area | Effort (weeks) | Priority | Dependencies |
-|--------------|----------------|----------|--------------|
-| Hand Events Schema | 1 | High | Phase 0.5 complete |
-| Live Entry Interface | 2-3 | High | Hand Events |
-| Real-time Sync | 1-2 | Medium | Live Entry |
-| Enhanced Statistics | 1 | Medium | Hand Events |
-| Offline Support | 1-2 | Low | Live Entry |
+
+| Feature Area         | Effort (weeks) | Priority | Dependencies       |
+| -------------------- | -------------- | -------- | ------------------ |
+| Hand Events Schema   | 1              | High     | Phase 0.5 complete |
+| Live Entry Interface | 2-3            | High     | Hand Events        |
+| Real-time Sync       | 1-2            | Medium   | Live Entry         |
+| Enhanced Statistics  | 1              | Medium   | Hand Events        |
+| Offline Support      | 1-2            | Low      | Live Entry         |
 
 ### Resource Requirements
+
 - **Frontend Developer**: React/Next.js expertise, UI/UX skills for configuration interfaces
 - **Backend Developer**: Python, PostgreSQL, Supabase, caching strategies
 - **UI/UX Designer**: Mobile-first design for game scenarios and configuration playground
 - **QA Tester**: Riichi Mahjong rules knowledge helpful, configuration validation testing
 
 ### Risk Mitigation
+
 - **Scope Creep**: Strict phase boundaries, configuration playground as separate phase
 - **User Adoption**: Early user testing of configuration features
 - **Technical Complexity**: Proof-of-concept for caching system before full implementation
@@ -251,12 +285,14 @@ This project follows a **phased approach** to deliver value incrementally while 
 ## Success Measurement
 
 ### Quantitative Metrics
+
 - **User Engagement**: Games per week, session duration, configuration experiment frequency
 - **System Reliability**: Uptime, error rates, data accuracy, cache performance
 - **Performance**: Page load times, input responsiveness, configuration switch times
 - **Adoption**: % of games tracked digitally vs. paper, configuration feature usage
 
 ### Qualitative Feedback
+
 - **User Satisfaction**: Regular surveys and feedback sessions
 - **Pain Point Identification**: Common user complaints and requests
 - **Feature Utilization**: Which features are actually used, most popular configurations

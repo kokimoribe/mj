@@ -1,6 +1,14 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  --color-brand-primary: #ff6b35;
+  --color-brand-secondary: #004e89;
+  --color-mahjong-red: #dc2626;
+  --color-mahjong-green: #16a34a;
+  --spacing-xs: 0.25rem;
+  --radius-card: 12px;
+  --font-family-display: ui-serif, Georgia, serif;
+}
 
 :root {
   --background: #ffffff;

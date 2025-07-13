@@ -14,7 +14,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Riichi Mahjong League",
-  description: "Track Riichi Mahjong ratings and games with OpenSkill-based calculations",
+  description:
+    "Track Riichi Mahjong ratings and games with OpenSkill-based calculations",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,

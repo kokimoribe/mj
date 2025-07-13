@@ -1,20 +1,22 @@
 # Development Setup Guide
 
-*Setting up the Riichi Mahjong League development environment*
+_Setting up the Riichi Mahjong League development environment_
 
 ## Prerequisites
 
 This guide assumes you're setting up the project from scratch or helping an LLM coding agent understand the development environment.
 
 ### Required Tools
-- **Node.js 20+** with npm/pnpm
+
+- **Node.js 22.17.0 (LTS)** with npm (managed via nvm)
 - **Python 3.9+** with pip
-- **Git** for version control  
+- **Git** for version control
 - **Supabase CLI** for database management
 - **VS Code** (recommended) with extensions
 
 ### Tech Stack Overview
-- **Frontend**: Next.js 15 (App Router)
+
+- **Frontend**: Next.js 15 (App Router) with Tailwind CSS v4
 - **Backend**: Supabase (PostgreSQL + Auth + Real-time)
 - **Rating Engine**: Python with OpenSkill library
 - **Monorepo**: Turborepo for multi-package management
@@ -29,7 +31,7 @@ mj/
 ├── docs/                    # Documentation (this directory)
 ├── apps/
 │   ├── web/                # Next.js PWA application
-│   └── rating-engine/      # Python OpenSkill service  
+│   └── rating-engine/      # Python OpenSkill service
 ├── packages/
 │   ├── ui/                 # Shared React components
 │   ├── database/           # Supabase schema & migrations
@@ -44,13 +46,21 @@ mj/
 ## Quick Start
 
 ### 1. Clone & Install Dependencies
+
 ```bash
 git clone <repository-url>
 cd mj
+
+# Use the correct Node.js version
+nvm use 22.17.0
+# If you don't have nvm installed, install it first:
+# curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+
 npm install
 ```
 
 ### 2. Set Up Supabase
+
 ```bash
 # Install Supabase CLI
 npm install -g supabase
@@ -66,6 +76,7 @@ supabase db reset
 ```
 
 ### 3. Configure Environment Variables
+
 ```bash
 # Copy environment template
 cp apps/web/.env.example apps/web/.env.local
@@ -77,6 +88,7 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-key
 ```
 
 ### 4. Set Up Python Rating Engine
+
 ```bash
 # Create virtual environment
 cd apps/rating-engine
@@ -91,6 +103,7 @@ python -m pytest tests/
 ```
 
 ### 5. Start Development
+
 ```bash
 # Start all services (from project root)
 npm run dev
@@ -109,6 +122,7 @@ npm run dev:rating     # Python service on :8000
 The database follows a **source/derived** architecture with **configuration-driven** rating calculations:
 
 #### Source Tables (Critical)
+
 - `players` - Player profiles and auth
 - `games` - Game sessions (season-agnostic)
 - `game_seats` - Player seating assignments with final scores
@@ -116,16 +130,19 @@ The database follows a **source/derived** architecture with **configuration-driv
 - `player_availability` - Scheduling data (Phase 2)
 
 #### Configuration System (Phase 0.5)
+
 - `rating_configurations` - Hash-based configuration storage
 - Configuration parameters stored as JSONB (time ranges, rating params, scoring rules)
 - Smart caching system with automatic invalidation
 
 #### Derived Tables (Cache)
+
 - `cached_player_ratings` - OpenSkill ratings and statistics per configuration
 - `cached_game_results` - Processed game outcomes with oka/uma per configuration
 - `current_leaderboard` - View for fast leaderboard queries
 
 ### Configuration Management
+
 ```yaml
 # config/rating_defaults.yaml
 default_season_2024:
@@ -151,16 +168,17 @@ default_season_2024:
 ```
 
 ### Initial Data Seeding
+
 ```sql
 -- Create test games (no season reference)
 insert into games (started_at, finished_at, status)
-values 
+values
   ('2024-01-15 19:00:00', '2024-01-15 22:30:00', 'finished'),
   ('2024-01-22 19:00:00', '2024-01-22 22:15:00', 'finished');
 
--- Create test players  
+-- Create test players
 insert into players (display_name, email)
-values 
+values
   ('Alice', 'alice@example.com'),
   ('Bob', 'bob@example.com'),
   ('Charlie', 'charlie@example.com'),
@@ -181,6 +199,7 @@ values (
 ## Python Rating Engine
 
 ### Architecture
+
 The Python service handles all rating calculations with configuration-driven logic:
 
 ```python
@@ -209,6 +228,7 @@ def get_cached_ratings(
 ```
 
 ### Key Responsibilities
+
 1. **Configuration Processing**: Parse and validate rating configurations
 2. **Smart Caching**: Hash-based cache hit/miss detection
 3. **OpenSkill Calculations**: Update μ/σ ratings using config parameters
@@ -219,6 +239,7 @@ def get_cached_ratings(
 8. **Data Validation**: Ensure game results consistency
 
 ### Configuration-Driven Testing Strategy
+
 ```bash
 # Unit tests for rating calculations with different configs
 python -m pytest tests/test_rating_engine.py::test_config_driven_ratings
@@ -238,6 +259,7 @@ python -m pytest tests/test_integration.py::test_config_switching
 ## Frontend Development
 
 ### Next.js App Structure
+
 ```
 apps/web/
 ├── app/                    # App Router pages
@@ -251,6 +273,7 @@ apps/web/
 ```
 
 ### Key Components
+
 - **Leaderboard**: Real-time ranking display with configuration switching
 - **ConfigurationPlayground**: UI for experimenting with rating parameters (Phase 0.5)
 - **GameTracker**: Hand-by-hand input interface (Phase 1)
@@ -258,6 +281,7 @@ apps/web/
 - **Scheduler**: Game scheduling interface (Phase 2)
 
 ### Configuration UI Components (Phase 0.5)
+
 - **ConfigSliders**: Interactive controls for all rating parameters
 - **LivePreview**: Real-time rating updates as users adjust settings
 - **CompareMode**: Side-by-side comparison of different configurations
@@ -265,6 +289,7 @@ apps/web/
 - **OfficialBadge**: Visual indicator for admin-controlled official seasons
 
 ### Development Workflow
+
 ```bash
 # Start with hot reload
 npm run dev:web
@@ -287,6 +312,7 @@ npm run test:config
 ## Database Migrations
 
 ### Schema Changes
+
 ```bash
 # Generate new migration
 supabase migration new "add_hand_events_table"
@@ -300,6 +326,7 @@ supabase db push
 ```
 
 ### Data Migrations
+
 ```bash
 # For complex data transformations
 supabase migration new "migrate_old_games_format"
@@ -313,22 +340,26 @@ supabase migration new "migrate_old_games_format"
 ## Phase-Specific Setup
 
 ### Phase 0: Leaderboard Only
+
 - Basic `players`, `games`, `game_seats` tables (season-agnostic)
 - Python rating engine for configuration-driven calculations
 - Simple game entry form (final scores only)
 
 ### Phase 0.5: Configuration Playground
+
 - Add `rating_configurations` and `cached_*` tables
 - Configuration UI with sliders and live preview
 - Smart caching system with hash-based invalidation
 - User experimentation features
 
-### Phase 1: Live Game Tracking  
+### Phase 1: Live Game Tracking
+
 - Add `hand_events` table
 - Real-time game interface components
 - Enhanced Python functions for hand processing with caching
 
 ### Phase 2: Scheduling System
+
 - Add `player_availability` table
 - Calendar integration components
 - Notification system setup
@@ -338,6 +369,7 @@ supabase migration new "migrate_old_games_format"
 ## Production Deployment
 
 ### Environment Setup
+
 ```bash
 # Vercel for frontend
 vercel deploy
@@ -351,6 +383,7 @@ git push railway main
 ```
 
 ### Environment Variables
+
 ```bash
 # Production .env
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
@@ -364,12 +397,14 @@ PYTHON_RATING_ENGINE_URL=https://your-rating-engine.railway.app
 ## Troubleshooting
 
 ### Common Issues
+
 1. **Supabase Connection**: Check environment variables and local instance
 2. **Python Dependencies**: Ensure virtual environment is activated
 3. **Schema Errors**: Run `supabase db reset` to rebuild from migrations
 4. **Rating Calculations**: Check Python service logs and test data
 
 ### Debug Commands
+
 ```bash
 # Check Supabase status
 supabase status
@@ -389,6 +424,7 @@ npm run build
 ## LLM Agent Guidelines
 
 ### For Code Changes
+
 1. **Read Schema First**: Always check `docs/03-database-schema.md`
 2. **Understand Phases**: Know which phase features you're implementing
 3. **Source vs Derived**: Never modify derived tables directly
@@ -396,8 +432,9 @@ npm run build
 5. **Test Thoroughly**: Changes affect competitive league data
 
 ### Development Flow
+
 1. **Schema Changes**: Update migrations first
-2. **Backend Logic**: Implement in Python rating engine  
+2. **Backend Logic**: Implement in Python rating engine
 3. **Frontend Components**: Build UI consuming the data
 4. **Integration**: Test end-to-end workflow
 5. **Documentation**: Update relevant docs

@@ -1,6 +1,6 @@
 # Technical Architecture
 
-*Tech stack, system design, and architectural decisions*
+_Tech stack, system design, and architectural decisions_
 
 ---
 
@@ -28,26 +28,29 @@
 ## 🛠️ Tech Stack
 
 ### Frontend
-| Technology | Purpose | Justification |
-|------------|---------|---------------|
-| **Next.js 15** | React framework | App Router, PWA support, excellent DX |
-| **TypeScript** | Type safety | Critical for data integrity |
-| **Tailwind CSS** | Styling | Rapid UI development, mobile-first |
-| **PWA (next-pwa)** | Mobile app experience | iOS-friendly, offline capability |
+
+| Technology         | Purpose               | Justification                         |
+| ------------------ | --------------------- | ------------------------------------- |
+| **Next.js 15**     | React framework       | App Router, PWA support, excellent DX |
+| **TypeScript**     | Type safety           | Critical for data integrity           |
+| **Tailwind CSS**   | Styling               | Rapid UI development, mobile-first    |
+| **PWA (next-pwa)** | Mobile app experience | iOS-friendly, offline capability      |
 
 ### Backend & Database
-| Technology | Purpose | Justification |
-|------------|---------|---------------|
-| **Supabase** | Database + Auth + Realtime | Postgres, built-in auth, real-time subscriptions |
-| **Python** | Rating calculations | OpenSkill library, data science ecosystem |
-| **Vercel Functions** | Serverless compute | Seamless Next.js integration |
+
+| Technology           | Purpose                    | Justification                                    |
+| -------------------- | -------------------------- | ------------------------------------------------ |
+| **Supabase**         | Database + Auth + Realtime | Postgres, built-in auth, real-time subscriptions |
+| **Python**           | Rating calculations        | OpenSkill library, data science ecosystem        |
+| **Vercel Functions** | Serverless compute         | Seamless Next.js integration                     |
 
 ### Development & Deployment
-| Technology | Purpose | Justification |
-|------------|---------|---------------|
-| **Turborepo** | Monorepo management | Multi-package coordination |
-| **pnpm** | Package management | Faster installs, workspace support |
-| **Vercel** | Hosting & deployment | Auto-deploy, edge functions |
+
+| Technology    | Purpose              | Justification                      |
+| ------------- | -------------------- | ---------------------------------- |
+| **Turborepo** | Monorepo management  | Multi-package coordination         |
+| **pnpm**      | Package management   | Faster installs, workspace support |
+| **Vercel**    | Hosting & deployment | Auto-deploy, edge functions        |
 
 ---
 
@@ -86,6 +89,7 @@ riichi-league/
 ## 🗄️ Data Flow Architecture
 
 ### Phase 0: Basic Ratings
+
 ```
 ┌─────────────────┐
 │  Admin enters   │
@@ -118,6 +122,7 @@ riichi-league/
 ```
 
 ### Phase 0.5: Configuration Playground
+
 ```
 ┌─────────────────┐    ┌─────────────────┐
 │  User adjusts   │    │  Official       │
@@ -140,50 +145,55 @@ riichi-league/
 │  • Instant switching between configs    │
 └──────────────────────────────────────────┘
 ```
+
                      ▼ Webhook triggers
+
 ┌─────────────────────────────────────┐
-│         Python Function             │
-│  • Calculate plus-minus (oka/uma)  │
-│  • Compute OpenSkill ratings       │
-│  • Update performance stats        │
+│ Python Function │
+│ • Calculate plus-minus (oka/uma) │
+│ • Compute OpenSkill ratings │
+│ • Update performance stats │
 └─────────────────────────────────────┘
-                     │
-                     ▼
+│
+▼
 ┌─────────────────────────────────────┐
-│          Derived Tables             │
-│  • player_ratings (cached μ/σ)     │
-│  • game_results (plus-minus cache) │
+│ Derived Tables │
+│ • player_ratings (cached μ/σ) │
+│ • game_results (plus-minus cache) │
 └─────────────────────────────────────┘
-                     │
-                     ▼
+│
+▼
 ┌─────────────────────────────────────┐
-│            Frontend                 │
-│  • Query cached leaderboard        │
-│  • Real-time via Supabase          │
+│ Frontend │
+│ • Query cached leaderboard │
+│ • Real-time via Supabase │
 └─────────────────────────────────────┘
+
 ```
 
 ### Phase 1: Live Game Tracking
 ```
+
 ┌─────────────────┐
-│   Players use   │
-│   webapp to     │──┐
-│   record hands  │  │
-└─────────────────┘  │
-                     ▼
+│ Players use │
+│ webapp to │──┐
+│ record hands │ │
+└─────────────────┘ │
+▼
 ┌─────────────────────────────────────┐
-│         Source Tables               │
-│  • hand_events (detailed logs)     │
-│  • games (live status updates)     │
+│ Source Tables │
+│ • hand_events (detailed logs) │
+│ • games (live status updates) │
 └─────────────────────────────────────┘
-                     │
-                     ▼ Real-time subscriptions
+│
+▼ Real-time subscriptions
 ┌─────────────────────────────────────┐
-│            Frontend                 │
-│  • Live game progress              │
-│  • Hand-by-hand recording UI       │
+│ Frontend │
+│ • Live game progress │
+│ • Hand-by-hand recording UI │
 └─────────────────────────────────────┘
-```
+
+````
 
 ---
 
@@ -225,40 +235,41 @@ riichi-league/
 ```sql
 -- Supabase webhook fires when game is completed
 UPDATE games SET status = 'finished' WHERE id = ?;
-```
+````
 
 ### Python Function Workflow
+
 ```python
 def process_game_completion(game_id: str):
     # 1. Extract source data
     game = get_game_with_seats(game_id)
     season = get_season(game.season_id)
-    
+
     # 2. Calculate plus-minus scores
     for seat in game.seats:
         plus_minus = calculate_oka_uma(
-            seat.final_score, 
+            seat.final_score,
             seat.placement,
             season.oka_settings
         )
         weight = calculate_weight(plus_minus, season.weight_params)
-    
+
     # 3. Update OpenSkill ratings
     teams = [[player] for player in game.players]
     new_ratings = openskill.rate(
-        teams, 
-        ranks=placements, 
+        teams,
+        ranks=placements,
         weights=weights
     )
-    
+
     # 4. Save to derived tables
     upsert_player_ratings(new_ratings)
     upsert_game_results(plus_minus_scores, rating_changes)
-    
+
     # 5. Calculate performance stats (if hand_events exist)
     if game.has_hand_logs:
         update_performance_stats(game.players, season.id)
-    
+
     # 6. Invalidate frontend cache
     revalidate_tag('ratings')
 ```
@@ -268,11 +279,13 @@ def process_game_completion(game_id: str):
 ## 🔐 Authentication & Security
 
 ### Authentication Strategy
+
 - **Phase 0**: Optional auth (read-only leaderboard)
 - **Phase 1+**: Required for game recording
 - **Provider**: Supabase Auth (email/password, OAuth)
 
 ### Row Level Security (RLS)
+
 ```sql
 -- Players can read public leaderboard
 CREATE POLICY "public_read_leaderboard" ON player_ratings
@@ -294,6 +307,7 @@ CREATE POLICY "own_availability" ON player_availability
 ## 📱 PWA Configuration
 
 ### Manifest
+
 ```json
 {
   "name": "Riichi League",
@@ -314,6 +328,7 @@ CREATE POLICY "own_availability" ON player_availability
 ```
 
 ### Service Worker Features
+
 - **Cache Strategy**: Network-first for data, cache-first for assets
 - **Background Sync**: Queue game recording when offline
 - **Push Notifications**: Game scheduling alerts (Phase 2)
@@ -323,16 +338,19 @@ CREATE POLICY "own_availability" ON player_availability
 ## 🚀 Performance Considerations
 
 ### Database Optimization
+
 - **Indexes**: Optimized for leaderboard and game history queries
 - **Views**: Pre-computed joins for common queries
 - **Connection Pooling**: Supabase handles automatically
 
 ### Frontend Optimization
+
 - **Static Generation**: Leaderboard page with ISR
 - **Real-time Updates**: Selective subscriptions to avoid over-fetching
 - **Mobile Performance**: Touch-optimized, minimal JavaScript
 
 ### Caching Strategy
+
 - **Database**: Derived tables cache expensive computations
 - **CDN**: Static assets via Vercel Edge
 - **Client**: React Query for intelligent data fetching
@@ -342,6 +360,7 @@ CREATE POLICY "own_availability" ON player_availability
 ## 🔧 Development Workflow
 
 ### Local Development
+
 ```bash
 # Start all services
 pnpm dev
@@ -352,6 +371,7 @@ next dev               # Frontend dev server
 ```
 
 ### Database Migrations
+
 ```bash
 # Create migration
 supabase migration new add_hand_events
@@ -364,6 +384,7 @@ git push  # Auto-deploys via Vercel
 ```
 
 ### Testing Strategy
+
 - **Unit Tests**: Python rating functions
 - **Integration Tests**: Database triggers and webhooks
 - **E2E Tests**: Critical user flows (game recording)
@@ -373,15 +394,17 @@ git push  # Auto-deploys via Vercel
 ## 📊 Monitoring & Observability
 
 ### Key Metrics
+
 - **Performance**: Page load times, function execution duration
 - **Reliability**: Error rates, webhook success rates
 - **Usage**: Active players, games per week
 
 ### Tools
+
 - **Vercel Analytics**: Frontend performance
 - **Supabase Dashboard**: Database metrics
 - **Custom Logging**: Python function execution
 
 ---
 
-*Next: [Database Schema](./03-database-schema.md)*
+_Next: [Database Schema](./03-database-schema.md)_

@@ -241,5 +241,54 @@ apps/web/public/workbox-*.js
 apps/rating-engine/src/main.py
 apps/rating-engine/src/rating.py
 
+# TypeScript build artifacts
+*.tsbuildinfo
+**/*.tsbuildinfo
+
 # TypeScript type declaration directories that aren't needed
 apps/web/types/
+
+# Deployment and platform files
+.vercel
+
+# Development artifacts and temporary files
+test-database.js
+supabase_password.txt
+*.tmp
+*.temp
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+
+# Dependency directories in subdirectories (fallback)
+**/node_modules/
+**/.venv/
+
+# Log files
+*.log
+logs/
+
+# Coverage reports
+coverage/
+.nyc_output/
+
+# Temporary Next.js files
+.next/
+out/
+
+# Production builds
+build/
+dist/

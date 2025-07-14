@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import InstallPrompt from "../components/InstallPrompt";
 
 interface Player {
@@ -48,13 +48,13 @@ export default function Home() {
           err instanceof Error &&
           (err.message.includes("fetch") || err.message.includes("network"))
         ) {
-          console.log(`Retrying... (${retryCount + 1}/3)`);
+          console.warn(`Retrying... (${retryCount + 1}/3)`);
           setTimeout(() => fetchLeaderboard(retryCount + 1), 2000);
           return;
         }
 
         setError(
-          `Failed to load leaderboard: ${err instanceof Error ? err.message : "Unknown error"}`,
+          `Failed to load leaderboard: ${err instanceof Error ? err.message : "Unknown error"}`
         );
       } finally {
         if (retryCount === 0) {
@@ -92,7 +92,7 @@ export default function Home() {
       } catch (err) {
         console.error("Failed to fetch leaderboard:", err);
         setError(
-          `Failed to load leaderboard: ${err instanceof Error ? err.message : "Unknown error"}`,
+          `Failed to load leaderboard: ${err instanceof Error ? err.message : "Unknown error"}`
         );
       } finally {
         setLoading(false);
@@ -104,7 +104,7 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center">
         <div className="text-xl">Loading leaderboard...</div>
       </div>
     );
@@ -112,12 +112,12 @@ export default function Home() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
-          <div className="text-xl text-red-600 mb-4">{error}</div>
+          <div className="mb-4 text-xl text-red-600">{error}</div>
           <button
             onClick={handleRetry}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="rounded-lg bg-blue-600 px-6 py-2 text-white transition-colors hover:bg-blue-700"
           >
             Try Again
           </button>
@@ -135,24 +135,24 @@ export default function Home() {
 
       {/* Page Title */}
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-gray-900 text-center mb-8">
+        <h1 className="mb-8 text-center text-3xl font-bold text-gray-900">
           Riichi Mahjong League
         </h1>
 
         {/* Test v4 Features */}
-        <div className="mb-6 p-4 bg-brand-primary text-white rounded-[--radius-card] text-center">
+        <div className="bg-brand-primary mb-6 rounded-[--radius-card] p-4 text-center text-white">
           <p className="text-lg font-semibold">
             🎌 Welcome to Tailwind CSS v4!
           </p>
-          <p className="text-sm opacity-90 mt-1">
+          <p className="mt-1 text-sm opacity-90">
             Using custom @theme variables
           </p>
         </div>
 
         {/* Leaderboard Display */}
         {leaderboard && (
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            <div className="px-6 py-4 bg-gray-800 text-white">
+          <div className="overflow-hidden rounded-lg bg-white shadow-md">
+            <div className="bg-gray-800 px-6 py-4 text-white">
               <h2 className="text-2xl font-semibold">Player Rankings</h2>
             </div>
 
@@ -160,11 +160,11 @@ export default function Home() {
               {leaderboard.players.map((player, index) => (
                 <div
                   key={player.id}
-                  className="px-6 py-4 flex items-center justify-between hover:bg-gray-50"
+                  className="flex items-center justify-between px-6 py-4 hover:bg-gray-50"
                 >
                   <div className="flex items-center space-x-4">
                     <div className="flex-shrink-0">
-                      <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-semibold">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 font-semibold text-white">
                         {index + 1}
                       </div>
                     </div>
@@ -191,7 +191,7 @@ export default function Home() {
 
         <footer className="mt-8 text-center text-gray-500">
           <p>Phase 0: Basic Read-Only PWA</p>
-          <p className="text-sm mt-2">Powered by OpenSkill ratings</p>
+          <p className="mt-2 text-sm">Powered by OpenSkill ratings</p>
         </footer>
       </div>
     </div>

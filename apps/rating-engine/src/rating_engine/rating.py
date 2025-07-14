@@ -3,7 +3,6 @@ OpenSkill rating configuration and calculations.
 """
 
 from dataclasses import dataclass
-from typing import Optional
 
 
 @dataclass
@@ -18,7 +17,7 @@ class RatingConfig:
 
     # Mahjong-specific settings
     oka: int = 20000
-    uma: Optional[list[int]] = None
+    uma: list[int] | None = None
     weight_divisor: int = 40
     weight_min: float = 0.5
     weight_max: float = 1.5

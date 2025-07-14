@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -24,15 +24,15 @@ export default function InstallPrompt() {
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
 
-    // Check if already installed
+    // Check if already installed (development info)
     if (window.matchMedia("(display-mode: standalone)").matches) {
-      console.log("PWA is already installed");
+      // PWA already installed, no need to show prompt
     }
 
     return () => {
       window.removeEventListener(
         "beforeinstallprompt",
-        handleBeforeInstallPrompt,
+        handleBeforeInstallPrompt
       );
     };
   }, []);
@@ -47,9 +47,9 @@ export default function InstallPrompt() {
     const { outcome } = await deferredPrompt.userChoice;
 
     if (outcome === "accepted") {
-      console.log("User accepted the install prompt");
+      // User accepted PWA installation
     } else {
-      console.log("User dismissed the install prompt");
+      // User dismissed PWA installation
     }
 
     // Clear the prompt
@@ -59,7 +59,7 @@ export default function InstallPrompt() {
 
   if (!isInstallable) {
     return (
-      <div className="text-sm text-gray-500 p-4 border-l-4 border-blue-500 bg-blue-50 rounded">
+      <div className="rounded border-l-4 border-blue-500 bg-blue-50 p-4 text-sm text-gray-500">
         <strong>PWA Status:</strong> Ready for installation
         <br />
         <span className="text-xs">
@@ -72,16 +72,16 @@ export default function InstallPrompt() {
   }
 
   return (
-    <div className="p-4 border-l-4 border-green-500 bg-green-50 rounded">
-      <h3 className="font-semibold text-green-800 mb-2">
+    <div className="rounded border-l-4 border-green-500 bg-green-50 p-4">
+      <h3 className="mb-2 font-semibold text-green-800">
         Install Mahjong League App
       </h3>
-      <p className="text-sm text-green-700 mb-3">
+      <p className="mb-3 text-sm text-green-700">
         Install this app on your device for quick access and offline capability.
       </p>
       <button
         onClick={handleInstallClick}
-        className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors"
+        className="rounded bg-green-600 px-4 py-2 text-white transition-colors hover:bg-green-700"
       >
         Install App
       </button>

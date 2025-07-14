@@ -1,0 +1,40 @@
+# Season 3 Configuration
+# Official configuration for the special carry-over season
+# Covers all legacy games from Feb 2022 through Jul 2025
+
+name: "Season 3"
+description: "Official Season 3 - Special carry-over season covering legacy games"
+
+# Time bounds for this season
+timeRange:
+  startDate: "2022-02-16"
+  endDate: "2025-07-22"
+  name: "Season 3"
+
+# OpenSkill rating parameters
+rating:
+  initialMu: 25.0 # Starting skill estimate
+  initialSigma: 8.33 # Starting uncertainty
+  confidenceFactor: 2.0 # Display rating conservatism (μ - k*σ)
+  decayRate: 0.02 # Weekly sigma inflation for inactive players
+
+# Scoring system (oka/uma)
+scoring:
+  oka: 20000 # Return bonus
+  uma: [10000, 5000, -5000, -10000] # Placement bonuses [1st, 2nd, 3rd, 4th]
+
+# Margin-of-victory weights
+weights:
+  divisor: 40 # Plus-minus scaling factor
+  min: 0.5 # Minimum weight multiplier
+  max: 1.5 # Maximum weight multiplier
+
+# Qualification rules
+qualification:
+  minGames: 8 # Games needed for prizes
+  dropWorst: 2 # Safety net for bad games
+
+# Metadata
+isOfficial: true
+createdBy: "system"
+version: "1.0.0"

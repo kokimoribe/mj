@@ -9,7 +9,7 @@ This guide assumes you're setting up the project from scratch or helping an LLM 
 ### Required Tools
 
 - **Node.js 22.17.0 (LTS)** with npm (managed via nvm)
-- **Python 3.9+** with pip
+- **Python 3.12+** with uv (modern Python package manager)
 - **Git** for version control
 - **Supabase CLI** for database management
 - **VS Code** (recommended) with extensions
@@ -90,16 +90,14 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-key
 ### 4. Set Up Python Rating Engine
 
 ```bash
-# Create virtual environment
+# Navigate to rating engine directory
 cd apps/rating-engine
-python -m venv venv
-source venv/bin/activate  # or `venv\Scripts\activate` on Windows
 
-# Install dependencies
-pip install -r requirements.txt
+# Install dependencies with uv (creates virtual environment automatically)
+uv sync
 
 # Test rating engine
-python -m pytest tests/
+uv run pytest tests/
 ```
 
 ### 5. Start Development
@@ -242,16 +240,16 @@ def get_cached_ratings(
 
 ```bash
 # Unit tests for rating calculations with different configs
-python -m pytest tests/test_rating_engine.py::test_config_driven_ratings
+uv run pytest tests/test_rating_engine.py::test_config_driven_ratings
 
 # Cache performance tests
-python -m pytest tests/test_caching.py::test_cache_hit_rates
+uv run pytest tests/test_caching.py::test_cache_hit_rates
 
 # Configuration validation tests
-python -m pytest tests/test_config_validation.py
+uv run pytest tests/test_config_validation.py
 
 # Integration tests with multiple configurations
-python -m pytest tests/test_integration.py::test_config_switching
+uv run pytest tests/test_integration.py::test_config_switching
 ```
 
 ---
@@ -396,16 +394,36 @@ GitHub Repository → Vercel Integration → Turborepo Build
 ### Environment Variables
 
 **Required for Production:**
+
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 ```
 
 **Optional (for advanced features):**
+
 ```bash
 SUPABASE_SERVICE_ROLE_KEY=your-service-key
 PYTHON_RATING_ENGINE_URL=https://your-rating-engine.vercel.app
 ```
+
+### Python Rating Engine Deployment
+
+The Python rating engine is configured to use **Python 3.12** (Vercel's default), which provides optimal performance and compatibility:
+
+```bash
+# For Vercel deployment, ensure your pyproject.toml specifies:
+# requires-python = ">=3.12"
+
+# uv will automatically use Python 3.12 when available
+uv sync --extra dev
+```
+
+**Vercel Configuration:**
+
+- Python 3.12 is Vercel's default runtime (no additional configuration needed)
+- Uses Node.js 22.x for optimal compatibility
+- Dependencies managed via `pyproject.toml` (modern Python standard)
 
 ### Database Deployment
 
@@ -447,6 +465,7 @@ npm run build
 ### Build Issues
 
 **Local Build Testing:**
+
 ```bash
 # Test build locally first
 npm run build
@@ -459,6 +478,7 @@ npm run type-check
 ```
 
 **Vercel Build Failures:**
+
 ```bash
 # Check Vercel logs
 vercel logs --follow
@@ -470,6 +490,7 @@ npx turbo build --filter=web
 ### Environment Issues
 
 **Missing Environment Variables:**
+
 ```bash
 # Check Vercel environment variables
 vercel env ls
@@ -479,6 +500,7 @@ vercel env pull .env.local
 ```
 
 **Supabase Connection:**
+
 ```bash
 # Check local Supabase status
 npx supabase status
@@ -490,6 +512,7 @@ node -e "console.log(process.env.NEXT_PUBLIC_SUPABASE_URL)"
 ### Monorepo Detection Issues
 
 **If Vercel doesn't detect monorepo properly:**
+
 1. Ensure `.vercel/repo.json` exists at project root
 2. Check project is linked: `vercel projects ls`
 3. Verify `apps/web/vercel.json` has correct build command:
@@ -503,13 +526,15 @@ node -e "console.log(process.env.NEXT_PUBLIC_SUPABASE_URL)"
 ### Performance Optimization
 
 **Turborepo Caching:**
+
 - **Local**: `.turbo/` cache speeds up repeated builds
 - **Remote**: Vercel provides shared cache across deployments
 - **Selective Building**: Only changed packages rebuild
 
 **Build Times:**
+
 - **Cold Build**: ~60-90 seconds (all packages)
-- **Incremental**: ~15-30 seconds (cached dependencies)  
+- **Incremental**: ~15-30 seconds (cached dependencies)
 - **Development**: ~2-5 seconds (hot reload)
 
 ---

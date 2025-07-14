@@ -1,0 +1,40 @@
+# Season 4 Configuration
+# Official configuration for the new system era
+# Starts August 2025 with the new web app and rating system
+
+name: "Season 4"
+description: "Official Season 4 - New system era with web app integration"
+
+# Time bounds for this season
+timeRange:
+  startDate: "2025-07-23"
+  endDate: "2025-12-31" # Will be extended as needed
+  name: "Season 4"
+
+# OpenSkill rating parameters (same as Season 3 for continuity)
+rating:
+  initialMu: 25.0 # Starting skill estimate
+  initialSigma: 8.33 # Starting uncertainty
+  confidenceFactor: 2.0 # Display rating conservatism (μ - k*σ)
+  decayRate: 0.02 # Weekly sigma inflation for inactive players
+
+# Scoring system (same as Season 3)
+scoring:
+  oka: 20000 # Return bonus
+  uma: [10000, 5000, -5000, -10000] # Placement bonuses [1st, 2nd, 3rd, 4th]
+
+# Margin-of-victory weights (same as Season 3)
+weights:
+  divisor: 40 # Plus-minus scaling factor
+  min: 0.5 # Minimum weight multiplier
+  max: 1.5 # Maximum weight multiplier
+
+# Qualification rules (same as Season 3)
+qualification:
+  minGames: 8 # Games needed for prizes
+  dropWorst: 2 # Safety net for bad games
+
+# Metadata
+isOfficial: true
+createdBy: "system"
+version: "1.0.0"

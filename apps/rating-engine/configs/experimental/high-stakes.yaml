@@ -1,0 +1,40 @@
+# High Stakes Configuration
+# Experimental configuration for high-stakes games
+# Higher margin-of-victory weights for more dramatic rating swings
+
+name: "High Stakes"
+description: "Experimental configuration for high-stakes games with increased volatility"
+
+# Time bounds (can be applied to any time range)
+timeRange:
+  startDate: "2025-01-01"
+  endDate: "2025-12-31"
+  name: "High Stakes Experimental"
+
+# Rating parameters - slightly more volatile
+rating:
+  initialMu: 25.0
+  initialSigma: 10.0 # Higher initial uncertainty
+  confidenceFactor: 2.5 # More conservative display
+  decayRate: 0.03 # Faster decay for inactive players
+
+# Scoring system - same as standard
+scoring:
+  oka: 20000
+  uma: [10000, 5000, -5000, -10000]
+
+# Increased margin-of-victory weights for bigger swings
+weights:
+  divisor: 30 # Lower divisor = higher weights
+  min: 0.3 # Lower minimum
+  max: 2.0 # Higher maximum
+
+# Higher qualification requirements
+qualification:
+  minGames: 12 # More games required
+  dropWorst: 1 # Fewer safety net games
+
+# Metadata
+isOfficial: false
+createdBy: "system"
+version: "1.0.0"

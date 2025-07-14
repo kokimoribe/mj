@@ -1,8 +1,4 @@
 {
-  "buildCommand": "uv sync --no-dev",
-  "framework": null,
-  "installCommand": "pip install uv",
-  "devCommand": "uv run python -m rating_engine.main",
   "regions": ["sfo1"],
   "rewrites": [
     {

@@ -9,7 +9,10 @@
     },
     "web#build": {
       "dependsOn": ["^build"],
-      "env": ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY"],
+      "env": [
+        "NEXT_PUBLIC_SUPABASE_URL",
+        "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"
+      ],
       "outputs": [".next/**", "!.next/cache/**"],
       "inputs": [
         "src/**",
@@ -22,8 +25,9 @@
     },
     "rating-engine#build": {
       "dependsOn": ["^build"],
+      "env": ["SUPABASE_URL", "SUPABASE_SECRET_KEY"],
       "outputs": ["dist/**"],
-      "inputs": ["src/**/*.py", "pyproject.toml", "uv.lock"]
+      "inputs": ["src/**/*.py", "pyproject.toml", "uv.lock", "api/**/*.py"]
     },
     "dev": {
       "cache": false,

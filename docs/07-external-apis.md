@@ -198,9 +198,9 @@ const channel = supabase
       schema: "public",
       table: "games",
     },
-    (payload) => {
+    payload => {
       // Handle real-time game updates
-    },
+    }
   )
   .subscribe();
 ```

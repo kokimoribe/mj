@@ -28,21 +28,3 @@ def test_root_endpoint():
     assert "message" in data
     assert "status" in data
     assert data["status"] == "healthy"
-
-
-def test_leaderboard_endpoint():
-    """Test the leaderboard endpoint."""
-    response = client.get("/ratings/current")
-    assert response.status_code == 200
-    data = response.json()
-    assert "season" in data
-    assert "players" in data
-    assert isinstance(data["players"], list)
-
-    # Check if players have the required fields
-    if data["players"]:
-        player = data["players"][0]
-        assert "id" in player
-        assert "name" in player
-        assert "rating" in player
-        assert "games" in player

@@ -19,6 +19,8 @@ Welcome to the documentation for our **Riichi Mahjong League** project - a Progr
 ### Reference
 
 - [**External APIs**](./07-external-apis.md) - Documentation links for Next.js, Supabase, etc.
+- [**Operational Guide**](./08-operational-guide.md) - Essential procedures for developers and LLM agents
+- [**Environment Variables**](./09-environment-variables.md) - Credential types and security guidelines
 
 ---
 
@@ -57,6 +59,8 @@ A **hobby PWA** for tracking Riichi Mahjong games among friends with:
 | **05-rating-system.md**          | Configuration system & rating algorithm   | Product, Dev      |
 | **06-feature-roadmap.md**        | Implementation phases including Phase 0.5 | Product, Dev      |
 | **07-external-apis.md**          | Reference links and documentation         | Dev               |
+| **08-operational-guide.md**      | Essential procedures for developers/LLMs  | Dev, LLM          |
+| **09-environment-variables.md**  | Credential types and security guidelines  | Dev, LLM          |
 
 ---
 

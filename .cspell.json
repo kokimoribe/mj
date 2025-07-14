@@ -1,0 +1,73 @@
+{
+  "version": "0.2",
+  "language": "en",
+  "words": ["JGMC", "PFHQR", "YRSQ", "PFHQ", "YRSB", "YRSC", "YRSD", "YRSR"],
+  "ignoreRegExpList": [
+    "\\b[0-9A-Z]{26}\\b",
+    "\\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\b",
+    "\\b[a-f0-9]{32,64}\\b"
+  ],
+  "files": [
+    "**/*.py",
+    "**/*.ts",
+    "**/*.tsx",
+    "**/*.js",
+    "**/*.jsx",
+    "**/*.md",
+    "**/*.mdx",
+    "**/*.json",
+    "**/*.yaml",
+    "**/*.yml"
+  ],
+  "ignorePaths": [
+    "node_modules/**",
+    ".git/**",
+    "dist/**",
+    "build/**",
+    ".next/**",
+    ".turbo/**",
+    "**/__pycache__/**",
+    "**/*.pyc",
+    "coverage/**",
+    ".pytest_cache/**",
+    "*.log",
+    "*.lock",
+    "package-lock.json",
+    "yarn.lock",
+    "pnpm-lock.yaml",
+    "uv.lock"
+  ],
+  "dictionaries": [
+    "typescript",
+    "node",
+    "npm",
+    "python",
+    "markdown",
+    "bash",
+    "project-dict"
+  ],
+  "dictionaryDefinitions": [
+    {
+      "name": "project-dict",
+      "path": "./.cspell-dict.txt",
+      "addWords": true
+    }
+  ],
+  "languageSettings": [
+    {
+      "languageId": "python",
+      "allowCompoundWords": true,
+      "dictionaries": ["python"]
+    },
+    {
+      "languageId": "typescript",
+      "allowCompoundWords": true,
+      "dictionaries": ["typescript", "node", "npm"]
+    },
+    {
+      "languageId": "javascript",
+      "allowCompoundWords": true,
+      "dictionaries": ["typescript", "node", "npm"]
+    }
+  ]
+}

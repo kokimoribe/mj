@@ -46,11 +46,11 @@ _Tech stack, system design, and architectural decisions_
 
 ### Development & Deployment
 
-| Technology    | Purpose              | Justification                      |
-| ------------- | -------------------- | ---------------------------------- |
-| **Turborepo** | Monorepo management  | Multi-package coordination         |
+| Technology    | Purpose              | Justification                       |
+| ------------- | -------------------- | ----------------------------------- |
+| **Turborepo** | Monorepo management  | Multi-package coordination          |
 | **npm**       | Package management   | Workspace support, Node.js standard |
-| **Vercel**    | Hosting & deployment | Auto-deploy, monorepo awareness    |
+| **Vercel**    | Hosting & deployment | Auto-deploy, monorepo awareness     |
 
 ---
 
@@ -61,7 +61,7 @@ mj/                          # Monorepo root
 ├─ apps/
 │  ├─ web/                   # Next.js 15 PWA
 │  │  ├─ src/
-│  │  │  ├─ app/            # App Router pages  
+│  │  │  ├─ app/            # App Router pages
 │  │  │  └─ components/     # Reusable UI components
 │  │  ├─ public/            # Static assets, PWA manifest
 │  │  ├─ vercel.json        # Vercel deployment config
@@ -106,7 +106,7 @@ mj/                          # Monorepo root
 ### Turborepo Integration Benefits
 
 - ✅ **Smart builds**: Only builds when relevant files change
-- ✅ **Workspace awareness**: Understands package dependencies  
+- ✅ **Workspace awareness**: Understands package dependencies
 - ✅ **Caching**: Local + remote cache for faster builds
 - ✅ **Parallel execution**: Multiple packages build simultaneously
 
@@ -116,7 +116,7 @@ When Vercel Fluid becomes generally available:
 
 ```
 ┌─────────────────┐    ┌─────────────────┐
-│   Monorepo      │───▶│  Related        │  
+│   Monorepo      │───▶│  Related        │
 │   Deployment    │    │  Projects       │
 │                 │    │                 │
 │ • Web App       │    │ • Python API    │
@@ -125,9 +125,11 @@ When Vercel Fluid becomes generally available:
 │   Variables     │    │                 │
 └─────────────────┘    └─────────────────┘
 ```
-├─ turbo.json               # Turborepo configuration
-├─ pnpm-workspace.yaml     # Workspace definition
-└─ .env.example            # Environment variables
+
+├─ turbo.json # Turborepo configuration
+├─ pnpm-workspace.yaml # Workspace definition
+└─ .env.example # Environment variables
+
 ```
 
 ---
@@ -137,59 +139,63 @@ When Vercel Fluid becomes generally available:
 ### Phase 0: Basic Ratings
 
 ```
+
 ┌─────────────────┐
-│  Admin enters   │
-│  final scores   │──┐
-│  (manual)       │  │
-└─────────────────┘  │
-                     ▼
+│ Admin enters │
+│ final scores │──┐
+│ (manual) │ │
+└─────────────────┘ │
+▼
 ┌─────────────────────────────────────┐
-│           Source Tables             │
-│  • games (raw final scores)        │
-│  • game_seats (player assignments) │
-│  • players (profiles)              │
+│ Source Tables │
+│ • games (raw final scores) │
+│ • game_seats (player assignments) │
+│ • players (profiles) │
 └─────────────────────────────────────┘
-                     │
-                     ▼
+│
+▼
 ┌─────────────────────────────────────┐
-│      Python Rating Engine          │
-│  • OpenSkill calculations          │
-│  • Configuration-driven logic      │
-│  • Smart caching system            │
+│ Python Rating Engine │
+│ • OpenSkill calculations │
+│ • Configuration-driven logic │
+│ • Smart caching system │
 └─────────────────────────────────────┘
-                     │
-                     ▼
+│
+▼
 ┌─────────────────────────────────────┐
-│         Derived Tables              │
-│  • cached_player_ratings            │
-│  • cached_game_results              │
-│  • rating_configurations           │
+│ Derived Tables │
+│ • cached_player_ratings │
+│ • cached_game_results │
+│ • rating_configurations │
 └─────────────────────────────────────┘
+
 ```
 
 ### Phase 0.5: Configuration Playground
 
 ```
-┌─────────────────┐    ┌─────────────────┐
-│  User adjusts   │    │  Official       │
-│  config sliders │    │  season config  │
-└─────────┬───────┘    └─────────┬───────┘
-          │                      │
-          ▼                      ▼
+
+┌─────────────────┐ ┌─────────────────┐
+│ User adjusts │ │ Official │
+│ config sliders │ │ season config │
+└─────────┬───────┘ └─────────┬───────┘
+│ │
+▼ ▼
 ┌──────────────────────────────────────────┐
-│        Configuration System              │
-│  • Hash-based config identification     │
-│  • Smart cache hit/miss detection       │
-│  • Real-time rating recalculation       │
+│ Configuration System │
+│ • Hash-based config identification │
+│ • Smart cache hit/miss detection │
+│ • Real-time rating recalculation │
 └──────────────────────┬───────────────────┘
-                       │
-                       ▼
+│
+▼
 ┌──────────────────────────────────────────┐
-│           Cache Layer                    │
-│  • Config hash → cached ratings         │
-│  • Source data hash → cache validity    │
-│  • Instant switching between configs    │
+│ Cache Layer │
+│ • Config hash → cached ratings │
+│ • Source data hash → cache validity │
+│ • Instant switching between configs │
 └──────────────────────────────────────────┘
+
 ```
 
                      ▼ Webhook triggers
@@ -218,6 +224,7 @@ When Vercel Fluid becomes generally available:
 ```
 
 ### Phase 1: Live Game Tracking
+
 ```
 
 ┌─────────────────┐
@@ -239,49 +246,53 @@ When Vercel Fluid becomes generally available:
 │ • Hand-by-hand recording UI │
 └─────────────────────────────────────┘
 
-````
+```
 
 ---
 
 ## 🔄 Source vs. Derived Tables
 
 ### Design Philosophy
+
 **Clean separation between human input and computed results**
 
 ### Source Tables (Critical Data)
+
 - **Definition**: Human-recorded data during/after games
 - **Characteristics**: Irreplaceable, minimal computation, audit trail
 - **Recovery**: Impossible if lost
 
-| Table | Purpose | Phase |
-|-------|---------|-------|
-| `players` | Player profiles and preferences | 0 |
-| `seasons` | Season rules and parameters | 0 |
-| `games` | Game scheduling and final scores | 0 |
-| `game_seats` | Player-to-seat assignments | 0 |
-| `hand_events` | Detailed hand-by-hand logs | 1 |
-| `player_availability` | Scheduling availability | 2 |
-| `game_queue` | Game scheduling requests | 2 |
+| Table                 | Purpose                          | Phase |
+| --------------------- | -------------------------------- | ----- |
+| `players`             | Player profiles and preferences  | 0     |
+| `seasons`             | Season rules and parameters      | 0     |
+| `games`               | Game scheduling and final scores | 0     |
+| `game_seats`          | Player-to-seat assignments       | 0     |
+| `hand_events`         | Detailed hand-by-hand logs       | 1     |
+| `player_availability` | Scheduling availability          | 2     |
+| `game_queue`          | Game scheduling requests         | 2     |
 
 ### Derived Tables (Computed Cache)
+
 - **Definition**: Results computed by Python function
 - **Characteristics**: Performance optimization, recoverable
 - **Recovery**: Can be regenerated from source tables
 
-| Table | Purpose | Source |
-|-------|---------|--------|
-| `player_ratings` | OpenSkill μ/σ values, display ratings | All games in season |
-| `game_results` | Plus-minus scores, rating changes | Final scores + season rules |
+| Table            | Purpose                               | Source                      |
+| ---------------- | ------------------------------------- | --------------------------- |
+| `player_ratings` | OpenSkill μ/σ values, display ratings | All games in season         |
+| `game_results`   | Plus-minus scores, rating changes     | Final scores + season rules |
 
 ---
 
 ## 🎯 Rating Calculation Pipeline
 
 ### Trigger
+
 ```sql
 -- Supabase webhook fires when game is completed
 UPDATE games SET status = 'finished' WHERE id = ?;
-````
+```
 
 ### Python Function Workflow
 

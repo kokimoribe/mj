@@ -1,16 +1,17 @@
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabasePublishableKey =
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabasePublishableKey);
 
 // ============================================================================
 // TYPES MATCHING PHASE 0 SCHEMA
 // ============================================================================
 
-export type RiichiSeat = 'east' | 'south' | 'west' | 'north';
-export type GameStatus = 'scheduled' | 'ongoing' | 'finished' | 'cancelled';
+export type RiichiSeat = "east" | "south" | "west" | "north";
+export type GameStatus = "scheduled" | "ongoing" | "finished" | "cancelled";
 
 // Source Tables (Critical Data)
 export interface Player {
@@ -34,7 +35,7 @@ export interface Game {
   finished_at?: string;
   status: GameStatus;
   scheduled_at?: string;
-  table_type: 'automatic' | 'manual';
+  table_type: "automatic" | "manual";
   location: string;
   notes?: string;
   created_at: string;
@@ -91,28 +92,28 @@ export interface CachedPlayerRating {
   player_id: string;
   games_start_date: string;
   games_end_date: string;
-  
+
   // OpenSkill parameters
   mu: number;
   sigma: number;
   display_rating: number;
-  
+
   // Game statistics
   games_played: number;
   total_plus_minus: number;
   best_game_plus?: number;
   worst_game_minus?: number;
-  
+
   // Streak tracking
   longest_first_streak: number;
   longest_fourth_free_streak: number;
-  
+
   // Performance statistics
   tsumo_rate?: number;
   ron_rate?: number;
   riichi_rate?: number;
   deal_in_rate?: number;
-  
+
   // Cache metadata
   computed_at: string;
   source_data_hash: string;
@@ -125,19 +126,19 @@ export interface CachedGameResult {
   game_id: string;
   player_id: string;
   seat: RiichiSeat;
-  
+
   // Computed by Python function
   final_score: number;
   placement: number; // 1-4
   plus_minus: number; // oka/uma applied
   rating_weight?: number;
-  
+
   // Rating changes
   mu_before?: number;
   sigma_before?: number;
   mu_after?: number;
   sigma_after?: number;
-  
+
   computed_at: string;
 }
 
@@ -157,7 +158,7 @@ export interface CurrentLeaderboard {
   longest_first_streak?: number;
   longest_fourth_free_streak?: number;
   last_game_date?: string;
-  activity_status?: 'active' | 'declining' | 'inactive';
+  activity_status?: "active" | "declining" | "inactive";
   config_hash?: string;
   computed_at?: string;
 }
@@ -168,29 +169,31 @@ export interface CurrentLeaderboard {
 
 export async function getOfficialConfigurations() {
   return supabase
-    .from('rating_configurations')
-    .select('*')
-    .eq('is_official', true)
-    .order('created_at', { ascending: false });
+    .from("rating_configurations")
+    .select("*")
+    .eq("is_official", true)
+    .order("created_at", { ascending: false });
 }
 
 export async function getCurrentLeaderboard(configHash?: string) {
-  let query = supabase.from('current_leaderboard').select('*');
-  
+  let query = supabase.from("current_leaderboard").select("*");
+
   if (configHash) {
-    query = query.eq('config_hash', configHash);
+    query = query.eq("config_hash", configHash);
   }
-  
-  return query.order('display_rating', { ascending: false });
+
+  return query.order("display_rating", { ascending: false });
 }
 
 export async function getPlayerGames(playerId: string) {
   return supabase
-    .from('game_seats')
-    .select(`
+    .from("game_seats")
+    .select(
+      `
       *,
       games!inner(*)
-    `)
-    .eq('player_id', playerId)
-    .order('games.started_at', { ascending: false });
+    `
+    )
+    .eq("player_id", playerId)
+    .order("games.started_at", { ascending: false });
 }

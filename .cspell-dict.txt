@@ -1,0 +1,92 @@
+# Project-specific dictionary for Riichi Mahjong League
+# Add project-specific terms here that should be recognized as valid words
+
+# Mahjong terminology
+riichi
+mahjong
+uma
+oka
+divisor
+placement
+placements
+volatility
+tsumo
+chombo
+hanchan
+kyoku
+honba
+ryuukyoku
+ryūkyoku
+tochuu
+yaku
+tenhou
+
+# Technical stack terms
+openskill
+supabase
+fastapi
+turborepo
+monorepo
+webhooks
+materialization
+plpgsql
+timestamptz
+smallint
+psql
+pooler
+apikey
+healthcheck
+docstrings
+scoresheets
+matchups
+nixpacks
+plackett
+postgresql
+postgres
+postgrest
+migration
+migrations
+
+# Database/ID related
+ulid
+ulids
+uuid
+uuids
+timestamp
+timestamps
+
+# Development terms
+pyproject
+toml
+deps
+env
+cfg
+impl
+ctx
+utils
+libs
+dist
+tsx
+jsx
+mjs
+cjs
+esm
+commonjs
+workspace
+workspaces
+apps
+
+# Personal names (project contributors)
+koki
+hyun
+mikey
+alexa
+
+# Database connection identifiers
+soih
+maus
+tqrmu
+
+# Typos to fix (marked for removal after fixing)
+# migr (should be "migration")
+# postg (should be "PostgreSQL")

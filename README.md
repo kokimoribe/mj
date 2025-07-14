@@ -95,3 +95,4 @@ mj/
 - [**Development Setup**](./docs/04-development-setup.md) - Getting started guide
 - [**Rating System**](./docs/05-rating-system.md) - OpenSkill-based algorithm
 - [**Feature Roadmap**](./docs/06-feature-roadmap.md) - Implementation timeline
+- [**Operational Guide**](./docs/08-operational-guide.md) - Essential developer procedures

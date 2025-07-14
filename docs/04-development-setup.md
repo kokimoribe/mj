@@ -83,8 +83,8 @@ cp apps/web/.env.example apps/web/.env.local
 
 # Edit with your Supabase credentials
 NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-SUPABASE_SERVICE_ROLE_KEY=your-service-key
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_your_key_here
+SUPABASE_SECRET_KEY=sb_secret_your_key_here
 ```
 
 ### 4. Set Up Python Rating Engine
@@ -397,13 +397,13 @@ GitHub Repository → Vercel Integration → Turborepo Build
 
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_your_key_here
 ```
 
 **Optional (for advanced features):**
 
 ```bash
-SUPABASE_SERVICE_ROLE_KEY=your-service-key
+SUPABASE_SECRET_KEY=sb_secret_your_key_here
 PYTHON_RATING_ENGINE_URL=https://your-rating-engine.vercel.app
 ```
 

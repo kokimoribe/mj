@@ -32,13 +32,13 @@ export const calculateWeightScale = (plusMinus: number): number => {
   const weight = 1 + plusMinus / PHASE_0_RATING_CONFIG.weightDivisor;
   return Math.max(
     PHASE_0_RATING_CONFIG.weightMin,
-    Math.min(PHASE_0_RATING_CONFIG.weightMax, weight),
+    Math.min(PHASE_0_RATING_CONFIG.weightMax, weight)
   );
 };
 
 export const calculatePlusMinus = (
   finalScore: number,
-  finishPosition: number,
+  finishPosition: number
 ): number => {
   const umaBonus = PHASE_0_RATING_CONFIG.uma[finishPosition - 1]; // 1st=0, 2nd=1, etc.
   return finalScore - PHASE_0_RATING_CONFIG.oka + umaBonus;

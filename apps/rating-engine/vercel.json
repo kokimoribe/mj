@@ -1,0 +1,17 @@
+{
+  "buildCommand": "uv sync --no-dev",
+  "framework": null,
+  "installCommand": "pip install uv",
+  "devCommand": "uv run python -m rating_engine.main",
+  "functions": {
+    "api/index.py": {
+      "runtime": "python3.12"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/index.py"
+    }
+  ]
+}

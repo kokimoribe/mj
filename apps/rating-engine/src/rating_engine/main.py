@@ -2,10 +2,15 @@
 FastAPI application for OpenSkill rating calculations.
 """
 
+import os
+
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from supabase import create_client
+
+from .materialization import materialize_data_for_config
 
 load_dotenv()
 
@@ -31,10 +36,18 @@ class HealthResponse(BaseModel):
     status: str
 
 
-class GameResult(BaseModel):
-    player_ids: list[str]
-    final_scores: list[int]
-    game_date: str
+class MaterializationRequest(BaseModel):
+    config_hash: str
+    force_refresh: bool = False
+
+
+class MaterializationResponse(BaseModel):
+    status: str
+    config_hash: str
+    players_count: int | None = None
+    games_count: int | None = None
+    source_data_hash: str | None = None
+    error: str | None = None
 
 
 @app.get("/", response_model=HealthResponse)
@@ -49,34 +62,90 @@ async def health() -> HealthResponse:
     return HealthResponse(status="healthy", message="Rating engine is running")
 
 
-@app.post("/calculate-ratings")
-async def calculate_ratings(game: GameResult) -> dict:
+@app.post("/materialize", response_model=MaterializationResponse)
+async def materialize_ratings(
+    request: MaterializationRequest,
+) -> MaterializationResponse:
     """
-    Calculate new ratings after a game.
-    Placeholder for Phase 0 - will implement OpenSkill logic later.
+    Materialize ratings for a given configuration.
+
+    This endpoint can be called from:
+    - Vercel Edge Functions (webhooks)
+    - Manual testing (development)
+    - Background jobs (maintenance)
     """
-    return {
-        "message": "Rating calculation received",
-        "game": game.dict(),
-        "note": "OpenSkill implementation coming in next phase",
-    }
+    try:
+        # Connect to Supabase
+        url = os.getenv("SUPABASE_URL")
+        key = os.getenv("SUPABASE_SECRET_KEY")
+
+        if not url or not key:
+            raise HTTPException(
+                status_code=500, detail="Database connection not configured"
+            )
+
+        supabase = create_client(url, key)
+
+        # Run materialization
+        result = await materialize_data_for_config(
+            supabase, request.config_hash, force_refresh=request.force_refresh
+        )
+
+        return MaterializationResponse(**result)
+
+    except (ValueError, KeyError) as e:
+        # Handle expected configuration/data errors
+        return MaterializationResponse(
+            status="error", config_hash=request.config_hash, error=str(e)
+        )
+    except Exception as e:
+        # Log unexpected errors for debugging
+        import logging
+
+        logging.exception(f"Unexpected error in materialization: {e}")
+        return MaterializationResponse(
+            status="error",
+            config_hash=request.config_hash,
+            error="Internal server error - check logs",
+        )
 
 
-@app.get("/ratings/current")
-async def get_current_ratings() -> dict:
-    """
-    Get current season ratings.
-    Mock data for Phase 0 - will connect to Supabase later.
-    """
-    return {
-        "season": "Winter 2024",
-        "players": [
-            {"id": "1", "name": "Alice", "rating": 1650, "games": 12},
-            {"id": "2", "name": "Bob", "rating": 1580, "games": 10},
-            {"id": "3", "name": "Charlie", "rating": 1520, "games": 8},
-            {"id": "4", "name": "Diana", "rating": 1480, "games": 9},
-        ],
-    }
+@app.get("/configurations")
+async def list_configurations() -> dict:
+    """List available rating configurations."""
+    try:
+        # Connect to Supabase
+        url = os.getenv("SUPABASE_URL")
+        key = os.getenv("SUPABASE_SECRET_KEY")
+
+        if not url or not key:
+            raise HTTPException(
+                status_code=500, detail="Database connection not configured"
+            )
+
+        supabase = create_client(url, key)
+
+        # Get configurations
+        result = (
+            supabase.table("rating_configurations")
+            .select("config_hash, name, description, is_official, created_at")
+            .order("created_at", desc=True)
+            .execute()
+        )
+
+        return {"configurations": result.data, "count": len(result.data)}
+
+    except (ValueError, KeyError) as e:
+        # Handle expected configuration/data errors
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        # Log unexpected errors for debugging
+        import logging
+
+        logging.exception(f"Unexpected error in configurations endpoint: {e}")
+        raise HTTPException(
+            status_code=500, detail="Internal server error - check logs"
+        )
 
 
 if __name__ == "__main__":

@@ -298,3 +298,11 @@ dist/
 # Turborepo
 .turbo
 .env*.local
+
+# Temporary analysis and review files (should not be committed)
+CODE_REVIEW_ANALYSIS.md
+LEGACY_CLEANUP_SUMMARY.md
+PHASE_0_BACKEND_REVIEW.md
+PROJECT_STATUS.md
+RATING_ENGINE_ANALYSIS.md
+VERCEL_DEPLOYMENT_INSTRUCTIONS.md

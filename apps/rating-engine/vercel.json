@@ -4,11 +4,6 @@
   "installCommand": "pip install uv",
   "devCommand": "uv run python -m rating_engine.main",
   "regions": ["sfo1"],
-  "functions": {
-    "api/index.py": {
-      "runtime": "python3.12"
-    }
-  },
   "rewrites": [
     {
       "source": "/api/(.*)",

@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "cd ../.. && $HOME/.local/bin/uv run --project apps/rating-engine uvicorn rating_engine.main:app --reload --port 8000 --host 0.0.0.0",
-    "build": "$HOME/.local/bin/uv build --project .",
+    "build": "echo 'Python build handled by Vercel runtime' && exit 0",
     "lint": "$HOME/.local/bin/uv run --project . ruff check src/ tests/",
     "type-check": "$HOME/.local/bin/uv run --project . mypy src/",
     "test": "echo 'Python tests require dev dependencies - run: uv sync --dev && uv run python -m pytest' && exit 0",

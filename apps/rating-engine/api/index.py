@@ -1,24 +1,146 @@
 """
-Vercel Serverless Function entry point for the Rating Engine.
-
-This file serves as the entry point for Vercel's Python serverless functions.
-It imports the FastAPI app and exposes it as a handler for Vercel.
+FastAPI application for OpenSkill rating calculations.
 """
 
-import sys
-from pathlib import Path
+import os
 
-# Add the src directory to the Python path so we can import rating_engine
-src_path = Path(__file__).parent.parent / "src"
-sys.path.insert(0, str(src_path))
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from materialization import materialize_data_for_config
+from pydantic import BaseModel
+from supabase import create_client
 
-# Now import after path setup
-# ruff: noqa: E402
-from rating_engine.main import app
+app = FastAPI(
+    title="Riichi Mahjong Rating Engine",
+    description="OpenSkill-based rating calculations for mahjong games",
+    version="0.1.0",
+)
 
-# Export the FastAPI app for Vercel
-# Vercel will automatically detect this and create serverless functions
-# The app variable must be named 'app' for ASGI applications
+# Configure CORS for Next.js frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-# This import is required for Vercel to detect the ASGI application
-__all__ = ["app"]
+
+class MaterializationRequest(BaseModel):
+    config_hash: str
+    force_refresh: bool = False
+
+
+class MaterializationResponse(BaseModel):
+    status: str
+    config_hash: str
+    players_count: int | None = None
+    games_count: int | None = None
+    source_data_hash: str | None = None
+    error: str | None = None
+
+
+@app.get("/")
+async def health_check():
+    """Quick health check - returns service info."""
+    return {
+        "service": "Riichi Mahjong Rating Engine",
+        "status": "healthy",
+        "version": "0.1.0",
+    }
+
+
+@app.post("/")
+async def materialize_ratings(
+    request: MaterializationRequest,
+) -> MaterializationResponse:
+    """
+    Materialize ratings for a given configuration.
+
+    This is the main endpoint for rating calculations.
+    Can be called from:
+    - Vercel Edge Functions (webhooks)
+    - Manual testing (development)
+    - Background jobs (maintenance)
+    """
+    try:
+        # Connect to Supabase
+        url = os.getenv("SUPABASE_URL")
+        key = os.getenv("SUPABASE_SECRET_KEY")
+
+        if not url or key:
+            raise HTTPException(
+                status_code=500, detail="Database connection not configured"
+            )
+
+        supabase = create_client(url, key)
+
+        # Run materialization
+        result = await materialize_data_for_config(
+            supabase, request.config_hash, force_refresh=request.force_refresh
+        )
+
+        return MaterializationResponse(**result)
+
+    except (ValueError, KeyError) as e:
+        # Handle expected configuration/data errors
+        return MaterializationResponse(
+            status="error", config_hash=request.config_hash, error=str(e)
+        )
+    except Exception as e:
+        # Log unexpected errors for debugging
+        import logging
+
+        logging.exception(f"Unexpected error in materialization: {e}")
+        return MaterializationResponse(
+            status="error",
+            config_hash=request.config_hash,
+            error="Internal server error - check logs",
+        )
+
+
+@app.get("/configurations")
+async def list_configurations() -> dict:
+    """List available rating configurations."""
+    try:
+        # Connect to Supabase
+        url = os.getenv("SUPABASE_URL")
+        key = os.getenv("SUPABASE_SECRET_KEY")
+
+        if not url or not key:
+            raise HTTPException(
+                status_code=500, detail="Database connection not configured"
+            )
+
+        supabase = create_client(url, key)
+
+        # Get configurations
+        result = (
+            supabase.table("rating_configurations")
+            .select("config_hash, name, description, is_official, created_at")
+            .order("created_at", desc=True)
+            .execute()
+        )
+
+        return {"configurations": result.data, "count": len(result.data)}
+
+    except (ValueError, KeyError) as e:
+        # Handle expected configuration/data errors
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        # Log unexpected errors for debugging
+        import logging
+
+        logging.exception(f"Unexpected error in configurations endpoint: {e}")
+        raise HTTPException(
+            status_code=500, detail="Internal server error - check logs"
+        )
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+
+# Vercel handler
+handler = app

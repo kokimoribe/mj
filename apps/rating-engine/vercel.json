@@ -1,6 +1,6 @@
 {
   "regions": ["sfo1"],
   "framework": null,
-  "buildCommand": null,
-  "outputDirectory": null
+  "buildCommand": "",
+  "outputDirectory": "."
 }

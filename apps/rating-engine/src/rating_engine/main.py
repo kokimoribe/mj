@@ -31,11 +31,6 @@ app.add_middleware(
 )
 
 
-class HealthResponse(BaseModel):
-    message: str
-    status: str
-
-
 class MaterializationRequest(BaseModel):
     config_hash: str
     force_refresh: bool = False
@@ -50,26 +45,25 @@ class MaterializationResponse(BaseModel):
     error: str | None = None
 
 
-@app.get("/", response_model=HealthResponse)
-async def root() -> HealthResponse:
-    """Health check endpoint."""
-    return HealthResponse(message="Riichi Mahjong Rating Engine", status="healthy")
+@app.get("/")
+async def health_check():
+    """Quick health check - returns service info."""
+    return {
+        "service": "Riichi Mahjong Rating Engine",
+        "status": "healthy",
+        "version": "0.1.0",
+    }
 
 
-@app.get("/health", response_model=HealthResponse)
-async def health() -> HealthResponse:
-    """Health check endpoint."""
-    return HealthResponse(status="healthy", message="Rating engine is running")
-
-
-@app.post("/materialize", response_model=MaterializationResponse)
+@app.post("/")
 async def materialize_ratings(
     request: MaterializationRequest,
 ) -> MaterializationResponse:
     """
     Materialize ratings for a given configuration.
 
-    This endpoint can be called from:
+    This is the main endpoint for rating calculations.
+    Can be called from:
     - Vercel Edge Functions (webhooks)
     - Manual testing (development)
     - Background jobs (maintenance)
@@ -79,7 +73,7 @@ async def materialize_ratings(
         url = os.getenv("SUPABASE_URL")
         key = os.getenv("SUPABASE_SECRET_KEY")
 
-        if not url or not key:
+        if not url or key:
             raise HTTPException(
                 status_code=500, detail="Database connection not configured"
             )

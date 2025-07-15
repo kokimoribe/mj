@@ -26,8 +26,8 @@
     "rating-engine#build": {
       "dependsOn": ["^build"],
       "env": ["SUPABASE_URL", "SUPABASE_SECRET_KEY"],
-      "outputs": ["dist/**"],
-      "inputs": ["src/**/*.py", "pyproject.toml", "uv.lock", "api/**/*.py"]
+      "outputs": [],
+      "inputs": ["src/**/*.py", "api/**/*.py", "requirements.txt", "vercel.json"]
     },
     "dev": {
       "cache": false,

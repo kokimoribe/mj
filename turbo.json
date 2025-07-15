@@ -27,7 +27,13 @@
       "dependsOn": ["^build"],
       "env": ["SUPABASE_URL", "SUPABASE_SECRET_KEY"],
       "outputs": [],
-      "inputs": ["src/**/*.py", "api/**/*.py", "requirements.txt", "vercel.json"]
+      "inputs": [
+        "src/**/*.py",
+        "api/**/*.py",
+        "requirements.txt",
+        "Pipfile",
+        "vercel.json"
+      ]
     },
     "dev": {
       "cache": false,

@@ -62,7 +62,7 @@ async def materialize_ratings(
         
         # Verify the import works (simplified - no real Supabase connection for demo)
         # In production, we'd pass actual supabase client and call materialize method
-        MaterializationEngine(supabase_client=None)
+        MaterializationEngine(supabase=None)
         
         return MaterializationResponse(
             status="success",

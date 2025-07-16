@@ -54,15 +54,29 @@ async def materialize_ratings(
     """
     Materialize ratings for a given configuration.
 
-    Currently simplified for testing - will integrate full materialization logic next.
+    Currently simplified for testing - demonstrates shared lib import works.
     """
-    return MaterializationResponse(
-        status="success",
-        config_hash=request.config_hash,
-        players_count=0,
-        games_count=0,
-        source_data_hash="test-hash",
-    )
+    try:
+        # Import our shared materialization logic
+        from lib.materialization import MaterializationEngine
+        
+        # Verify the import works (simplified - no real Supabase connection for demo)
+        # In production, we'd pass actual supabase client and call materialize method
+        MaterializationEngine(supabase_client=None)
+        
+        return MaterializationResponse(
+            status="success",
+            config_hash=request.config_hash,
+            players_count=42,  # Demo data
+            games_count=150,   # Demo data
+            source_data_hash="shared-lib-import-working",
+        )
+    except Exception as e:
+        return MaterializationResponse(
+            status="error",
+            config_hash=request.config_hash,
+            error=f"Import failed: {str(e)}",
+        )
 
 
 @app.get("/configurations")

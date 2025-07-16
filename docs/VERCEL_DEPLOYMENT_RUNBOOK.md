@@ -7,6 +7,7 @@
 ### ⚠️ **HTTP 401 ≠ Deployment Failure**
 
 **What you'll see when testing:**
+
 ```bash
 curl -s "https://[deployment-url]/"
 # Returns: <!doctype html>...Authentication Required...
@@ -14,20 +15,23 @@ curl -s "https://[deployment-url]/"
 ```
 
 **What this ACTUALLY means:**
+
 1. ✅ **Deployment succeeded** - your function is running correctly
-2. ✅ **FastAPI app is working** - it's running behind Vercel's auth layer  
+2. ✅ **FastAPI app is working** - it's running behind Vercel's auth layer
 3. ⚠️ **Vercel Protection is enabled** - blocking public access (intentional security)
 4. ❌ **You cannot test your API endpoints** through curl/public requests
 
 ### 🎯 How to Actually Verify Success
 
 **Build Success** ✅:
+
 ```bash
 npx vercel list
 # Look for: ● Ready (not ● Error)
 ```
 
 **Function Import Success** ✅:
+
 ```bash
 # Test locally first
 cd apps/rating-engine
@@ -39,8 +43,27 @@ uv run python -c "from api.index import app; from lib.materialization import Mat
 ### 🔓 Options to Test Production API
 
 1. **Disable Vercel Protection** (Vercel Dashboard → Project Settings → Deployment Protection)
-2. **Use Protection Bypass Headers** (if configured)
+2. **Use Protection Bypass Headers** (if configured):
+   ```bash
+   # First: Set up bypass secret in Vercel Dashboard → Project Settings → Deployment Protection
+   # Then: Use the secret in requests
+   curl -H "x-vercel-protection-bypass: YOUR_BYPASS_SECRET" "https://[deployment-url]/"
+   ```
+   
+   **⚠️ Current Status**: No bypass secret configured for this project
+   
 3. **Test locally only** with `uv run fastapi dev api/index.py`
+
+### 🔧 How to Configure Protection Bypass (Optional)
+
+**Setup Steps:**
+1. Go to Vercel Dashboard → Your Project → Settings
+2. Navigate to "Deployment Protection" tab  
+3. Enable "Protection Bypass for Automation"
+4. Generate/set a bypass secret (keep this secure!)
+5. Use in requests: `x-vercel-protection-bypass: your-secret`
+
+**Security Note**: Only do this if you need programmatic API testing. For security, keep protection enabled and test locally instead.
 
 ## 🎯 Quick Status Checks
 
@@ -175,6 +198,12 @@ apps/rating-engine/
    - **Symptom**: Warning about missing env vars in Turborepo build
    - **Fix**: Add to `turbo.json` env configuration
    - **Impact**: Non-blocking warning, functions still deploy
+
+6. **"x-vercel-protection-bypass header not working"**
+   - **Cause**: No bypass secret configured in Vercel Dashboard
+   - **Current Status**: ❌ No bypass secret set up for this project
+   - **Fix**: Configure in Vercel Dashboard → Deployment Protection → Protection Bypass
+   - **Alternative**: Test locally or disable protection temporarily
 
 ### Debug Commands
 

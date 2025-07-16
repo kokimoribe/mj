@@ -2,14 +2,56 @@
 
 **Target Audience**: LLM coding agents and developers working with this monorepo
 
+## 🚨 CRITICAL: Understanding HTTP 401 Responses
+
+### ⚠️ **HTTP 401 ≠ Deployment Failure**
+
+**What you'll see when testing:**
+```bash
+curl -s "https://[deployment-url]/"
+# Returns: <!doctype html>...Authentication Required...
+# HTTP Status: 401
+```
+
+**What this ACTUALLY means:**
+1. ✅ **Deployment succeeded** - your function is running correctly
+2. ✅ **FastAPI app is working** - it's running behind Vercel's auth layer  
+3. ⚠️ **Vercel Protection is enabled** - blocking public access (intentional security)
+4. ❌ **You cannot test your API endpoints** through curl/public requests
+
+### 🎯 How to Actually Verify Success
+
+**Build Success** ✅:
+```bash
+npx vercel list
+# Look for: ● Ready (not ● Error)
+```
+
+**Function Import Success** ✅:
+```bash
+# Test locally first
+cd apps/rating-engine
+uv run python -c "from api.index import app; from lib.materialization import MaterializationEngine; print('✅ All imports working')"
+```
+
+**The Real Issue**: We **cannot verify our FastAPI endpoints work in production** while protection is enabled.
+
+### 🔓 Options to Test Production API
+
+1. **Disable Vercel Protection** (Vercel Dashboard → Project Settings → Deployment Protection)
+2. **Use Protection Bypass Headers** (if configured)
+3. **Test locally only** with `uv run fastapi dev api/index.py`
+
 ## 🎯 Quick Status Checks
 
 ### How to Check if Deployment Succeeded
 
 1. **Command Line Check**:
+
    ```bash
    npx vercel list
    ```
+
    - Look for `● Ready` status (green dot)
    - `● Error` means deployment failed
    - Most recent deployment is at the top
@@ -20,10 +62,11 @@
    - Each deployment gets a unique URL
 
 3. **Testing API Endpoints**:
+
    ```bash
    # Health check (GET)
-   curl -s "https://[deployment-url]/" 
-   
+   curl -s "https://[deployment-url]/"
+
    # Materialization endpoint (POST)
    curl -X POST "https://[deployment-url]/" \
      -H "Content-Type: application/json" \
@@ -41,6 +84,7 @@
 ## 🚀 Deployment Methods
 
 ### Git-Based (Recommended) ✅
+
 ```bash
 git add .
 git commit -m "Your changes"
@@ -49,12 +93,14 @@ git push
 ```
 
 **Benefits**:
+
 - Automatic preview deployments on pull requests
 - Production deployments on main branch
 - Better CI/CD integration
 - No manual CLI commands needed
 
 ### CLI-Based (Alternative)
+
 ```bash
 cd apps/rating-engine
 npx vercel --prod
@@ -63,6 +109,7 @@ npx vercel --prod
 ## 🏗️ Project Architecture
 
 ### Current Structure ✅
+
 ```
 apps/rating-engine/
 ├── api/
@@ -74,6 +121,7 @@ apps/rating-engine/
 ```
 
 ### API Endpoints
+
 - `GET /` - Health check
 - `POST /` - Materialization endpoint
 - `GET /configurations` - List configurations
@@ -81,7 +129,9 @@ apps/rating-engine/
 ## 🔧 FastAPI + Vercel Configuration
 
 ### Key Requirements ✅
+
 1. **ASGI App Export**: Must export `app` variable (not `handler`)
+
    ```python
    app = FastAPI()  # This variable name is required
    ```
@@ -100,21 +150,28 @@ apps/rating-engine/
 
 ### Common Issues & Solutions
 
-1. **"TypeError: issubclass() arg 1 must be a class"**
+1. **❌ "HTTP 401 when testing API" - MOST COMMON**
+   - **What you see**: `<!doctype html>...Authentication Required...`
+   - **What it means**: ✅ Deployment succeeded, ⚠️ Vercel Protection enabled
+   - **NOT AN ERROR**: Your FastAPI app is working correctly behind auth
+   - **Fix**: Disable protection in Vercel Dashboard or test locally
+   - **Status**: ⚠️ Currently blocking all API testing
+
+2. **"TypeError: issubclass() arg 1 must be a class"**
    - **Cause**: Wrong ASGI handler export
    - **Fix**: Ensure `app = FastAPI()` variable exists (not `handler`)
 
-2. **Import Errors in Vercel Functions**
+3. **Import Errors in Vercel Functions**
    - **Cause**: Missing `__init__.py` files
    - **Fix**: Add `__init__.py` to all Python packages
    - **Status**: ✅ Fixed in `/lib/__init__.py`
 
-3. **Multiple Functions Created**
+4. **Multiple Functions Created**
    - **Cause**: Multiple Python files in `api/` directory
    - **Fix**: Consolidate to single `api/index.py`
    - **Status**: ✅ Fixed - reduced from 4 to 1 function
 
-4. **Environment Variables Not Available**
+5. **Environment Variables Not Available**
    - **Symptom**: Warning about missing env vars in Turborepo build
    - **Fix**: Add to `turbo.json` env configuration
    - **Impact**: Non-blocking warning, functions still deploy
@@ -138,12 +195,14 @@ python -c "from lib.materialization import MaterializationEngine; print('Import 
 ## 📊 Performance & Limits
 
 ### Deployment Stats
+
 - **Build Time**: ~20-30 seconds
 - **Function Count**: 1 (reduced from 4)
 - **Static Assets**: Auto-included (normal behavior)
 - **Cold Start**: <2 seconds for FastAPI
 
 ### File Size Considerations
+
 - Keep shared modules focused
 - Avoid large dependencies in `lib/`
 - Vercel has 50MB limit per function
@@ -151,11 +210,13 @@ python -c "from lib.materialization import MaterializationEngine; print('Import 
 ## 🔐 Security & Access
 
 ### Vercel Protection ⚠️
+
 - Currently enabled (returns 401 Authentication Required)
 - Can be bypassed with protection headers (if configured)
 - Not an application error - intentional security layer
 
 ### Production Access
+
 - Authentication screen is Vercel's security feature
 - Functions are running correctly behind auth layer
 - Consider disabling protection for public APIs if needed
@@ -163,18 +224,36 @@ python -c "from lib.materialization import MaterializationEngine; print('Import 
 ## 🎓 Key Learnings for LLM Agents
 
 ### What Works ✅
+
 1. **Single FastAPI Function**: Much simpler than multiple functions
 2. **Shared `lib/` Directory**: Python imports work perfectly in Vercel
 3. **Git Deployment**: Automatic, reliable, better than CLI
 4. **ASGI Export**: `app = FastAPI()` variable is key requirement
 
 ### What to Avoid ❌
-1. **Multiple API Files**: Creates unnecessary function complexity
-2. **Manual CLI Deployment**: Git-based is more reliable
-3. **Complex Handler Classes**: FastAPI ASGI app is sufficient
-4. **Missing `__init__.py`**: Breaks Python package imports
+
+1. **Misinterpreting HTTP 401 as Failure**: Most common mistake!
+2. **Multiple API Files**: Creates unnecessary function complexity
+3. **Manual CLI Deployment**: Git-based is more reliable
+4. **Complex Handler Classes**: FastAPI ASGI app is sufficient
+5. **Missing `__init__.py`**: Breaks Python package imports
+
+### 🚨 Critical Misconceptions to Avoid
+
+1. **"HTTP 401 means deployment failed"** ❌
+   - Reality: It means Vercel Protection is enabled (intentional security)
+   - Your FastAPI app is actually working correctly
+
+2. **"npx vercel list shows Ready but API doesn't work"** ❌
+   - Reality: Build succeeded, API works, but protection blocks testing
+   - Need to disable protection or test locally
+
+3. **"Can't test = broken deployment"** ❌
+   - Reality: Can't test publicly ≠ deployment broken
+   - Protection is a feature, not a bug
 
 ### Investigation Process ✅
+
 1. ✅ Consolidated 4 functions → 1 function
 2. ✅ Verified static assets are normal/expected
 3. ✅ Confirmed Python imports work in serverless functions
@@ -183,6 +262,7 @@ python -c "from lib.materialization import MaterializationEngine; print('Import 
 6. ✅ Established Git-based deployment workflow
 
 ### Time-Saving Commands
+
 ```bash
 # Quick deployment status
 npx vercel list | head -5

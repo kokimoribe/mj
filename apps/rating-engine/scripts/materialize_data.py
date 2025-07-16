@@ -24,7 +24,7 @@ from supabase import Client, create_client
 # Add the src directory to the path so we can import our modules
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from rating_engine.materialization import materialize_data_for_config
+from lib.materialization import materialize_data_for_config
 
 # Load environment variables
 load_dotenv()

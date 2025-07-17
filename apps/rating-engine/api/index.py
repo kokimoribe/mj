@@ -1,10 +1,20 @@
 """
 FastAPI application for OpenSkill rating calculations.
+Vercel serverless function endpoint.
 """
 
-from fastapi import FastAPI
+import os
+
+from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from supabase import create_client
+
+# Import from the proper package location
+from rating_engine.materialization import materialize_data_for_config
+
+load_dotenv()
 
 app = FastAPI(
     title="Riichi Mahjong Rating Engine",
@@ -43,7 +53,6 @@ async def health_check():
         "service": "Riichi Mahjong Rating Engine",
         "status": "healthy",
         "version": "0.1.0",
-        "shared_lib_test": "Import working correctly",
     }
 
 
@@ -54,40 +63,85 @@ async def materialize_ratings(
     """
     Materialize ratings for a given configuration.
 
-    Currently simplified for testing - demonstrates shared lib import works.
+    This is the main endpoint for rating calculations.
+    Can be called from:
+    - Vercel Edge Functions (webhooks)
+    - Manual testing (development)
+    - Background jobs (maintenance)
     """
     try:
-        # Import our shared materialization logic
-        from lib.materialization import MaterializationEngine
-        
-        # Verify the import works (simplified - no real Supabase connection for demo)
-        # In production, we'd pass actual supabase client and call materialize method
-        MaterializationEngine(supabase=None)
-        
+        # Connect to Supabase
+        url = os.getenv("SUPABASE_URL")
+        key = os.getenv("SUPABASE_SECRET_KEY")
+
+        if not url or not key:
+            raise HTTPException(
+                status_code=500, detail="Database connection not configured"
+            )
+
+        supabase = create_client(url, key)
+
+        # Run materialization
+        result = await materialize_data_for_config(
+            supabase, request.config_hash, force_refresh=request.force_refresh
+        )
+
+        return MaterializationResponse(**result)
+
+    except (ValueError, KeyError) as e:
+        # Handle expected configuration/data errors
         return MaterializationResponse(
-            status="success",
-            config_hash=request.config_hash,
-            players_count=42,  # Demo data
-            games_count=150,   # Demo data
-            source_data_hash="shared-lib-import-working",
+            status="error", config_hash=request.config_hash, error=str(e)
         )
     except Exception as e:
+        # Log unexpected errors for debugging
+        import logging
+
+        logging.exception(f"Unexpected error in materialization: {e}")
         return MaterializationResponse(
             status="error",
             config_hash=request.config_hash,
-            error=f"Import failed: {str(e)}",
+            error=f"Internal server error: {str(e)}",
         )
 
 
 @app.get("/configurations")
 async def list_configurations() -> dict:
     """List available rating configurations."""
-    return {
-        "configurations": [],
-        "count": 0,
-        "message": "Configuration listing not yet implemented",
-    }
+    try:
+        # Connect to Supabase
+        url = os.getenv("SUPABASE_URL")
+        key = os.getenv("SUPABASE_SECRET_KEY")
+
+        if not url or not key:
+            raise HTTPException(
+                status_code=500, detail="Database connection not configured"
+            )
+
+        supabase = create_client(url, key)
+
+        # Get configurations
+        result = (
+            supabase.table("rating_configurations")
+            .select("config_hash, name, description, is_official, created_at")
+            .order("created_at", desc=True)
+            .execute()
+        )
+
+        return {"configurations": result.data, "count": len(result.data)}
+
+    except (ValueError, KeyError) as e:
+        # Handle expected configuration/data errors
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        # Log unexpected errors for debugging
+        import logging
+
+        logging.exception(f"Unexpected error in configurations endpoint: {e}")
+        raise HTTPException(
+            status_code=500, detail="Internal server error - check logs"
+        )
 
 
 # This is the ASGI app that Vercel will use
-# No need for a separate handler variable
+handler = app

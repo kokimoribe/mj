@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from rating_engine.main import app
+from api.index import app
 
 client = TestClient(app)
 
@@ -23,15 +23,15 @@ class TestHealthEndpoints:
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "healthy"
-        assert "Riichi Mahjong Rating Engine" in data["message"]
+        assert "Riichi Mahjong Rating Engine" in data["service"]
 
     def test_health_endpoint(self):
-        """Test the dedicated health endpoint."""
-        response = client.get("/health")
+        """Test the dedicated health endpoint (same as root)."""
+        response = client.get("/")
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "healthy"
-        assert "Rating engine is running" in data["message"]
+        assert "Riichi Mahjong Rating Engine" in data["service"]
 
 
 class TestMaterializationEndpoint:
@@ -41,8 +41,8 @@ class TestMaterializationEndpoint:
         os.environ,
         {"SUPABASE_URL": "https://test.supabase.co", "SUPABASE_SECRET_KEY": "test-key"},
     )
-    @patch("rating_engine.main.create_client")
-    @patch("rating_engine.main.materialize_data_for_config")
+    @patch("api.index.create_client")
+    @patch("api.index.materialize_data_for_config")
     def test_materialize_success(self, mock_materialize, mock_create_client):
         """Test successful materialization request."""
         # Mock the materialization result
@@ -75,8 +75,8 @@ class TestMaterializationEndpoint:
         os.environ,
         {"SUPABASE_URL": "https://test.supabase.co", "SUPABASE_SECRET_KEY": "test-key"},
     )
-    @patch("rating_engine.main.create_client")
-    @patch("rating_engine.main.materialize_data_for_config")
+    @patch("api.index.create_client")
+    @patch("api.index.materialize_data_for_config")
     def test_materialize_force_refresh(self, mock_materialize, mock_create_client):
         """Test materialization with force refresh."""
         mock_materialize.return_value = {
@@ -109,8 +109,8 @@ class TestMaterializationEndpoint:
         os.environ,
         {"SUPABASE_URL": "https://test.supabase.co", "SUPABASE_SECRET_KEY": "test-key"},
     )
-    @patch("rating_engine.main.create_client")
-    @patch("rating_engine.main.materialize_data_for_config")
+    @patch("api.index.create_client")
+    @patch("api.index.materialize_data_for_config")
     def test_materialize_exception_handling(self, mock_materialize, mock_create_client):
         """Test that exceptions are properly handled and returned."""
         mock_materialize.side_effect = Exception("Database connection failed")
@@ -132,7 +132,7 @@ class TestConfigurationsEndpoint:
         os.environ,
         {"SUPABASE_URL": "https://test.supabase.co", "SUPABASE_SECRET_KEY": "test-key"},
     )
-    @patch("rating_engine.main.create_client")
+    @patch("api.index.create_client")
     def test_list_configurations_success(self, mock_create_client):
         """Test successful configuration listing."""
         # Mock Supabase response
@@ -191,7 +191,7 @@ class TestConfigurationsEndpoint:
         os.environ,
         {"SUPABASE_URL": "https://test.supabase.co", "SUPABASE_SECRET_KEY": "test-key"},
     )
-    @patch("rating_engine.main.create_client")
+    @patch("api.index.create_client")
     def test_configurations_database_error(self, mock_create_client):
         """Test configurations endpoint handles database errors."""
         mock_create_client.side_effect = Exception("Database error")

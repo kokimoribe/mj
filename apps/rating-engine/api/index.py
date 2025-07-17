@@ -144,4 +144,5 @@ async def list_configurations() -> dict:
 
 
 # This is the ASGI app that Vercel will use
-handler = app
+# Export as 'app' for Vercel FastAPI deployment
+# handler = app  # Old approach, use 'app' directly

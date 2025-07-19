@@ -132,7 +132,70 @@ async def get_current_leaderboard() -> dict:
 
         supabase = create_client(url, key)
 
-        # Get leaderboard from view
+        # First, check if the view exists and has data
+        try:
+            result = (
+                supabase.table("current_leaderboard")
+                .select("*")
+                .limit(1)
+                .execute()
+            )
+        except Exception as view_error:
+            # View might not exist or have issues, let's try a simpler approach
+            # Get data from cached_player_ratings directly
+            result = (
+                supabase.table("cached_player_ratings")
+                .select("*, players!inner(display_name)")
+                .order("display_rating", desc=True)
+                .limit(20)
+                .execute()
+            )
+            
+            if not result.data:
+                return {
+                    "seasonName": "No Data Available",
+                    "players": [],
+                    "totalGames": 0,
+                    "lastUpdated": datetime.now().isoformat(),
+                    "debug": "No cached ratings found"
+                }
+
+            # Transform cached_player_ratings data
+            players = []
+            for row in result.data:
+                players.append({
+                    "id": row["players"]["display_name"].lower().replace(" ", "_"),
+                    "name": row["players"]["display_name"],
+                    "rating": float(row["display_rating"]),
+                    "mu": float(row["mu"]),
+                    "sigma": float(row["sigma"]),
+                    "games": row["games_played"],
+                    "lastGameDate": row["last_game_date"].isoformat() if row["last_game_date"] else "2024-01-01T00:00:00Z",
+                    "totalPlusMinus": row["total_plus_minus"] or 0,
+                    "averagePlusMinus": float(row["total_plus_minus"] / max(row["games_played"], 1)),
+                    "bestGame": row["best_game_plus"] or 0,
+                    "worstGame": row["worst_game_minus"] or 0,
+                })
+
+            return {
+                "seasonName": "Season 3",
+                "players": players,
+                "totalGames": max([p["games"] for p in players], default=0),
+                "lastUpdated": datetime.now().isoformat(),
+                "debug": f"Used cached_player_ratings, found {len(players)} players"
+            }
+
+        # If we get here, the view worked
+        if not result.data:
+            return {
+                "seasonName": "No Data",
+                "players": [],
+                "totalGames": 0,
+                "lastUpdated": datetime.now().isoformat(),
+                "debug": "current_leaderboard view is empty"
+            }
+
+        # Get all data from view
         result = (
             supabase.table("current_leaderboard")
             .select("*")
@@ -140,31 +203,17 @@ async def get_current_leaderboard() -> dict:
             .execute()
         )
 
-        if not result.data:
-            return {
-                "seasonName": "No Data",
-                "players": [],
-                "totalGames": 0,
-                "lastUpdated": datetime.now().isoformat()
-            }
-
-        # Get season name from first row
-        season_name = "Season 3"  # Default fallback
-        if result.data:
-            # Try to extract season name from config data
-            season_name = "Current Season"
-
-        # Transform data for frontend
+        # Transform view data for frontend
         players = []
         total_games = 0
         
         for row in result.data:
             players.append({
-                "id": row["display_name"].lower().replace(" ", "_"),  # Create ID from name
+                "id": row["display_name"].lower().replace(" ", "_"),
                 "name": row["display_name"],
                 "rating": float(row["display_rating"]),
-                "mu": 25.0,  # Will be added when we get real mu/sigma data
-                "sigma": 8.33,  # Will be added when we get real mu/sigma data
+                "mu": 25.0,  # View doesn't have mu/sigma
+                "sigma": 8.33,  # View doesn't have mu/sigma
                 "games": row["games_played"],
                 "lastGameDate": row["last_game_date"].isoformat() if row["last_game_date"] else "2024-01-01T00:00:00Z",
                 "totalPlusMinus": row["total_plus_minus"] or 0,
@@ -175,23 +224,23 @@ async def get_current_leaderboard() -> dict:
             total_games = max(total_games, row["games_played"])
 
         return {
-            "seasonName": season_name,
+            "seasonName": "Current Season",
             "players": players,
             "totalGames": total_games,
-            "lastUpdated": datetime.now().isoformat()
+            "lastUpdated": datetime.now().isoformat(),
+            "debug": f"Used current_leaderboard view, found {len(players)} players"
         }
 
-    except (ValueError, KeyError) as e:
-        # Handle expected configuration/data errors
-        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        # Log unexpected errors for debugging
-        import logging
-
-        logging.exception(f"Unexpected error in leaderboard endpoint: {e}")
-        raise HTTPException(
-            status_code=500, detail="Internal server error - check logs"
-        )
+        # Return detailed error for debugging
+        return {
+            "seasonName": "Error",
+            "players": [],
+            "totalGames": 0,
+            "lastUpdated": datetime.now().isoformat(),
+            "error": str(e),
+            "debug": "Exception occurred in leaderboard endpoint"
+        }
 
 
 @app.get("/configurations")

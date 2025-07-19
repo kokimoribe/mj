@@ -170,7 +170,7 @@ async def get_current_leaderboard() -> dict:
                     "mu": float(row["mu"]),
                     "sigma": float(row["sigma"]),
                     "games": row["games_played"],
-                    "lastGameDate": row["last_game_date"].isoformat() if row["last_game_date"] else "2024-01-01T00:00:00Z",
+                    "lastGameDate": row["last_game_date"] if row["last_game_date"] else "2024-01-01T00:00:00Z",
                     "totalPlusMinus": row["total_plus_minus"] or 0,
                     "averagePlusMinus": float(row["total_plus_minus"] / max(row["games_played"], 1)),
                     "bestGame": row["best_game_plus"] or 0,
@@ -215,7 +215,7 @@ async def get_current_leaderboard() -> dict:
                 "mu": 25.0,  # View doesn't have mu/sigma
                 "sigma": 8.33,  # View doesn't have mu/sigma
                 "games": row["games_played"],
-                "lastGameDate": row["last_game_date"].isoformat() if row["last_game_date"] else "2024-01-01T00:00:00Z",
+                "lastGameDate": row["last_game_date"] if row["last_game_date"] else "2024-01-01T00:00:00Z",
                 "totalPlusMinus": row["total_plus_minus"] or 0,
                 "averagePlusMinus": float(row["avg_plus_minus"]) if row["avg_plus_minus"] else 0.0,
                 "bestGame": 0,  # Will be added when available

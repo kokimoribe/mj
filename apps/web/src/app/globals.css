@@ -4,15 +4,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  /* Brand Colors */
-  --color-brand-primary: #ff6b35;
-  --color-brand-secondary: #004e89;
-
-  /* Mahjong-specific Colors */
-  --color-mahjong-red: #dc2626;
-  --color-mahjong-green: #16a34a;
-  --color-mahjong-white: #f8fafc;
-  --color-mahjong-bamboo: #22c55e;
+  /* Remove residual placeholder colors */
 
   /* Spacing Scale */
   --spacing-xs: 0.25rem;
@@ -22,9 +14,9 @@
   --radius-card: 12px;
   --radius-button: 8px;
 
-  /* Typography */
-  --font-family-display: ui-serif, Georgia, serif;
-  --font-family-mono: ui-monospace, "SF Mono", monospace;
+  /* Typography - Use system fonts as per spec */
+  --font-family-display: Inter, system-ui, -apple-system, sans-serif;
+  --font-family-mono: "JetBrains Mono", "SF Mono", Consolas, monospace;
 
   /* Shadows */
   --shadow-card: 0 4px 6px -1px rgb(0 0 0 / 0.1);
@@ -109,37 +101,38 @@ body {
 }
 
 .dark {
-  --background: oklch(0.129 0.042 264.695);
-  --foreground: oklch(0.984 0.003 247.858);
-  --card: oklch(0.208 0.042 265.755);
-  --card-foreground: oklch(0.984 0.003 247.858);
-  --popover: oklch(0.208 0.042 265.755);
-  --popover-foreground: oklch(0.984 0.003 247.858);
-  --primary: oklch(0.929 0.013 255.508);
-  --primary-foreground: oklch(0.208 0.042 265.755);
-  --secondary: oklch(0.279 0.041 260.031);
-  --secondary-foreground: oklch(0.984 0.003 247.858);
-  --muted: oklch(0.279 0.041 260.031);
-  --muted-foreground: oklch(0.704 0.04 256.788);
-  --accent: oklch(0.279 0.041 260.031);
-  --accent-foreground: oklch(0.984 0.003 247.858);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.551 0.027 264.364);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.208 0.042 265.755);
-  --sidebar-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.279 0.041 260.031);
-  --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.551 0.027 264.364);
+  /* Slate palette as specified in design doc */
+  --background: #020617; /* Slate 950 */
+  --foreground: #f1f5f9; /* Slate 100 */
+  --card: #0f172a; /* Slate 900 */
+  --card-foreground: #f1f5f9; /* Slate 100 */
+  --popover: #0f172a; /* Slate 900 */
+  --popover-foreground: #f1f5f9; /* Slate 100 */
+  --primary: #0ea5e9; /* Blue 500 */
+  --primary-foreground: #f1f5f9; /* Slate 100 */
+  --secondary: #64748b; /* Slate 500 */
+  --secondary-foreground: #f1f5f9; /* Slate 100 */
+  --muted: #1e293b; /* Slate 800 */
+  --muted-foreground: #64748b; /* Slate 500 */
+  --accent: #1e293b; /* Slate 800 */
+  --accent-foreground: #f1f5f9; /* Slate 100 */
+  --destructive: #ef4444; /* Red 500 */
+  --border: #1e293b; /* Slate 800 */
+  --input: #1e293b; /* Slate 800 */
+  --ring: #0ea5e9; /* Blue 500 */
+  --chart-1: #0ea5e9; /* Blue 500 */
+  --chart-2: #10b981; /* Emerald 500 */
+  --chart-3: #f59e0b; /* Amber 500 */
+  --chart-4: #8b5cf6; /* Violet 500 */
+  --chart-5: #ef4444; /* Red 500 */
+  --sidebar: #0f172a; /* Slate 900 */
+  --sidebar-foreground: #f1f5f9; /* Slate 100 */
+  --sidebar-primary: #0ea5e9; /* Blue 500 */
+  --sidebar-primary-foreground: #f1f5f9; /* Slate 100 */
+  --sidebar-accent: #1e293b; /* Slate 800 */
+  --sidebar-accent-foreground: #f1f5f9; /* Slate 100 */
+  --sidebar-border: #1e293b; /* Slate 800 */
+  --sidebar-ring: #0ea5e9; /* Blue 500 */
 }
 
 @layer base {

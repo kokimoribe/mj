@@ -59,7 +59,7 @@ export function InstallPrompt() {
 
   if (!isInstallable) {
     return (
-      <div className="rounded border-l-4 border-blue-500 bg-blue-50 p-4 text-sm text-gray-500">
+      <div className="rounded border-l-4 border-blue-500 bg-blue-500/10 p-4 text-sm text-muted-foreground">
         <strong>PWA Status:</strong> Ready for installation
         <br />
         <span className="text-xs">
@@ -72,11 +72,11 @@ export function InstallPrompt() {
   }
 
   return (
-    <div className="rounded border-l-4 border-green-500 bg-green-50 p-4">
-      <h3 className="mb-2 font-semibold text-green-800">
+    <div className="rounded border-l-4 border-green-500 bg-green-500/10 p-4">
+      <h3 className="mb-2 font-semibold text-green-500">
         Install Mahjong League App
       </h3>
-      <p className="mb-3 text-sm text-green-700">
+      <p className="mb-3 text-sm text-muted-foreground">
         Install this app on your device for quick access and offline capability.
       </p>
       <button

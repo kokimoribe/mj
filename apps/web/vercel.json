@@ -1,5 +1,6 @@
 {
   "buildCommand": "turbo build --filter=web",
   "framework": "nextjs",
-  "regions": ["sfo1"]
+  "regions": ["sfo1"],
+  "installCommand": "pnpm install"
 }

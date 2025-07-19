@@ -58,7 +58,8 @@ export async function POST(request: NextRequest) {
 
   // Trigger rating recalculation
   try {
-    await fetch('https://mj-skill-rating.vercel.app/materialize', {
+    const API_URL = process.env.NEXT_PUBLIC_PYTHON_API_URL || 'https://mj-skill-rating.vercel.app';
+    await fetch(`${API_URL}/materialize`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

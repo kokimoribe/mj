@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 
-const API_BASE_URL = 'https://mj-skill-rating.vercel.app'
+const API_BASE_URL = process.env.NEXT_PUBLIC_PYTHON_API_URL || 'https://mj-skill-rating.vercel.app'
 
 export async function GET() {
   try {

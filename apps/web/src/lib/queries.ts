@@ -42,11 +42,20 @@ export function useLeaderboard() {
   return useQuery({
     queryKey: ['leaderboard'],
     queryFn: async (): Promise<LeaderboardData> => {
-      const response = await fetch(`${API_BASE_URL}/leaderboard`)
-      if (!response.ok) {
-        throw new Error('Failed to fetch leaderboard')
+      console.log('Fetching from:', `${API_BASE_URL}/leaderboard`)
+      try {
+        const response = await fetch(`${API_BASE_URL}/leaderboard`)
+        console.log('Response status:', response.status)
+        if (!response.ok) {
+          throw new Error('Failed to fetch leaderboard')
+        }
+        const data = await response.json()
+        console.log('Response data:', data)
+        return data
+      } catch (error) {
+        console.error('Fetch error:', error)
+        throw error
       }
-      return response.json()
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 30 * 60 * 1000, // 30 minutes

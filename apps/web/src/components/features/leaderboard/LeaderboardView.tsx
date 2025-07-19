@@ -8,9 +8,19 @@ import { AlertCircle } from 'lucide-react'
 import { LeaderboardHeader } from './LeaderboardHeader'
 import { RatingCard } from './RatingCard'
 import { toast } from "sonner"
+import { useEffect } from 'react'
 
 export function LeaderboardView() {
   const { data, isLoading, error, refetch, isRefetching } = useLeaderboard()
+
+  useEffect(() => {
+    console.log('LeaderboardView State:', {
+      isLoading,
+      error: error?.message,
+      hasData: !!data,
+      data
+    })
+  }, [data, isLoading, error])
 
   const handleRefresh = async () => {
     try {

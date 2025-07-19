@@ -24,15 +24,20 @@ app = FastAPI(
 )
 
 # Configure CORS for Next.js frontend
+# Note: FastAPI CORS middleware doesn't support wildcard patterns like "https://mj-web-*.vercel.app"
+# We need to add specific URLs or use allow_origin_regex
+import re
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000", 
         "http://127.0.0.1:3000",
         "https://mj-web-beta.vercel.app",
-        "https://mj-web-git-main-kokimoribes-projects.vercel.app",
-        "https://mj-web-*.vercel.app"  # Allow all preview deployments
+        "https://mj-web-psi.vercel.app",
+        "https://mj-web-git-main-kokimoribes-projects.vercel.app"
     ],
+    allow_origin_regex=r"https://mj-web-.*\.vercel\.app",  # Regex pattern for all preview deployments
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

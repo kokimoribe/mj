@@ -36,8 +36,8 @@ export function BottomNav() {
   const pathname = usePathname()
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t md:hidden">
-      <div className="grid grid-cols-4 h-16">
+    <nav aria-label="Main navigation" className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t md:hidden">
+      <div className="grid grid-cols-4 h-16" role="list">
         {navigation.map((item) => {
           const isActive = pathname === item.href || 
             (item.href !== '/' && pathname.startsWith(item.href))
@@ -46,9 +46,11 @@ export function BottomNav() {
             <Link
               key={item.name}
               href={item.href}
+              aria-label={item.description}
+              aria-current={isActive ? 'page' : undefined}
               className={cn(
                 "flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors",
-                "hover:text-primary focus:text-primary focus:outline-none",
+                "hover:text-primary focus:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
                 isActive 
                   ? "text-primary" 
                   : "text-muted-foreground"
@@ -59,6 +61,7 @@ export function BottomNav() {
                   "h-5 w-5 transition-all",
                   isActive && "scale-110"
                 )} 
+                aria-hidden="true"
               />
               <span className="text-[10px]">{item.name}</span>
             </Link>

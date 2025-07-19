@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -15,7 +16,7 @@ interface ExpandablePlayerCardProps {
   onToggle: () => void
 }
 
-export function ExpandablePlayerCard({ player, isExpanded, onToggle }: ExpandablePlayerCardProps) {
+function ExpandablePlayerCardComponent({ player, isExpanded, onToggle }: ExpandablePlayerCardProps) {
   const router = useRouter()
 
   const handleProfileClick = (e: React.MouseEvent) => {
@@ -35,12 +36,23 @@ export function ExpandablePlayerCard({ player, isExpanded, onToggle }: Expandabl
 
   return (
     <Card 
+      role="button"
+      tabIndex={0}
+      aria-expanded={isExpanded}
+      aria-label={`${player.name} - Rank ${player.rating.toFixed(1)} - Click to ${isExpanded ? 'collapse' : 'expand'} details`}
       className={cn(
         "cursor-pointer transition-all duration-200",
         "hover:shadow-md active:scale-[0.99]",
+        "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
         isExpanded && "ring-2 ring-primary/20"
       )}
       onClick={onToggle}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onToggle()
+        }
+      }}
     >
       <CardContent className="p-0">
         {/* Main Row */}
@@ -64,16 +76,29 @@ export function ExpandablePlayerCard({ player, isExpanded, onToggle }: Expandabl
                   "flex items-center justify-end text-sm",
                   isPositiveChange ? "text-green-600" : "text-red-600"
                 )}>
-                  {isPositiveChange ? <TrendingUp className="w-3 h-3 mr-1" /> : <TrendingDown className="w-3 h-3 mr-1" />}
-                  {Math.abs(ratingChange).toFixed(1)}
+                  {isPositiveChange ? (
+                    <>
+                      <TrendingUp className="w-3 h-3 mr-1" aria-label="Rating increased" />
+                      <span aria-label={`Rating increased by ${ratingChange.toFixed(1)} points`}>
+                        +{ratingChange.toFixed(1)}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <TrendingDown className="w-3 h-3 mr-1" aria-label="Rating decreased" />
+                      <span aria-label={`Rating decreased by ${Math.abs(ratingChange).toFixed(1)} points`}>
+                        {ratingChange.toFixed(1)}
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
 
               {/* Expand Indicator */}
-              <div className="ml-2">
+              <div className="ml-2" aria-hidden="true">
                 {isExpanded ? 
-                  <ChevronUp className="w-4 h-4 text-muted-foreground" /> : 
-                  <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                  <ChevronUp className="w-4 h-4 text-muted-foreground transition-transform" /> : 
+                  <ChevronDown className="w-4 h-4 text-muted-foreground transition-transform hover:translate-y-0.5" />
                 }
               </div>
             </div>
@@ -137,3 +162,13 @@ export function ExpandablePlayerCard({ player, isExpanded, onToggle }: Expandabl
     </Card>
   )
 }
+
+export const ExpandablePlayerCard = React.memo(ExpandablePlayerCardComponent, (prevProps, nextProps) => {
+  return (
+    prevProps.player.id === nextProps.player.id &&
+    prevProps.player.rating === nextProps.player.rating &&
+    prevProps.player.games === nextProps.player.games &&
+    prevProps.isExpanded === nextProps.isExpanded &&
+    prevProps.rank === nextProps.rank
+  )
+})

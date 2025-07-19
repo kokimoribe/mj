@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import React, { useState, useCallback } from 'react'
 import { useLeaderboard } from '@/lib/queries'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -10,22 +10,22 @@ import { LeaderboardHeader } from './LeaderboardHeader'
 import { ExpandablePlayerCard } from './ExpandablePlayerCard'
 import { toast } from "sonner"
 
-export function LeaderboardView() {
+function LeaderboardViewComponent() {
   const { data, isLoading, error, refetch, isRefetching } = useLeaderboard()
   const [expandedCard, setExpandedCard] = useState<string | null>(null)
 
-  const handleRefresh = async () => {
+  const handleRefresh = useCallback(async () => {
     try {
       await refetch()
       toast.success("Leaderboard updated!")
     } catch {
       toast.error("Failed to refresh leaderboard")
     }
-  }
+  }, [refetch])
 
-  const handleCardToggle = (playerId: string) => {
+  const handleCardToggle = useCallback((playerId: string) => {
     setExpandedCard(current => current === playerId ? null : playerId)
-  }
+  }, [])
 
   if (isLoading) {
     return <LeaderboardSkeleton />
@@ -83,7 +83,9 @@ export function LeaderboardView() {
   )
 }
 
-function LeaderboardSkeleton() {
+export const LeaderboardView = React.memo(LeaderboardViewComponent)
+
+const LeaderboardSkeleton = React.memo(() => {
   return (
     <div className="space-y-6">
       {/* Header skeleton */}
@@ -100,4 +102,4 @@ function LeaderboardSkeleton() {
       </div>
     </div>
   )
-}
+})

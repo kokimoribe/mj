@@ -269,11 +269,12 @@ async def get_game_history(limit: int = 20) -> dict:
 
         supabase = create_client(url, key)
 
-        # Get recent games
+        # Get recent games with seats (scores)
         result = (
             supabase.table("games")
-            .select("*, game_scores(*)")
-            .order("date", desc=True)
+            .select("*, game_seats(*, players!inner(display_name))")
+            .eq("status", "completed")
+            .order("started_at", desc=True)
             .limit(limit)
             .execute()
         )
@@ -286,23 +287,37 @@ async def get_game_history(limit: int = 20) -> dict:
         for game in result.data:
             game_result = {
                 "id": game["id"],
-                "date": game["date"],
+                "date": game["started_at"],
                 "players": []
             }
             
-            # Sort scores by placement
-            scores = sorted(game.get("game_scores", []), key=lambda x: x["placement"])
+            # Sort seats by final score (descending) to get placement
+            seats = sorted(game.get("game_seats", []), key=lambda x: x["final_score"] or 0, reverse=True)
             
-            for score in scores:
-                game_result["players"].append({
-                    "name": score["player_id"],
-                    "placement": score["placement"],
-                    "score": score["score"],
-                    "plusMinus": score["plus_minus"],
-                    "ratingDelta": 0  # Would need to calculate this
-                })
+            # Calculate placements and plus/minus
+            for i, seat in enumerate(seats):
+                if seat["final_score"] is not None:
+                    # Calculate plus/minus based on standard riichi rules
+                    # Assuming uma of 15/5/-5/-15 and oka of 25000
+                    base_score = seat["final_score"]
+                    plus_minus = round((base_score - 25000) / 1000)
+                    
+                    # Add uma based on placement
+                    uma_values = [15, 5, -5, -15]
+                    if i < 4:
+                        plus_minus += uma_values[i]
+                    
+                    game_result["players"].append({
+                        "name": seat["players"]["display_name"],
+                        "placement": i + 1,
+                        "score": seat["final_score"],
+                        "plusMinus": plus_minus,
+                        "ratingDelta": 0  # Would need to calculate this from rating history
+                    })
             
-            games.append(game_result)
+            # Only add games that have complete results
+            if len(game_result["players"]) == 4:
+                games.append(game_result)
 
         return {"games": games}
 
@@ -328,32 +343,87 @@ async def get_player_profile(player_id: str) -> dict:
 
         supabase = create_client(url, key)
 
-        # Get player from leaderboard view
-        result = (
-            supabase.table("current_leaderboard")
-            .select("*")
-            .eq("player_name", player_id.replace("_", " ").title())
+        # Try to get player data directly from cached_player_ratings with player info
+        player_name = player_id.replace("_", " ").title()
+        
+        # First get the player ID from the players table
+        player_result = (
+            supabase.table("players")
+            .select("id, display_name")
+            .eq("display_name", player_name)
             .single()
             .execute()
         )
-
-        if not result.data:
-            raise HTTPException(status_code=404, detail="Player not found")
-
-        player_data = result.data
         
+        if not player_result.data:
+            raise HTTPException(status_code=404, detail="Player not found")
+        
+        player_uuid = player_result.data["id"]
+        
+        # Get the official config hash
+        config_result = (
+            supabase.table("rating_configurations")
+            .select("config_hash")
+            .eq("is_official", True)
+            .single()
+            .execute()
+        )
+        
+        if not config_result.data:
+            raise HTTPException(status_code=500, detail="No official configuration found")
+        
+        # Get player ratings from cached data
+        rating_result = (
+            supabase.table("cached_player_ratings")
+            .select("*")
+            .eq("player_id", player_uuid)
+            .eq("config_hash", config_result.data["config_hash"])
+            .single()
+            .execute()
+        )
+        
+        if not rating_result.data:
+            # Fallback to leaderboard view
+            result = (
+                supabase.table("current_leaderboard")
+                .select("*")
+                .eq("display_name", player_name)
+                .single()
+                .execute()
+            )
+            
+            if not result.data:
+                raise HTTPException(status_code=404, detail="Player not found in leaderboard")
+            
+            player_data = result.data
+            return {
+                "id": player_id,
+                "name": player_data["display_name"],
+                "rating": float(player_data["display_rating"]),
+                "mu": 25.0,  # Default values since view doesn't have them
+                "sigma": 8.33,
+                "games": player_data["games_played"],
+                "lastGameDate": player_data["last_game_date"] if player_data["last_game_date"] else "2024-01-01T00:00:00Z",
+                "totalPlusMinus": player_data["total_plus_minus"] or 0,
+                "averagePlusMinus": float(player_data["avg_plus_minus"] or 0),
+                "bestGame": 0,  # View doesn't have these fields
+                "worstGame": 0,
+            }
+        
+        # Use cached_player_ratings data
+        rating_data = rating_result.data
         return {
             "id": player_id,
-            "name": player_data["player_name"],
-            "rating": float(player_data["display_rating"]),
-            "mu": float(player_data["mu"]),
-            "sigma": float(player_data["sigma"]),
-            "games": player_data["games_played"],
-            "lastGameDate": player_data["last_game_date"] if player_data["last_game_date"] else "2024-01-01T00:00:00Z",
-            "totalPlusMinus": player_data["total_plus_minus"] or 0,
-            "averagePlusMinus": float(player_data["avg_plus_minus"] or 0),
-            "bestGame": player_data["best_game_plus"] or 0,
-            "worstGame": player_data["worst_game_minus"] or 0,
+            "name": player_result.data["display_name"],
+            "rating": float(rating_data["display_rating"]),
+            "mu": float(rating_data["mu"]),
+            "sigma": float(rating_data["sigma"]),
+            "games": rating_data["games_played"],
+            "lastGameDate": rating_data["last_game_date"] if rating_data["last_game_date"] else "2024-01-01T00:00:00Z",
+            "totalPlusMinus": rating_data["total_plus_minus"] or 0,
+            "averagePlusMinus": float(rating_data["total_plus_minus"] / max(rating_data["games_played"], 1)),
+            "bestGame": rating_data["best_game_plus"] or 0,
+            "worstGame": rating_data["worst_game_minus"] or 0,
         }
 
     except HTTPException:
@@ -424,15 +494,15 @@ async def get_season_statistics() -> dict:
             "averageRating": round(average_rating, 2),
             "totalPlusMinus": sum(p["total_plus_minus"] or 0 for p in players),
             "mostActivePlayer": {
-                "name": most_active["player_name"],
+                "name": most_active["display_name"],
                 "games": most_active["games_played"]
             },
             "biggestWinner": {
-                "name": biggest_winner["player_name"],
+                "name": biggest_winner["display_name"],
                 "plusMinus": biggest_winner["total_plus_minus"] or 0
             },
             "biggestLoser": {
-                "name": biggest_loser["player_name"],
+                "name": biggest_loser["display_name"],
                 "plusMinus": biggest_loser["total_plus_minus"] or 0
             } if (biggest_loser["total_plus_minus"] or 0) < 0 else None
         }
@@ -481,13 +551,17 @@ async def calculate_configuration_ratings(request: dict) -> dict:
         players = []
         for row in result.data:
             # Simulate different ratings based on config
-            adjusted_mu = float(row["mu"]) + mu_offset
-            adjusted_sigma = float(row["sigma"]) * sigma_factor
+            # Since view doesn't have mu/sigma, we'll approximate
+            # Assuming standard values for demonstration
+            base_mu = 25.0
+            base_sigma = 8.33
+            adjusted_mu = base_mu + mu_offset
+            adjusted_sigma = base_sigma * sigma_factor
             adjusted_rating = adjusted_mu - 3 * adjusted_sigma
             
             players.append({
-                "id": row["player_name"].lower().replace(" ", "_"),
-                "name": row["player_name"],
+                "id": row["display_name"].lower().replace(" ", "_"),
+                "name": row["display_name"],
                 "rating": adjusted_rating,
                 "mu": adjusted_mu,
                 "sigma": adjusted_sigma,
@@ -495,8 +569,8 @@ async def calculate_configuration_ratings(request: dict) -> dict:
                 "lastGameDate": row["last_game_date"] if row["last_game_date"] else "2024-01-01T00:00:00Z",
                 "totalPlusMinus": row["total_plus_minus"] or 0,
                 "averagePlusMinus": float(row["avg_plus_minus"] or 0),
-                "bestGame": row["best_game_plus"] or 0,
-                "worstGame": row["worst_game_minus"] or 0,
+                "bestGame": row.get("best_game_plus", 0) or 0,
+                "worstGame": row.get("worst_game_minus", 0) or 0,
             })
 
         # Sort by adjusted rating

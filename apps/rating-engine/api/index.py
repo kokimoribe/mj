@@ -4,6 +4,7 @@ Vercel serverless function endpoint.
 """
 
 import os
+from datetime import datetime
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
@@ -102,6 +103,83 @@ async def materialize_ratings(
             status="error",
             config_hash=request.config_hash,
             error=f"Internal server error: {str(e)}",
+        )
+
+
+@app.get("/leaderboard")
+async def get_current_leaderboard() -> dict:
+    """Get current leaderboard with ratings and statistics."""
+    try:
+        # Connect to Supabase
+        url = os.getenv("SUPABASE_URL")
+        key = os.getenv("SUPABASE_SECRET_KEY")
+
+        if not url or not key:
+            raise HTTPException(
+                status_code=500, detail="Database connection not configured"
+            )
+
+        supabase = create_client(url, key)
+
+        # Get leaderboard from view
+        result = (
+            supabase.table("current_leaderboard")
+            .select("*")
+            .order("display_rating", desc=True)
+            .execute()
+        )
+
+        if not result.data:
+            return {
+                "seasonName": "No Data",
+                "players": [],
+                "totalGames": 0,
+                "lastUpdated": datetime.now().isoformat()
+            }
+
+        # Get season name from first row
+        season_name = "Season 3"  # Default fallback
+        if result.data:
+            # Try to extract season name from config data
+            season_name = "Current Season"
+
+        # Transform data for frontend
+        players = []
+        total_games = 0
+        
+        for row in result.data:
+            players.append({
+                "id": row["display_name"].lower().replace(" ", "_"),  # Create ID from name
+                "name": row["display_name"],
+                "rating": float(row["display_rating"]),
+                "mu": 25.0,  # Will be added when we get real mu/sigma data
+                "sigma": 8.33,  # Will be added when we get real mu/sigma data
+                "games": row["games_played"],
+                "lastGameDate": row["last_game_date"].isoformat() if row["last_game_date"] else "2024-01-01T00:00:00Z",
+                "totalPlusMinus": row["total_plus_minus"] or 0,
+                "averagePlusMinus": float(row["avg_plus_minus"]) if row["avg_plus_minus"] else 0.0,
+                "bestGame": 0,  # Will be added when available
+                "worstGame": 0,  # Will be added when available
+            })
+            total_games = max(total_games, row["games_played"])
+
+        return {
+            "seasonName": season_name,
+            "players": players,
+            "totalGames": total_games,
+            "lastUpdated": datetime.now().isoformat()
+        }
+
+    except (ValueError, KeyError) as e:
+        # Handle expected configuration/data errors
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        # Log unexpected errors for debugging
+        import logging
+
+        logging.exception(f"Unexpected error in leaderboard endpoint: {e}")
+        raise HTTPException(
+            status_code=500, detail="Internal server error - check logs"
         )
 
 

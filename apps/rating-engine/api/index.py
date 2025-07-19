@@ -343,87 +343,36 @@ async def get_player_profile(player_id: str) -> dict:
 
         supabase = create_client(url, key)
 
-        # Try to get player data directly from cached_player_ratings with player info
+        # Convert player_id to display_name (e.g., "joseph" -> "Joseph")
         player_name = player_id.replace("_", " ").title()
         
-        # First get the player ID from the players table
-        player_result = (
-            supabase.table("players")
-            .select("id, display_name")
+        # Query the current_leaderboard view directly
+        result = (
+            supabase.table("current_leaderboard")
+            .select("*")
             .eq("display_name", player_name)
-            .single()
             .execute()
         )
         
-        if not player_result.data:
+        if not result.data or len(result.data) == 0:
             raise HTTPException(status_code=404, detail="Player not found")
         
-        player_uuid = player_result.data["id"]
+        # Get the player data
+        player_data = result.data[0]
         
-        # Get the official config hash
-        config_result = (
-            supabase.table("rating_configurations")
-            .select("config_hash")
-            .eq("is_official", True)
-            .single()
-            .execute()
-        )
-        
-        if not config_result.data:
-            raise HTTPException(status_code=500, detail="No official configuration found")
-        
-        # Get player ratings from cached data
-        rating_result = (
-            supabase.table("cached_player_ratings")
-            .select("*")
-            .eq("player_id", player_uuid)
-            .eq("config_hash", config_result.data["config_hash"])
-            .single()
-            .execute()
-        )
-        
-        if not rating_result.data:
-            # Fallback to leaderboard view
-            result = (
-                supabase.table("current_leaderboard")
-                .select("*")
-                .eq("display_name", player_name)
-                .single()
-                .execute()
-            )
-            
-            if not result.data:
-                raise HTTPException(status_code=404, detail="Player not found in leaderboard")
-            
-            player_data = result.data
-            return {
-                "id": player_id,
-                "name": player_data["display_name"],
-                "rating": float(player_data["display_rating"]),
-                "mu": 25.0,  # Default values since view doesn't have them
-                "sigma": 8.33,
-                "games": player_data["games_played"],
-                "lastGameDate": player_data["last_game_date"] if player_data["last_game_date"] else "2024-01-01T00:00:00Z",
-                "totalPlusMinus": player_data["total_plus_minus"] or 0,
-                "averagePlusMinus": float(player_data["avg_plus_minus"] or 0),
-                "bestGame": 0,  # View doesn't have these fields
-                "worstGame": 0,
-            }
-        
-        # Use cached_player_ratings data
-        rating_data = rating_result.data
+        # Return in the expected format
         return {
             "id": player_id,
-            "name": player_result.data["display_name"],
-            "rating": float(rating_data["display_rating"]),
-            "mu": float(rating_data["mu"]),
-            "sigma": float(rating_data["sigma"]),
-            "games": rating_data["games_played"],
-            "lastGameDate": rating_data["last_game_date"] if rating_data["last_game_date"] else "2024-01-01T00:00:00Z",
-            "totalPlusMinus": rating_data["total_plus_minus"] or 0,
-            "averagePlusMinus": float(rating_data["total_plus_minus"] / max(rating_data["games_played"], 1)),
-            "bestGame": rating_data["best_game_plus"] or 0,
-            "worstGame": rating_data["worst_game_minus"] or 0,
+            "name": player_data["display_name"],
+            "rating": float(player_data["display_rating"]),
+            "mu": 25.0,  # Default values since view doesn't have them
+            "sigma": 8.33,
+            "games": player_data["games_played"],
+            "lastGameDate": player_data["last_game_date"] if player_data["last_game_date"] else "2024-01-01T00:00:00Z",
+            "totalPlusMinus": player_data["total_plus_minus"] or 0,
+            "averagePlusMinus": float(player_data["avg_plus_minus"]) if player_data["avg_plus_minus"] else 0.0,
+            "bestGame": 0,  # View doesn't have these fields
+            "worstGame": 0,
         }
 
     except HTTPException:

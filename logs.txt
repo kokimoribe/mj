@@ -1,0 +1,131 @@
+[12:20:35.133] Running build in Washington, D.C., USA (East) – iad1
+[12:20:35.134] Build machine configuration: 2 cores, 8 GB
+[12:20:35.159] Cloning github.com/kokimoribe/mj (Branch: main, Commit: 08028b7)
+[12:20:35.560] Cloning completed: 401.000ms
+[12:20:37.706] Restored build cache from previous deployment (AnvaQooN3dYpZwVMWRq8RwQ1pB6u)
+[12:20:41.490] Running "vercel build"
+[12:20:42.154] Vercel CLI 44.4.3
+[12:20:42.409] > Detected Turbo. Adjusting default settings...
+[12:20:42.632] Running "install" command: `cd ../.. && npm install`...
+[12:20:44.298] npm warn EBADENGINE Unsupported engine {
+[12:20:44.299] npm warn EBADENGINE   package: 'riichi-mahjong-league@0.1.0',
+[12:20:44.299] npm warn EBADENGINE   required: { node: '22.17.0' },
+[12:20:44.299] npm warn EBADENGINE   current: { node: 'v22.17.1', npm: '10.9.2' }
+[12:20:44.300] npm warn EBADENGINE }
+[12:20:48.877] 
+[12:20:48.878] added 155 packages, removed 3 packages, and audited 1051 packages in 6s
+[12:20:48.879] 
+[12:20:48.893] 219 packages are looking for funding
+[12:20:48.893]   run `npm fund` for details
+[12:20:48.901] 
+[12:20:48.904] found 0 vulnerabilities
+[12:20:48.973] Detected Next.js version: 15.3.5
+[12:20:48.974] Running "turbo build --filter=web"
+[12:20:49.113] 
+[12:20:49.114] Attention:
+[12:20:49.114] Turborepo now collects completely anonymous telemetry regarding usage.
+[12:20:49.115] This information is used to shape the Turborepo roadmap and prioritize features.
+[12:20:49.115] You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+[12:20:49.115] https://turborepo.com/docs/telemetry
+[12:20:49.115] 
+[12:20:49.181] • Packages in scope: web
+[12:20:49.181] • Running build in 1 packages
+[12:20:49.181] • Remote caching enabled
+[12:20:49.410] web:build: cache miss, executing 537f5d17ed01f547
+[12:20:49.639] web:build: 
+[12:20:49.639] web:build: > web@0.1.0 build
+[12:20:49.640] web:build: > next build
+[12:20:49.642] web:build: 
+[12:20:52.152] web:build:    ▲ Next.js 15.3.5
+[12:20:52.153] web:build: 
+[12:20:52.201] web:build:    Creating an optimized production build ...
+[12:20:52.779] web:build:  ✓ (pwa) Compiling for server...
+[12:20:52.785] web:build:  ✓ (pwa) Compiling for server...
+[12:20:52.788] web:build:  ✓ (pwa) Compiling for client (static)...
+[12:20:52.793] web:build:  ○ (pwa) Service worker: /vercel/path0/apps/web/public/sw.js
+[12:20:52.794] web:build:  ○ (pwa)   URL: /sw.js
+[12:20:52.794] web:build:  ○ (pwa)   Scope: /
+[12:20:52.795] web:build:  ○ (pwa) Custom runtimeCaching array found, using it instead of the default one.
+[12:21:07.257] web:build:  ⚠ Compiled with warnings in 14.0s
+[12:21:07.258] web:build: 
+[12:21:07.272] web:build: ./src/lib/supabase/server.ts
+[12:21:07.273] web:build: Attempted import error: 'createServerClient' is not exported from '@supabase/supabase-js' (imported as 'createServerClient').
+[12:21:07.273] web:build: 
+[12:21:07.274] web:build: Import trace for requested module:
+[12:21:07.274] web:build: ./src/lib/supabase/server.ts
+[12:21:07.274] web:build: ./src/app/api/games/route.ts
+[12:21:07.275] web:build: 
+[12:21:07.280] web:build:    Linting and checking validity of types ...
+[12:21:08.039] web:build:  ⚠ TypeScript project references are not fully supported. Attempting to build in incremental mode.
+[12:21:16.292] web:build: 
+[12:21:16.292] web:build: Failed to compile.
+[12:21:16.292] web:build: 
+[12:21:16.294] web:build: ./src/app/api/games/route.ts
+[12:21:16.294] web:build: 3:10  Error: 'cookies' is defined but never used.  @typescript-eslint/no-unused-vars
+[12:21:16.296] web:build: 
+[12:21:16.296] web:build: ./src/components/features/games/GameHistoryView.test.tsx
+[12:21:16.296] web:build: 64:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+[12:21:16.296] web:build: 78:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+[12:21:16.296] web:build: 90:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+[12:21:16.296] web:build: 115:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+[12:21:16.297] web:build: 130:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+[12:21:16.297] web:build: 146:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+[12:21:16.297] web:build: 158:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+[12:21:16.297] web:build: 
+[12:21:16.297] web:build: ./src/components/features/leaderboard/LeaderboardView.test.tsx
+[12:21:16.297] web:build: 85:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+[12:21:16.298] web:build: 103:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+[12:21:16.298] web:build: 118:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+[12:21:16.299] web:build: 141:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+[12:21:16.299] web:build: 174:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+[12:21:16.299] web:build: 202:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+[12:21:16.299] web:build: 230:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+[12:21:16.299] web:build: 246:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+[12:21:16.299] web:build: 
+[12:21:16.299] web:build: ./src/components/features/player/PlayerProfileView.test.tsx
+[12:21:16.299] web:build: 80:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+[12:21:16.300] web:build: 86:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+[12:21:16.300] web:build: 100:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+[12:21:16.300] web:build: 106:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+[12:21:16.308] web:build: 118:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+[12:21:16.308] web:build: 124:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+[12:21:16.312] web:build: 139:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+[12:21:16.313] web:build: 145:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+[12:21:16.313] web:build: 161:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+[12:21:16.313] web:build: 167:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+[12:21:16.313] web:build: 181:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+[12:21:16.313] web:build: 187:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+[12:21:16.313] web:build: 206:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+[12:21:16.313] web:build: 212:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+[12:21:16.313] web:build: 
+[12:21:16.313] web:build: ./src/components/features/stats/StatsView.test.tsx
+[12:21:16.313] web:build: 52:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+[12:21:16.313] web:build: 66:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+[12:21:16.314] web:build: 78:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+[12:21:16.314] web:build: 95:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+[12:21:16.314] web:build: 113:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+[12:21:16.314] web:build: 132:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+[12:21:16.314] web:build: 148:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+[12:21:16.314] web:build: 169:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+[12:21:16.314] web:build: 
+[12:21:16.314] web:build: info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules
+[12:21:16.395] web:build: npm error Lifecycle script `build` failed with error:
+[12:21:16.395] web:build: npm error code 1
+[12:21:16.396] web:build: npm error path /vercel/path0/apps/web
+[12:21:16.396] web:build: npm error workspace web@0.1.0
+[12:21:16.396] web:build: npm error location /vercel/path0/apps/web
+[12:21:16.396] web:build: npm error command failed
+[12:21:16.397] web:build: npm error command sh -c next build
+[12:21:16.404] web:build: ERROR: command finished with error: command (/vercel/path0/apps/web) /node22/bin/npm run build exited (1)
+[12:21:16.406] web#build: command (/vercel/path0/apps/web) /node22/bin/npm run build exited (1)
+[12:21:16.410] 
+[12:21:16.411]   Tasks:    0 successful, 1 total
+[12:21:16.411]  Cached:    0 cached, 1 total
+[12:21:16.411]    Time:    27.272s 
+[12:21:16.411] Summary:    /vercel/path0/.turbo/runs/306fKBAbhvjhRtYqWqyGEgyBe4B.json
+[12:21:16.412]  Failed:    web#build
+[12:21:16.412] 
+[12:21:16.418]  ERROR  run failed: command  exited (1)
+[12:21:16.435] Error: Command "turbo build --filter=web" exited with 1
+[12:21:17.218] 
+[12:21:20.482] Exiting build container

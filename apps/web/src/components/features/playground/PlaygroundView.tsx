@@ -10,11 +10,11 @@ import { Slider } from '@/components/ui/slider'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Settings, RefreshCw, Save, Copy, AlertCircle } from 'lucide-react'
+import { Settings, RefreshCw, Save, AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
 
 export function PlaygroundView() {
-  const { currentConfig, updateConfig, saveConfig, loadConfig } = useConfigStore()
+  const { currentConfig, updateConfig, saveConfig } = useConfigStore()
   const [isApplying, setIsApplying] = useState(false)
   
   const { data, isLoading, error, refetch } = useConfigurationResults(
@@ -241,7 +241,7 @@ export function PlaygroundView() {
           <div>
             <strong>Higher τ:</strong> Ratings drift more over time
             <p className="text-muted-foreground">
-              Helps inactive players' uncertainty increase
+              Helps inactive players&apos; uncertainty increase
             </p>
           </div>
         </CardContent>

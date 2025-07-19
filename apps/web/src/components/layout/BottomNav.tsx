@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Home, Trophy, BarChart3, Sliders, History } from 'lucide-react'
+import { Home, BarChart3, Sliders, History } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navigation = [

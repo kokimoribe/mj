@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Progress } from '@/components/ui/progress'
-import { ArrowLeft, TrendingUp, TrendingDown, Activity, Calendar, Trophy, Target } from 'lucide-react'
+import { ArrowLeft, TrendingUp, Activity, Trophy, Target } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { formatDistanceToNow } from 'date-fns'
 

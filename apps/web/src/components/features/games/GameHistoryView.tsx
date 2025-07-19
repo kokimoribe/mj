@@ -8,12 +8,12 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { format, formatDistanceToNow } from 'date-fns'
-import { History, Calendar, Trophy, Users } from 'lucide-react'
+import { History, Calendar, Users } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export function GameHistoryView() {
   const [limit, setLimit] = useState(20)
-  const { data, isLoading, error, refetch } = useGameHistory(limit)
+  const { data, isLoading, error } = useGameHistory(limit)
 
   if (isLoading) {
     return <GameHistorySkeleton />
@@ -125,7 +125,7 @@ function GameCard({ game }: GameCardProps) {
 
         {/* Player Results */}
         <div className="space-y-2">
-          {game.players.map((player, index) => (
+          {game.players.map((player) => (
             <div 
               key={`${game.id}-${player.name}`}
               className="flex items-center justify-between text-sm"

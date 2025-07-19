@@ -249,6 +249,114 @@ async def get_current_leaderboard() -> dict:
         }
 
 
+@app.get("/games")
+async def get_game_history(limit: int = 20) -> dict:
+    """Get recent game history."""
+    try:
+        # Connect to Supabase
+        url = os.getenv("SUPABASE_URL")
+        key = os.getenv("SUPABASE_SECRET_KEY")
+
+        if not url or not key:
+            raise HTTPException(
+                status_code=500, detail="Database connection not configured"
+            )
+
+        supabase = create_client(url, key)
+
+        # Get recent games
+        result = (
+            supabase.table("games")
+            .select("*, game_scores(*)")
+            .order("date", desc=True)
+            .limit(limit)
+            .execute()
+        )
+
+        if not result.data:
+            return {"games": []}
+
+        # Transform game data
+        games = []
+        for game in result.data:
+            game_result = {
+                "id": game["id"],
+                "date": game["date"],
+                "players": []
+            }
+            
+            # Sort scores by placement
+            scores = sorted(game.get("game_scores", []), key=lambda x: x["placement"])
+            
+            for score in scores:
+                game_result["players"].append({
+                    "name": score["player_id"],
+                    "placement": score["placement"],
+                    "score": score["score"],
+                    "plusMinus": score["plus_minus"],
+                    "ratingDelta": 0  # Would need to calculate this
+                })
+            
+            games.append(game_result)
+
+        return {"games": games}
+
+    except Exception as e:
+        return {
+            "games": [],
+            "error": str(e)
+        }
+
+
+@app.get("/players/{player_id}")
+async def get_player_profile(player_id: str) -> dict:
+    """Get detailed player profile."""
+    try:
+        # Connect to Supabase
+        url = os.getenv("SUPABASE_URL")
+        key = os.getenv("SUPABASE_SECRET_KEY")
+
+        if not url or not key:
+            raise HTTPException(
+                status_code=500, detail="Database connection not configured"
+            )
+
+        supabase = create_client(url, key)
+
+        # Get player from leaderboard view
+        result = (
+            supabase.table("current_leaderboard")
+            .select("*")
+            .eq("player_name", player_id.replace("_", " ").title())
+            .single()
+            .execute()
+        )
+
+        if not result.data:
+            raise HTTPException(status_code=404, detail="Player not found")
+
+        player_data = result.data
+        
+        return {
+            "id": player_id,
+            "name": player_data["player_name"],
+            "rating": float(player_data["display_rating"]),
+            "mu": float(player_data["mu"]),
+            "sigma": float(player_data["sigma"]),
+            "games": player_data["games_played"],
+            "lastGameDate": player_data["last_game_date"] if player_data["last_game_date"] else "2024-01-01T00:00:00Z",
+            "totalPlusMinus": player_data["total_plus_minus"] or 0,
+            "averagePlusMinus": float(player_data["avg_plus_minus"] or 0),
+            "bestGame": player_data["best_game_plus"] or 0,
+            "worstGame": player_data["worst_game_minus"] or 0,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/configurations")
 async def list_configurations() -> dict:
     """List available rating configurations."""

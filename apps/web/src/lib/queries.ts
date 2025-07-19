@@ -85,7 +85,7 @@ export function usePlayerProfile(playerId: string) {
 export function useGameHistory(limit?: number) {
   return useQuery({
     queryKey: ['games', limit],
-    queryFn: async (): Promise<GameResult[]> => {
+    queryFn: async (): Promise<{ games: GameResult[] }> => {
       const url = new URL(`${API_BASE_URL}/games`)
       if (limit) {
         url.searchParams.set('limit', limit.toString())

@@ -1,6 +1,9 @@
+'use client'
+
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ActivityIndicator } from "./ActivityIndicator"
+import { useRouter } from 'next/navigation'
 import type { Player } from "@/lib/queries"
 
 interface RatingCardProps {
@@ -10,6 +13,7 @@ interface RatingCardProps {
 }
 
 export function RatingCard({ player, rank, onTap }: RatingCardProps) {
+  const router = useRouter()
   const getRankIcon = (rank: number) => {
     switch (rank) {
       case 1: return '🥇'
@@ -27,10 +31,15 @@ export function RatingCard({ player, rank, onTap }: RatingCardProps) {
   // Calculate rating delta (mock for now - will be from API)
   const ratingDelta = Math.random() * 4 - 2 // -2 to +2 range
 
+  const handleClick = () => {
+    router.push(`/player/${player.id}`)
+    onTap?.()
+  }
+
   return (
     <Card 
       className="cursor-pointer transition-colors hover:bg-muted/50 active:bg-muted"
-      onClick={onTap}
+      onClick={handleClick}
     >
       <CardContent className="p-4">
         <div className="flex items-center justify-between">

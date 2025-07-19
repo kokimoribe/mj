@@ -1,6 +1,7 @@
 'use client'
 
 import { InstallPrompt } from '@/components/InstallPrompt'
+import { BottomNav } from './BottomNav'
 
 interface AppLayoutProps {
   children: React.ReactNode
@@ -15,7 +16,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       </div>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-6">
+      <div className="container mx-auto px-4 py-6 pb-20 md:pb-6">
         <header className="mb-8 text-center">
           <h1 className="text-3xl font-bold text-foreground">
             🀄 Riichi Mahjong League
@@ -34,6 +35,9 @@ export function AppLayout({ children }: AppLayoutProps) {
           </p>
         </footer>
       </div>
+
+      {/* Bottom Navigation - Mobile Only */}
+      <BottomNav />
     </div>
   )
 }

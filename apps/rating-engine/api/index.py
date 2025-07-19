@@ -57,6 +57,17 @@ async def health_check():
     }
 
 
+@app.get("/debug")
+async def debug_env():
+    """Debug endpoint to check environment configuration."""
+    return {
+        "has_supabase_url": bool(os.getenv("SUPABASE_URL")),
+        "has_supabase_secret_key": bool(os.getenv("SUPABASE_SECRET_KEY")),
+        "supabase_url_prefix": (os.getenv("SUPABASE_URL") or "")[:30] + "..." if os.getenv("SUPABASE_URL") else None,
+        "secret_key_prefix": (os.getenv("SUPABASE_SECRET_KEY") or "")[:20] + "..." if os.getenv("SUPABASE_SECRET_KEY") else None,
+    }
+
+
 @app.post("/")
 async def materialize_ratings(
     request: MaterializationRequest,

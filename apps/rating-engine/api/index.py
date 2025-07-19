@@ -357,6 +357,85 @@ async def get_player_profile(player_id: str) -> dict:
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/stats/season")
+async def get_season_statistics() -> dict:
+    """Get season-wide statistics."""
+    try:
+        # Connect to Supabase
+        url = os.getenv("SUPABASE_URL")
+        key = os.getenv("SUPABASE_SECRET_KEY")
+
+        if not url or not key:
+            raise HTTPException(
+                status_code=500, detail="Database connection not configured"
+            )
+
+        supabase = create_client(url, key)
+
+        # Get basic stats from current leaderboard
+        leaderboard_result = (
+            supabase.table("current_leaderboard")
+            .select("*")
+            .execute()
+        )
+
+        if not leaderboard_result.data:
+            return {
+                "totalGames": 0,
+                "totalPlayers": 0,
+                "averageGamesPerPlayer": 0,
+                "highestRating": 0,
+                "lowestRating": 0,
+                "averageRating": 0,
+                "totalPlusMinus": 0,
+                "mostActivePlayer": None,
+                "biggestWinner": None,
+                "biggestLoser": None
+            }
+
+        players = leaderboard_result.data
+        
+        # Calculate statistics
+        total_games = sum(p["games_played"] for p in players) // 4  # Approximate
+        total_players = len(players)
+        avg_games_per_player = sum(p["games_played"] for p in players) / total_players if total_players > 0 else 0
+        
+        ratings = [float(p["display_rating"]) for p in players]
+        highest_rating = max(ratings) if ratings else 0
+        lowest_rating = min(ratings) if ratings else 0
+        average_rating = sum(ratings) / len(ratings) if ratings else 0
+        
+        # Find special players
+        most_active = max(players, key=lambda p: p["games_played"])
+        biggest_winner = max(players, key=lambda p: p["total_plus_minus"] or 0)
+        biggest_loser = min(players, key=lambda p: p["total_plus_minus"] or 0)
+        
+        return {
+            "totalGames": total_games,
+            "totalPlayers": total_players,
+            "averageGamesPerPlayer": round(avg_games_per_player, 1),
+            "highestRating": round(highest_rating, 2),
+            "lowestRating": round(lowest_rating, 2),
+            "averageRating": round(average_rating, 2),
+            "totalPlusMinus": sum(p["total_plus_minus"] or 0 for p in players),
+            "mostActivePlayer": {
+                "name": most_active["player_name"],
+                "games": most_active["games_played"]
+            },
+            "biggestWinner": {
+                "name": biggest_winner["player_name"],
+                "plusMinus": biggest_winner["total_plus_minus"] or 0
+            },
+            "biggestLoser": {
+                "name": biggest_loser["player_name"],
+                "plusMinus": biggest_loser["total_plus_minus"] or 0
+            } if (biggest_loser["total_plus_minus"] or 0) < 0 else None
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/configurations")
 async def list_configurations() -> dict:
     """List available rating configurations."""

@@ -18,7 +18,14 @@
         "SUPABASE_SECRET_KEY",
         "SUPABASE_SERVICE_ROLE_KEY",
         "SUPABASE_JWT_SECRET",
-        "SUPABASE_ANON_KEY"
+        "SUPABASE_ANON_KEY",
+        "POSTGRES_URL",
+        "POSTGRES_PRISMA_URL",
+        "POSTGRES_URL_NON_POOLING",
+        "POSTGRES_USER",
+        "POSTGRES_PASSWORD",
+        "POSTGRES_DATABASE",
+        "POSTGRES_HOST"
       ],
       "outputs": [".next/**", "!.next/cache/**"],
       "inputs": [

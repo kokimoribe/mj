@@ -16,7 +16,10 @@
     "type-check": "turbo type-check",
     "test": "turbo test",
     "clean": "turbo clean",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\""
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "verify": "turbo lint && turbo type-check && turbo build",
+    "verify:web": "turbo lint --filter=web && turbo type-check --filter=web && turbo build --filter=web",
+    "pre-deploy": "npm run verify:web"
   },
   "devDependencies": {
     "@turbo/gen": "^2.5.4",

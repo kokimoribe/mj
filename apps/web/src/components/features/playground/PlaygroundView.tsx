@@ -14,7 +14,7 @@ import { Settings, RefreshCw, Save, AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
 
 export function PlaygroundView() {
-  const { currentConfig, updateConfig, saveConfig } = useConfigStore()
+  const { selectedConfig, setSelectedConfig, saveCustomConfig } = useConfigStore()
   const [isApplying, setIsApplying] = useState(false)
   
   const { data, isLoading, error, refetch } = useConfigurationResults(

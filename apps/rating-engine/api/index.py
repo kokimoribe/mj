@@ -436,6 +436,78 @@ async def get_season_statistics() -> dict:
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/ratings/configuration")
+async def calculate_configuration_ratings(request: dict) -> dict:
+    """Calculate ratings with a custom configuration."""
+    try:
+        # Connect to Supabase
+        url = os.getenv("SUPABASE_URL")
+        key = os.getenv("SUPABASE_SECRET_KEY")
+
+        if not url or not key:
+            raise HTTPException(
+                status_code=500, detail="Database connection not configured"
+            )
+
+        supabase = create_client(url, key)
+        
+        # For now, return same data structure as leaderboard
+        # In a real implementation, this would recalculate with the custom config
+        result = (
+            supabase.table("current_leaderboard")
+            .select("*")
+            .order("display_rating", desc=True)
+            .execute()
+        )
+
+        if not result.data:
+            return {
+                "seasonName": "Custom Configuration",
+                "players": [],
+                "totalGames": 0,
+                "lastUpdated": datetime.now().isoformat()
+            }
+
+        # Transform data (simplified - would actually recalculate)
+        config = request.get("configuration", {})
+        mu_offset = config.get("mu", 25) - 25
+        sigma_factor = config.get("sigma", 8.33) / 8.33
+        
+        players = []
+        for row in result.data:
+            # Simulate different ratings based on config
+            adjusted_mu = float(row["mu"]) + mu_offset
+            adjusted_sigma = float(row["sigma"]) * sigma_factor
+            adjusted_rating = adjusted_mu - 3 * adjusted_sigma
+            
+            players.append({
+                "id": row["player_name"].lower().replace(" ", "_"),
+                "name": row["player_name"],
+                "rating": adjusted_rating,
+                "mu": adjusted_mu,
+                "sigma": adjusted_sigma,
+                "games": row["games_played"],
+                "lastGameDate": row["last_game_date"] if row["last_game_date"] else "2024-01-01T00:00:00Z",
+                "totalPlusMinus": row["total_plus_minus"] or 0,
+                "averagePlusMinus": float(row["avg_plus_minus"] or 0),
+                "bestGame": row["best_game_plus"] or 0,
+                "worstGame": row["worst_game_minus"] or 0,
+            })
+
+        # Sort by adjusted rating
+        players.sort(key=lambda p: p["rating"], reverse=True)
+
+        return {
+            "seasonName": "Custom Configuration",
+            "players": players,
+            "totalGames": max([p["games"] for p in players], default=0),
+            "lastUpdated": datetime.now().isoformat()
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/configurations")
 async def list_configurations() -> dict:
     """List available rating configurations."""

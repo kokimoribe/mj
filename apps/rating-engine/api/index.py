@@ -381,6 +381,72 @@ async def get_player_profile(player_id: str) -> dict:
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/players/{player_id}/games")
+async def get_player_games(player_id: str, limit: int = 20) -> list:
+    """Get a player's recent games."""
+    try:
+        # Connect to Supabase
+        url = os.getenv("SUPABASE_URL")
+        key = os.getenv("SUPABASE_SECRET_KEY")
+
+        if not url or not key:
+            raise HTTPException(
+                status_code=500, detail="Database connection not configured"
+            )
+
+        supabase = create_client(url, key)
+        
+        # Convert player_id to display_name (e.g., "joseph" -> "Joseph")
+        player_name = player_id.replace("_", " ").title()
+        
+        # First get the player to ensure they exist and get their ID
+        player_result = (
+            supabase.table("players")
+            .select("*")
+            .eq("display_name", player_name)
+            .execute()
+        )
+        
+        if not player_result.data:
+            raise HTTPException(status_code=404, detail="Player not found")
+        
+        player = player_result.data[0]
+        
+        # Get player's recent games from game_seats
+        games_result = (
+            supabase.table("game_seats")
+            .select("*, games(*)")
+            .eq("player_id", player["id"])
+            .order("game_id", desc=True)
+            .limit(limit)
+            .execute()
+        )
+        
+        if not games_result.data:
+            return []
+        
+        # Format the games data
+        games = []
+        for seat in games_result.data:
+            game = seat.get("games", {})
+            if game:
+                games.append({
+                    "id": game.get("id"),
+                    "date": game.get("created_at"),
+                    "position": seat.get("wind", ""),
+                    "score": seat.get("score", 0),
+                    "adjustedScore": seat.get("adjusted_score", 0),
+                    "placement": seat.get("placement", 0)
+                })
+        
+        return games
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/stats/season")
 async def get_season_statistics() -> dict:
     """Get season-wide statistics."""

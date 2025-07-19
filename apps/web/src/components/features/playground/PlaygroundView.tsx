@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useConfigStore } from '@/stores/configStore'
+import { useConfigStore, type RatingConfiguration } from '@/stores/configStore'
 import { useConfigurationResults } from '@/lib/queries'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -14,18 +14,51 @@ import { Settings, RefreshCw, Save, AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
 
 export function PlaygroundView() {
-  const { selectedConfig, setSelectedConfig, saveCustomConfig } = useConfigStore()
+  const { saveCustomConfig } = useConfigStore()
   const [isApplying, setIsApplying] = useState(false)
+  const [currentConfig, setCurrentConfig] = useState({
+    mu: 25,
+    sigma: 8.33,
+    beta: 4.17,
+    tau: 0.25,
+    draw_probability: 0.0
+  })
+  
+  // Create default full configuration
+  const defaultFullConfig: RatingConfiguration = {
+    timeRange: {
+      startDate: new Date().toISOString(),
+      endDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
+      name: 'Playground Test'
+    },
+    rating: {
+      initialMu: currentConfig.mu,
+      initialSigma: currentConfig.sigma,
+      confidenceFactor: 3,
+      decayRate: currentConfig.tau
+    },
+    scoring: {
+      oka: 30000,
+      uma: [15, 5, -5, -15]
+    },
+    weights: {
+      divisor: 1000,
+      min: 0.2,
+      max: 0.8
+    },
+    qualification: {
+      minGames: 10,
+      dropWorst: 0
+    }
+  }
   
   const { data, isLoading, error, refetch } = useConfigurationResults(
-    isApplying ? currentConfig : { 
-      mu: 25, 
-      sigma: 8.33, 
-      beta: 4.17, 
-      tau: 0.25,
-      draw_probability: 0.0
-    }
+    isApplying ? defaultFullConfig : defaultFullConfig
   )
+  
+  const updateConfig = (updates: Partial<typeof currentConfig>) => {
+    setCurrentConfig(prev => ({ ...prev, ...updates }))
+  }
 
   const handleApply = async () => {
     setIsApplying(true)
@@ -46,16 +79,38 @@ export function PlaygroundView() {
   }
 
   const handleSave = () => {
-    const configId = saveConfig('Custom Config ' + new Date().toISOString())
-    toast.success('Configuration saved!', {
-      action: {
-        label: 'Copy ID',
-        onClick: () => {
-          navigator.clipboard.writeText(configId)
-          toast.success('Config ID copied!')
-        }
+    const configName = 'Custom Config ' + new Date().toISOString()
+    
+    // Create a full RatingConfiguration object
+    const fullConfig: RatingConfiguration = {
+      timeRange: {
+        startDate: new Date().toISOString(),
+        endDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(), // 90 days
+        name: configName
+      },
+      rating: {
+        initialMu: currentConfig.mu,
+        initialSigma: currentConfig.sigma,
+        confidenceFactor: 3,
+        decayRate: currentConfig.tau
+      },
+      scoring: {
+        oka: 30000,
+        uma: [15, 5, -5, -15]
+      },
+      weights: {
+        divisor: 1000,
+        min: 0.2,
+        max: 0.8
+      },
+      qualification: {
+        minGames: 10,
+        dropWorst: 0
       }
-    })
+    }
+    
+    saveCustomConfig(configName, fullConfig)
+    toast.success('Configuration saved!')
   }
 
   return (

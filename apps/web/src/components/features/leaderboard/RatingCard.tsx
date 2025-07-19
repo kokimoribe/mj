@@ -16,20 +16,13 @@ export function RatingCard({ player, rank, onTap }: RatingCardProps) {
   const router = useRouter()
   const getRankIcon = (rank: number) => {
     switch (rank) {
-      case 1: return '🥇'
-      case 2: return '🥈' 
-      case 3: return '🥉'
+      case 1: return '1'
+      case 2: return '2' 
+      case 3: return '3'
       default: return rank.toString()
     }
   }
 
-  const formatRatingDelta = (delta: number) => {
-    if (delta > 0) return `+${delta.toFixed(1)}`
-    return delta.toFixed(1)
-  }
-
-  // Calculate rating delta (mock for now - will be from API)
-  const ratingDelta = Math.random() * 4 - 2 // -2 to +2 range
 
   const handleClick = () => {
     router.push(`/player/${player.id}`)
@@ -45,11 +38,26 @@ export function RatingCard({ player, rank, onTap }: RatingCardProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             {/* Rank indicator */}
-            <div className="flex h-8 w-8 items-center justify-center text-sm font-semibold">
-              {rank <= 3 ? (
-                <span className="text-lg">{getRankIcon(rank)}</span>
-              ) : (
-                <Badge variant="outline">{rank}</Badge>
+            <div className="flex h-10 w-10 items-center justify-center">
+              {rank === 1 && (
+                <Badge className="h-10 w-10 rounded-full bg-yellow-500 text-white border-0 text-lg font-bold">
+                  1
+                </Badge>
+              )}
+              {rank === 2 && (
+                <Badge className="h-10 w-10 rounded-full bg-gray-400 text-white border-0 text-lg font-bold">
+                  2
+                </Badge>
+              )}
+              {rank === 3 && (
+                <Badge className="h-10 w-10 rounded-full bg-orange-600 text-white border-0 text-lg font-bold">
+                  3
+                </Badge>
+              )}
+              {rank > 3 && (
+                <Badge variant="outline" className="h-10 w-10 rounded-full text-base">
+                  {rank}
+                </Badge>
               )}
             </div>
 
@@ -72,20 +80,18 @@ export function RatingCard({ player, rank, onTap }: RatingCardProps) {
 
           {/* Rating display */}
           <div className="text-right">
-            <div className="flex items-center space-x-2">
-              <span className="text-lg font-bold font-mono">
+            <div className="flex flex-col items-end">
+              <span className="text-xl font-bold font-mono tabular-nums">
                 {player.rating.toFixed(1)}
               </span>
+              {/* Plus/Minus display */}
               <Badge 
-                variant={ratingDelta >= 0 ? "default" : "destructive"}
-                className="text-xs"
+                variant={player.averagePlusMinus >= 0 ? "default" : "destructive"}
+                className="text-xs mt-1"
               >
-                {formatRatingDelta(ratingDelta)}
+                {player.averagePlusMinus >= 0 ? '+' : ''}{player.averagePlusMinus.toFixed(1)}
               </Badge>
             </div>
-            <p className="text-xs text-muted-foreground">
-              conservative rating
-            </p>
           </div>
         </div>
       </CardContent>

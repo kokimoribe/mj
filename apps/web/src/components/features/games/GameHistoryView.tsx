@@ -94,25 +94,16 @@ interface GameCardProps {
 }
 
 function GameCard({ game }: GameCardProps) {
-  const getPlacementIcon = (placement: number) => {
+  const getPlacementBadge = (placement: number) => {
     switch (placement) {
-      case 1: return '🥇'
-      case 2: return '🥈'
-      case 3: return '🥉'
-      case 4: return '💀'
-      default: return placement.toString()
+      case 1: return { text: '1st', color: 'bg-yellow-500 text-white' }
+      case 2: return { text: '2nd', color: 'bg-gray-400 text-white' }
+      case 3: return { text: '3rd', color: 'bg-orange-600 text-white' }
+      case 4: return { text: '4th', color: 'bg-red-600 text-white' }
+      default: return { text: placement.toString(), color: 'bg-muted text-muted-foreground' }
     }
   }
 
-  const getPlacementColor = (placement: number) => {
-    switch (placement) {
-      case 1: return 'text-yellow-600'
-      case 2: return 'text-gray-500'
-      case 3: return 'text-orange-600'
-      case 4: return 'text-red-600'
-      default: return 'text-muted-foreground'
-    }
-  }
 
   return (
     <Card>
@@ -140,9 +131,9 @@ function GameCard({ game }: GameCardProps) {
               className="flex items-center justify-between text-sm"
             >
               <div className="flex items-center gap-2">
-                <span className={cn("text-lg", getPlacementColor(player.placement))}>
-                  {getPlacementIcon(player.placement)}
-                </span>
+                <Badge className={cn("text-xs font-bold min-w-[40px] justify-center border-0", getPlacementBadge(player.placement).color)}>
+                  {getPlacementBadge(player.placement).text}
+                </Badge>
                 <span className="font-medium">{player.name}</span>
               </div>
               <div className="flex items-center gap-3">

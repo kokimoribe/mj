@@ -2,5 +2,5 @@
   "buildCommand": "turbo build --filter=web",
   "framework": "nextjs",
   "regions": ["sfo1"],
-  "installCommand": "pnpm install"
+  "installCommand": "pnpm install --no-frozen-lockfile"
 }

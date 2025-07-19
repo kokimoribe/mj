@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Home, Trophy, BarChart3, Settings, History } from 'lucide-react'
+import { Home, Trophy, BarChart3, Sliders, History } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navigation = [
@@ -27,7 +27,7 @@ const navigation = [
   { 
     name: 'Config', 
     href: '/playground', 
-    icon: Settings,
+    icon: Sliders,
     description: 'Playground'
   },
 ]

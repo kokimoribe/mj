@@ -8,10 +8,12 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { format, formatDistanceToNow } from 'date-fns'
-import { History, Calendar, Users } from 'lucide-react'
+import { History, Calendar, Users, Plus } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 
 export function GameHistoryView() {
+  const router = useRouter()
   const [limit, setLimit] = useState(20)
   const { data, isLoading, error } = useGameHistory(limit)
 
@@ -47,10 +49,19 @@ export function GameHistoryView() {
       {/* Header */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <History className="h-5 w-5" />
-            Recent Games
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <History className="h-5 w-5" />
+              Recent Games
+            </CardTitle>
+            <Button 
+              onClick={() => router.push('/games/new')}
+              size="sm"
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              New Game
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-between">

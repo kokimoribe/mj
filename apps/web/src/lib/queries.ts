@@ -16,6 +16,7 @@ export interface Player {
   averagePlusMinus: number
   bestGame: number
   worstGame: number
+  ratingChange?: number // Rating change since last game
 }
 
 export interface LeaderboardData {

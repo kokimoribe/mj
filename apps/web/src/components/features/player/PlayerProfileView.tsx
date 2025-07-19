@@ -1,16 +1,24 @@
 'use client'
 
+import { useState } from 'react'
 import { usePlayerProfile } from '@/lib/queries'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Progress } from '@/components/ui/progress'
-import { ArrowLeft, TrendingUp, Activity, Trophy, Target } from 'lucide-react'
+import { 
+  ArrowLeft, 
+  TrendingUp, 
+  TrendingDown, 
+  Trophy, 
+  ChartLine,
+  Calculator,
+  ChevronDown,
+  ChevronRight
+} from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { formatDistanceToNow } from 'date-fns'
+import { cn } from '@/lib/utils'
 
 interface PlayerProfileViewProps {
   playerId: string
@@ -19,6 +27,7 @@ interface PlayerProfileViewProps {
 export function PlayerProfileView({ playerId }: PlayerProfileViewProps) {
   const router = useRouter()
   const { data: player, isLoading, error } = usePlayerProfile(playerId)
+  const [showAdvancedStats, setShowAdvancedStats] = useState(false)
 
   if (isLoading) {
     return <PlayerProfileSkeleton />
@@ -44,9 +53,11 @@ export function PlayerProfileView({ playerId }: PlayerProfileViewProps) {
     )
   }
 
-  const winRate = 0.35 // Placeholder - will be calculated from game history
-  const avgPlacement = 2.4 // Placeholder
-  const consistency = 0.72 // Placeholder - sigma-based
+  // Mock calculations (would come from API)
+  const winRate = 35
+  const avgPlacement = 2.4
+  const recentTrend = player.ratingChange || 4.2
+  const seasonChange = 8.1
 
   return (
     <div className="space-y-6">
@@ -54,157 +65,186 @@ export function PlayerProfileView({ playerId }: PlayerProfileViewProps) {
       <Button
         variant="ghost"
         onClick={() => router.back()}
-        className="mb-4"
+        size="sm"
       >
         <ArrowLeft className="mr-2 h-4 w-4" />
         Back
       </Button>
 
-      {/* Player Header */}
+      {/* Player Header - Simplified */}
       <Card>
         <CardHeader>
           <div className="flex items-start justify-between">
             <div>
               <CardTitle className="text-2xl">{player.name}</CardTitle>
               <CardDescription>
-                Last played {formatDistanceToNow(new Date(player.lastGameDate), { addSuffix: true })}
+                Rank #{player.rating.toFixed(1)} • {player.games} games
               </CardDescription>
             </div>
-            <Badge variant="secondary" className="text-lg px-3 py-1">
-              #{player.rating.toFixed(2)}
-            </Badge>
           </div>
         </CardHeader>
+      </Card>
+
+      {/* Rating Trend */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ChartLine className="h-5 w-5" />
+            Rating Trend
+          </CardTitle>
+        </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Games Played</p>
-              <p className="text-2xl font-bold">{player.games}</p>
+          <div className="space-y-4">
+            {/* Simple trend visualization placeholder */}
+            <div className="h-32 bg-muted rounded flex items-center justify-center text-muted-foreground">
+              Rating chart will go here
             </div>
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Win Rate</p>
-              <p className="text-2xl font-bold">{(winRate * 100).toFixed(1)}%</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Avg Placement</p>
-              <p className="text-2xl font-bold">{avgPlacement.toFixed(2)}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Consistency</p>
-              <p className="text-2xl font-bold">{(consistency * 100).toFixed(0)}%</p>
+            
+            {/* Trend stats */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground">30-day change</p>
+                <p className={cn(
+                  "text-lg font-semibold flex items-center gap-1",
+                  recentTrend >= 0 ? "text-green-600" : "text-red-600"
+                )}>
+                  {recentTrend >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+                  {Math.abs(recentTrend).toFixed(1)}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Season total</p>
+                <p className={cn(
+                  "text-lg font-semibold flex items-center gap-1",
+                  seasonChange >= 0 ? "text-green-600" : "text-red-600"
+                )}>
+                  {seasonChange >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+                  {Math.abs(seasonChange).toFixed(1)}
+                </p>
+              </div>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Statistics Tabs */}
-      <Tabs defaultValue="performance" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="performance">Performance</TabsTrigger>
-          <TabsTrigger value="trends">Trends</TabsTrigger>
-          <TabsTrigger value="records">Records</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="performance" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Activity className="h-5 w-5" />
-                Rating Breakdown
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Skill (μ)</span>
-                  <span className="font-medium">{player.mu.toFixed(2)}</span>
-                </div>
-                <Progress value={(player.mu / 50) * 100} />
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Uncertainty (σ)</span>
-                  <span className="font-medium">{player.sigma.toFixed(2)}</span>
-                </div>
-                <Progress value={100 - (player.sigma / 10) * 100} />
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Lower uncertainty means more consistent performance
+      {/* Quick Stats */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Trophy className="h-5 w-5" />
+            Quick Stats
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm text-muted-foreground">Win Rate</p>
+              <p className="text-xl font-semibold">{winRate}%</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Avg Placement</p>
+              <p className="text-xl font-semibold">{avgPlacement.toFixed(1)}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Last Played</p>
+              <p className="text-sm font-medium">
+                {formatDistanceToNow(new Date(player.lastGameDate), { addSuffix: true })}
               </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="h-5 w-5" />
-                Score Performance
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Average +/-</span>
-                  <span className={`font-medium ${player.averagePlusMinus >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {player.averagePlusMinus >= 0 ? '+' : ''}{player.averagePlusMinus.toFixed(0)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Total +/-</span>
-                  <span className={`font-medium ${player.totalPlusMinus >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {player.totalPlusMinus >= 0 ? '+' : ''}{player.totalPlusMinus.toLocaleString()}
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="trends" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5" />
-                Recent Performance
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">
-                Rating trend chart coming soon...
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Best Game</p>
+              <p className="text-xl font-semibold text-green-600">
+                +{player.bestGame || 0}
               </p>
-            </CardContent>
-          </Card>
-        </TabsContent>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-        <TabsContent value="records" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Trophy className="h-5 w-5" />
-                Personal Records
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Best Game</span>
-                <span className="font-medium text-green-600">
-                  +{player.bestGame || 'N/A'}
+      {/* Recent Games */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Games</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            {/* Placeholder for recent games */}
+            <div className="text-sm text-muted-foreground">
+              Recent games will be displayed here
+            </div>
+            <Button variant="outline" className="w-full">
+              View All Games →
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Advanced Stats - Collapsed by default */}
+      <Card>
+        <CardHeader 
+          className="cursor-pointer"
+          onClick={() => setShowAdvancedStats(!showAdvancedStats)}
+        >
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Calculator className="h-5 w-5" />
+              Advanced Stats
+            </div>
+            {showAdvancedStats ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          </CardTitle>
+          <CardDescription>
+            For those curious about the rating mathematics
+          </CardDescription>
+        </CardHeader>
+        {showAdvancedStats && (
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">Skill (μ)</p>
+                <p className="text-lg font-mono">{player.mu.toFixed(2)}</p>
+                <p className="text-xs text-muted-foreground">Your estimated skill level</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">Uncertainty (σ)</p>
+                <p className="text-lg font-mono">{player.sigma.toFixed(2)}</p>
+                <p className="text-xs text-muted-foreground">Lower = more consistent</p>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <p className="text-sm font-medium">How Your Rating Works</p>
+              <p className="text-sm text-muted-foreground">
+                Your display rating ({player.rating.toFixed(1)}) = μ ({player.mu.toFixed(1)}) - 2σ ({(2 * player.sigma).toFixed(1)})
+              </p>
+              <p className="text-sm text-muted-foreground">
+                This conservative estimate ensures we&apos;re confident in your skill level.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Season Performance</p>
+              <div className="flex items-center justify-between text-sm">
+                <span>Total Points</span>
+                <span className={cn(
+                  "font-medium",
+                  player.totalPlusMinus >= 0 ? "text-green-600" : "text-red-600"
+                )}>
+                  {player.totalPlusMinus >= 0 ? '+' : ''}{player.totalPlusMinus.toLocaleString()} pts
                 </span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Worst Game</span>
-                <span className="font-medium text-red-600">
-                  {player.worstGame || 'N/A'}
+              <div className="flex items-center justify-between text-sm">
+                <span>Average per Game</span>
+                <span className={cn(
+                  "font-medium",
+                  player.averagePlusMinus >= 0 ? "text-green-600" : "text-red-600"
+                )}>
+                  {player.averagePlusMinus >= 0 ? '+' : ''}{player.averagePlusMinus.toFixed(0)} pts
                 </span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Longest Win Streak</span>
-                <span className="font-medium">N/A</span>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            </div>
+          </CardContent>
+        )}
+      </Card>
     </div>
   )
 }
@@ -213,8 +253,9 @@ function PlayerProfileSkeleton() {
   return (
     <div className="space-y-6">
       <Skeleton className="h-10 w-24" />
+      <Skeleton className="h-32 w-full" />
       <Skeleton className="h-48 w-full" />
-      <Skeleton className="h-96 w-full" />
+      <Skeleton className="h-64 w-full" />
     </div>
   )
 }

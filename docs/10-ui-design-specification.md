@@ -7,8 +7,9 @@ _Comprehensive UI/UX design document for the Riichi Mahjong League PWA_
 ### Core Design Philosophy
 
 - **Mobile-First**: iOS Safari optimized, PWA installable
-- **Data Dashboard**: Clean, analytical interface like Streamlit
-- **Configuration-Driven**: Real-time "what-if" experimentation
+- **Progressive Disclosure**: Clean surface, rich depths for exploration
+- **Context-Rich**: Every data point has meaning and explanation when needed
+- **Discovery-Oriented**: Hide complexity, reward curiosity
 - **Modern UI**: Shadcn/ui components with dark mode support
 - **Extensible**: Foundation for Phase 1 & 2 features
 
@@ -48,71 +49,82 @@ _Comprehensive UI/UX design document for the Riichi Mahjong League PWA_
 ```
 ┌─────────────────────────────────────────┐
 │ 🏆 Season 3 Leaderboard                 │
-│ 📊 24 games • 7 players • Updated 2h ago│
+│ 24 games • 7 players • Updated 2h ago   │
 ├─────────────────────────────────────────┤
-│ 🥇 1. Joseph  🟢  46.26    20 games +2.1│
-│ 🥈 2. Josh    🟡  39.18    16 games -0.8│
-│ 🥉 3. Mikey   🟢  35.95    23 games +0.4│
-│    4. Hyun    🟡  32.22    14 games -1.2│
-│    5. Koki    🟢  31.89    20 games +0.6│
-│    6. Alice   🔴  15.77     2 games +4.2│
-│    7. Frank   🔴   9.11     1 game  +9.1│
-├─────────────────────────────────────────┤
-│ 💡 Tap players for detailed rating info │
-│ 📊 Ratings: Conservative estimate (μ-2σ) │
+│ Joseph     46.3  ↑2.1    20 games      │
+│ Josh       39.2  ↓0.8    16 games      │
+│ Mikey      36.0  ↑0.4    23 games      │
+│ Hyun       32.2  ↓1.2    14 games      │
+│ Koki       31.9  ↑0.6    20 games      │
+│ Rayshone   20.5  ↑4.2     2 games      │
+│ Jackie     15.4  ↑9.1     1 game       │
 └─────────────────────────────────────────┘
 ```
 
-**Features:**
+**Surface Level Features:**
 
-- **Ranking badges**: 🥇🥈🥉 for top 3, numbers for others
-- **Activity indicators**: 
-  - 🟢 Active (last game <10 days)
-  - 🟡 Idle (10-28 days since last game)  
-  - 🔴 Inactive (>28 days since last game)
-- **Display rating**: Conservative estimate (μ - 2σ) for leaderboard sorting
-- **Rating deltas**: Change from previous calculation
-- **Tap for detailed rating**: Shows μ, σ, confidence intervals for curious users
-- **Rating system tooltip**: Explains OpenSkill algorithm and display calculation
+- **Clean layout**: Name, rating, trend, games played
+- **Trend indicators**: ↑↓ with rating change since last game
+- **Natural ranking**: Position implies rank (no badges needed)
+- **Tap to expand**: Each row expands to show quick stats
 - **Pull to refresh**: Update data with pull gesture
+
+**Expanded Card Features (on tap):**
+
+```
+┌─────────────────────────────────────────┐
+│ Joseph     46.3  ↑2.1    20 games      │
+├─────────────────────────────────────────┤
+│ 📊 Season Performance                   │
+│ Win Rate: 40% • Avg Place: 2.1         │
+│ Best Streak: 3 wins • Total: +8,965 pts│
+│                                         │
+│ Recent: 1st → 2nd → 3rd → 1st → 2nd    │
+│         [View Full Profile →]           │
+└─────────────────────────────────────────┘
+```
 
 ### 3. Player Profile View
 
 ```
 ┌─────────────────────────────────────────┐
-│ ← Joseph                            •••  │
-│ 🏆 #1 • 46.26 display • 20 games  🟢    │
-│ 💡 μ: 50.59 • σ: 2.17 • Confidence: 95% │
+│ ← Joseph                                │
+│ Rank #1 • Rating: 46.3 • 20 games      │
 ├─────────────────────────────────────────┤
-│ 📈 Rating History                       │
+│ 📈 Rating Trend                         │
 │     /\  /\                              │
-│    /  \/  \      Current: 46.26        │
-│   /        \__   Peak: 48.50           │
-│  /            \  Low: 42.13            │
+│    /  \/  \      Current: 46.3         │
+│   /        \__   30-day: ↑4.2          │
+│  /            \  Season: ↑8.1          │
 ├─────────────────────────────────────────┤
-│ 📊 Performance Stats                    │
-│ • Total Plus/Minus: +179,300           │
-│ • Average per game: +8,965             │
-│ • Best game: +45,200 (Jul 6)          │
-│ • Worst game: -15,800 (Jun 22)        │
+│ 🎯 Quick Stats                          │
+│ Win Rate: 40% (8/20)                    │
+│ Average Placement: 2.1                  │
+│ Last Played: 3 days ago                 │
 ├─────────────────────────────────────────┤
-│ 🎮 Recent Games (Last 3)               │
-│ Jul 6  • 1st place • +32,700 • 🆙 0.8  │
-│ Jul 3  • 2nd place • +15,200 • 🆙 0.3  │
-│ Jun 29 • 3rd place • -5,100  • 🔻 0.2  │
-│ [View All Games →]                      │
+│ 🎮 Recent Games                         │
+│ Jul 6  • 1st • +32,700 pts • ↑0.8      │
+│ Jul 3  • 2nd • +15,200 pts • ↑0.3      │
+│ Jul 1  • 3rd • -5,100 pts  • ↓0.2      │
+│                                         │
+│ [📊 Advanced Stats] [🎲 All Games]      │
 └─────────────────────────────────────────┘
 ```
 
-**Features:**
+**Progressive Disclosure Layers:**
 
-- **Detailed rating info**: Display rating, μ (skill), σ (uncertainty), confidence
-- **Activity status indicator**: Color-coded based on last game (10/28 day thresholds)
-- **Interactive rating chart**: Zoomable timeline with markers
-- **Performance highlights**: Best/worst games, streaks
-- **Recent games (3 default)**: Chronological list with rating deltas
-- **Full game history**: "View All Games" link for complete history
-- **Statistics carousel**: Swipe through different stat categories
+1. **Default View**: Shows essential performance metrics
+2. **Advanced Stats Tab**: 
+   - Season totals (+8,965 points from 20 games)
+   - Best/worst games with context
+   - Placement distribution chart
+   - Head-to-head records
+   - Favorite seat analysis
+3. **Rating Details** (collapsed by default):
+   - "How ratings work" explanation
+   - Current μ: 50.59, σ: 2.17
+   - Confidence intervals visualization
+   - Historical σ progression
 
 ### 4. Game History View
 
@@ -150,31 +162,48 @@ _Comprehensive UI/UX design document for the Riichi Mahjong League PWA_
 ┌─────────────────────────────────────────┐
 │ 📊 Season 3 Statistics                  │
 ├─────────────────────────────────────────┤
-│ 🎯 Overview                             │
-│ • Total games: 24                       │
-│ • Total players: 7                      │
-│ • Most active: Mikey (23 games)        │
-│ • Biggest win: +45,200 (Josh)          │
-├─────────────────────────────────────────┤
-│ 🪑 Seat Performance                     │
-│ East:  1.8 avg placement 🟢             │
-│ South: 2.2 avg placement 🟡             │
-│ West:  2.6 avg placement 🟠             │
-│ North: 3.4 avg placement 🔴             │
-├─────────────────────────────────────────┤
-│ 🏆 Mini Leaderboards                    │
-│ Most 1st places: Joseph (8)             │
-│ Most consistent: Alice (σ: 6.2)         │
-│ Biggest comeback: Koki (+67k recovery)  │
+│ Overview                                │
+│ 24 games played • 7 active players      │
+│                                         │
+│ 🏆 Records & Achievements               │
+│ Biggest Win: Josh (+45,200)             │
+│ Best Streak: Joseph (3 wins)            │
+│ Most Games: Mikey (23)                  │
+│                                         │
+│ [Explore More Stats →]                  │
 └─────────────────────────────────────────┘
 ```
 
-**Features:**
+**Exploration Sections (tap to reveal):**
 
-- **Overview cards**: Key metrics at a glance
-- **Visual indicators**: Color coding for performance
-- **Mini leaderboards**: Fun trivia stats
-- **Expandable sections**: Tap for detailed breakdowns
+1. **🎯 Placement Analysis**
+   - Average placements by player
+   - Distribution charts
+   - Improvement trends
+
+2. **🪑 Hidden Gem: Seat Performance**
+   - East: 1.8 avg placement ⭐
+   - South: 2.2 avg placement
+   - West: 2.6 avg placement
+   - North: 3.4 avg placement ⚠️
+   - "Did you know? East seat wins 35% more!"
+
+3. **📈 Rating Mathematics** (for the curious)
+   - Interactive OpenSkill explanation
+   - Why ratings change differently
+   - Margin of victory impacts
+
+4. **🎲 Fun Facts**
+   - Biggest comeback stories
+   - Unluckiest player metrics
+   - Head-to-head rivalries
+   - "Curse of the North Seat"
+
+**Design Principles:**
+- Start with highlights, let users dig deeper
+- Each section rewards exploration
+- Mix serious stats with fun discoveries
+- Visual charts over raw numbers
 
 ---
 
@@ -351,6 +380,68 @@ Muted:     #64748b (Slate 500)
 
 ---
 
+## 🏗️ Information Architecture
+
+### Navigation Hierarchy
+
+```
+App Root
+├── Home (Leaderboard)
+│   ├── Season selector
+│   ├── Player cards (expandable)
+│   └── Quick stats summary
+├── Players
+│   ├── Player list
+│   ├── Player profiles
+│   │   ├── Overview tab
+│   │   ├── Games tab
+│   │   └── Advanced tab (hidden stats)
+│   └── Comparison view
+├── Games
+│   ├── Recent games feed
+│   ├── Game details (expandable)
+│   ├── Filters (player, date)
+│   └── Season archive
+├── Stats
+│   ├── Season overview
+│   ├── Records & achievements
+│   ├── Hidden discoveries
+│   │   ├── Seat performance
+│   │   ├── Time-based analysis
+│   │   └── Weather correlations(?)
+│   └── Rating explorer
+└── Config (Phase 0.5)
+    ├── Parameter playground
+    ├── Live preview
+    ├── Saved configurations
+    └── Share & export
+```
+
+### Progressive Disclosure Strategy
+
+1. **Level 0 (Glance)**: Core info visible immediately
+   - Leaderboard rankings
+   - Current ratings
+   - Recent changes
+
+2. **Level 1 (Tap)**: Quick expansions
+   - Player card expansions
+   - Game summaries
+   - Stat highlights
+
+3. **Level 2 (Navigate)**: Dedicated views
+   - Full player profiles
+   - Detailed game history
+   - Statistics dashboard
+
+4. **Level 3 (Explore)**: Hidden treasures
+   - Advanced rating math
+   - Seat performance analysis
+   - Historical trends
+   - Fun correlations
+
+---
+
 ## 🧩 Shadcn/ui Component Mapping
 
 ### Core Components
@@ -364,25 +455,33 @@ Muted:     #64748b (Slate 500)
 
 ### Custom Components (Built on Shadcn/ui)
 
-- **RatingCard**: Player rating display with activity indicator
-- **GameHistoryItem**: Game result with expandable details
+- **ExpandablePlayerCard**: Leaderboard row that expands with animation
+- **RatingTrendChart**: Simplified line chart with touch interactions
+- **StatExplorerCard**: Reveals deeper stats on tap
 - **ConfigurationSlider**: Real-time parameter adjustment
-- **ComparisonTable**: Side-by-side rating comparison
-- **StatisticsGrid**: Dashboard metrics layout
+- **ProgressiveDisclosurePanel**: Container for hidden content
+- **ContextualTooltip**: Explains numbers on long-press
 
 ### Component Architecture
 
 ```typescript
-// Example: RatingCard component
-interface RatingCardProps {
+// Example: ExpandablePlayerCard component
+interface ExpandablePlayerCardProps {
   player: Player;
-  rank: number;
   rating: number;
+  ratingChange: number;
   games: number;
-  plusMinus: number;
-  isQualified: boolean;
-  activityStatus: "active" | "idle" | "inactive";
-  onTap: () => void;
+  isExpanded: boolean;
+  onToggle: () => void;
+}
+
+// Expanded state shows:
+interface PlayerCardExpansion {
+  winRate: number;
+  avgPlacement: number;
+  recentPlacements: number[];
+  seasonPerformance: number;
+  lastPlayed: string;
 }
 ```
 

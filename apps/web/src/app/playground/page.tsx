@@ -1,10 +1,10 @@
 import { AppLayout } from '@/components/layout/AppLayout'
-import { PlaygroundView } from '@/components/features/playground/PlaygroundView'
+import { EnhancedPlaygroundView } from '@/components/features/playground/EnhancedPlaygroundView'
 
 export default function PlaygroundPage() {
   return (
     <AppLayout>
-      <PlaygroundView />
+      <EnhancedPlaygroundView />
     </AppLayout>
   )
 }

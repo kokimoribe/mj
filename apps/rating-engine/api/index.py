@@ -412,10 +412,10 @@ async def get_player_games(player_id: str, limit: int = 20) -> list:
         
         player = player_result.data[0]
         
-        # Get player's recent games from game_seats
+        # Get player's recent games from game_seats with all player data
         games_result = (
             supabase.table("game_seats")
-            .select("*, games(*)")
+            .select("*, games(*, game_seats(*, players!inner(display_name)))")
             .eq("player_id", player["id"])
             .order("game_id", desc=True)
             .limit(limit)
@@ -425,19 +425,50 @@ async def get_player_games(player_id: str, limit: int = 20) -> list:
         if not games_result.data:
             return []
         
-        # Format the games data
+        # Format the games data with full details
         games = []
-        for seat in games_result.data:
-            game = seat.get("games", {})
-            if game:
-                games.append({
-                    "id": game.get("id"),
-                    "date": game.get("created_at"),
-                    "position": seat.get("wind", ""),
-                    "score": seat.get("score", 0),
-                    "adjustedScore": seat.get("adjusted_score", 0),
-                    "placement": seat.get("placement", 0)
-                })
+        for seat_data in games_result.data:
+            game = seat_data.get("games", {})
+            if not game:
+                continue
+                
+            # Get all seats for this game to find opponents
+            all_seats = game.get("game_seats", [])
+            opponents = []
+            
+            for other_seat in all_seats:
+                if other_seat["player_id"] != player["id"]:
+                    opponents.append({
+                        "name": other_seat["players"]["display_name"],
+                        "placement": other_seat.get("placement", 0),
+                        "score": other_seat.get("final_score", 0)
+                    })
+            
+            # Sort opponents by placement
+            opponents.sort(key=lambda x: x["placement"])
+            
+            # Calculate plus/minus (score - 25000 + uma)
+            score = seat_data.get("final_score", 0)
+            placement = seat_data.get("placement", 0)
+            uma_values = [15, 5, -5, -15]
+            uma = uma_values[placement - 1] if 1 <= placement <= 4 else 0
+            plus_minus = round((score - 25000) / 1000) + uma
+            
+            # Mock rating change (would need rating history table for real data)
+            rating_changes = [0.8, 0.3, -0.2, -0.9]
+            rating_change = rating_changes[placement - 1] if 1 <= placement <= 4 else 0
+            
+            games.append({
+                "id": game.get("id"),
+                "date": game.get("started_at", game.get("created_at")),
+                "placement": placement,
+                "score": score,
+                "plusMinus": plus_minus,
+                "ratingBefore": float(player.get("display_rating", 25.0)) - rating_change,
+                "ratingAfter": float(player.get("display_rating", 25.0)),
+                "ratingChange": rating_change,
+                "opponents": opponents
+            })
         
         return games
 

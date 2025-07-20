@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { usePlayerProfile } from '@/lib/queries'
+import { useState, useMemo } from 'react'
+import { usePlayerProfile, usePlayerGames } from '@/lib/queries'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -19,6 +19,8 @@ import {
 import { useRouter } from 'next/navigation'
 import { formatDistanceToNow } from 'date-fns'
 import { cn } from '@/lib/utils'
+import { RatingChart } from './RatingChart'
+import { PlayerGamesList } from './PlayerGamesList'
 
 interface PlayerProfileViewProps {
   playerId: string
@@ -27,6 +29,7 @@ interface PlayerProfileViewProps {
 export function PlayerProfileView({ playerId }: PlayerProfileViewProps) {
   const router = useRouter()
   const { data: player, isLoading, error } = usePlayerProfile(playerId)
+  const { data: gamesData, isLoading: gamesLoading } = usePlayerGames(playerId)
   const [showAdvancedStats, setShowAdvancedStats] = useState(false)
 
   if (isLoading) {
@@ -52,6 +55,37 @@ export function PlayerProfileView({ playerId }: PlayerProfileViewProps) {
       </div>
     )
   }
+
+  // Calculate rating history from games
+  const ratingHistory = useMemo(() => {
+    if (!gamesData || gamesData.length === 0) return []
+    
+    // Build rating history from games (newest to oldest)
+    const history = []
+    let currentRating = player.rating
+    
+    // Add current rating as the latest point
+    history.push({
+      date: new Date().toISOString(),
+      rating: currentRating,
+      gameId: 'current',
+      change: 0
+    })
+    
+    // Work backwards through games to build history
+    gamesData.forEach((game: any) => {
+      const previousRating = currentRating - (game.ratingChange || 0)
+      history.unshift({
+        date: game.date,
+        rating: previousRating,
+        gameId: game.id,
+        change: game.ratingChange || 0
+      })
+      currentRating = previousRating
+    })
+    
+    return history
+  }, [gamesData, player.rating])
 
   // Mock calculations (would come from API)
   const winRate = 35
@@ -95,10 +129,12 @@ export function PlayerProfileView({ playerId }: PlayerProfileViewProps) {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {/* Simple trend visualization placeholder */}
-            <div className="h-32 bg-muted rounded flex items-center justify-center text-muted-foreground">
-              Rating chart will go here
-            </div>
+            {/* Rating chart */}
+            {gamesLoading ? (
+              <Skeleton className="h-48 w-full" />
+            ) : (
+              <RatingChart data={ratingHistory} />
+            )}
             
             {/* Trend stats */}
             <div className="grid grid-cols-2 gap-4">
@@ -167,15 +203,18 @@ export function PlayerProfileView({ playerId }: PlayerProfileViewProps) {
           <CardTitle>Recent Games</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2">
-            {/* Placeholder for recent games */}
-            <div className="text-sm text-muted-foreground">
-              Recent games will be displayed here
+          {gamesLoading ? (
+            <Skeleton className="h-48 w-full" />
+          ) : gamesData && gamesData.length > 0 ? (
+            <PlayerGamesList 
+              playerId={playerId} 
+              initialGames={gamesData}
+            />
+          ) : (
+            <div className="text-sm text-muted-foreground text-center py-4">
+              No games played yet
             </div>
-            <Button variant="outline" className="w-full">
-              View All Games →
-            </Button>
-          </div>
+          )}
         </CardContent>
       </Card>
 

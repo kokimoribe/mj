@@ -22,12 +22,13 @@ test.describe('User Story: Understanding My Performance', () => {
     // He sees his current rating in the header
     await expect(page.getByText(/Rank #\d+\.\d+/)).toBeVisible();
     
-    // He sees a chart placeholder (will be implemented)
+    // He sees a rating trend chart
     const chartSection = page.getByText('Rating Trend').locator('..');
     await expect(chartSection).toBeVisible();
     
-    // For now, there's a placeholder
-    await expect(page.getByText('Rating chart will go here')).toBeVisible();
+    // The chart should be rendered (check for chart container or svg)
+    const chart = chartSection.locator('svg, canvas, [role="img"]').first();
+    await expect(chart).toBeVisible();
     
     await takeScreenshot(page, 'user-stories/mikey-views-rating-history');
   });
@@ -39,11 +40,28 @@ test.describe('User Story: Understanding My Performance', () => {
     // He should see a section for recent games
     await expect(page.getByText('Recent Games').first()).toBeVisible();
     
-    // Currently shows placeholder (to be implemented)
-    await expect(page.getByText('Recent games will be displayed here')).toBeVisible();
+    // He should see actual game entries
+    const gameEntries = page.locator('[data-testid^="player-game-"]');
+    const gameCount = await gameEntries.count();
+    expect(gameCount).toBeGreaterThan(0);
     
-    // He sees a button to view all games
-    await expect(page.getByRole('button', { name: /View All Games/ })).toBeVisible();
+    // First game should show required information
+    const firstGame = gameEntries.first();
+    
+    // Should show date
+    await expect(firstGame.getByText(/\w{3} \d{1,2}, \d{4}/)).toBeVisible();
+    
+    // Should show placement (1st, 2nd, etc)
+    await expect(firstGame.getByText(/1st|2nd|3rd|4th/)).toBeVisible();
+    
+    // Should show score and plus/minus
+    await expect(firstGame.getByText(/[+-]\d+/)).toBeVisible();
+    
+    // Should show rating change
+    await expect(firstGame.getByText(/↑|↓/)).toBeVisible();
+    
+    // He sees a button to load more games
+    await expect(page.getByRole('button', { name: /Load More|View All/ })).toBeVisible();
     
     await takeScreenshot(page, 'user-stories/josh-views-recent-games');
   });

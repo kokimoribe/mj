@@ -73,6 +73,23 @@ export function usePlayerProfile(playerId: string) {
   })
 }
 
+// Player game history
+export function usePlayerGames(playerId: string, limit: number = 5) {
+  return useQuery({
+    queryKey: ['player-games', playerId, limit],
+    queryFn: async () => {
+      const response = await fetch(`${API_BASE_URL}/players/${playerId}/games?limit=${limit}`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch player games')
+      }
+      return response.json()
+    },
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    enabled: !!playerId,
+  })
+}
+
 // Game history queries
 export function useGameHistory(limit?: number) {
   return useQuery({

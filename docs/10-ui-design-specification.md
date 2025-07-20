@@ -73,14 +73,14 @@ _Comprehensive UI/UX design document for the Riichi Mahjong League PWA_
 
 ```
 ┌─────────────────────────────────────────┐
-│ Joseph     46.3  ↑2.1    20 games      │
+│ Joseph     46.3  ↑2.1    20 games       │
 ├─────────────────────────────────────────┤
-│ 📊 Season Performance                   │
-│ Win Rate: 40% • Avg Place: 2.1         │
-│ Best Streak: 3 wins • Total: +8,965 pts│
+│ Avg Placement: 2.1                      │
+│ Rating history:                         |
+| <rating history graph goes here>        |
 │                                         │
-│ Recent: 1st → 2nd → 3rd → 1st → 2nd    │
-│         [View Full Profile →]           │
+│ Recent games:                           │
+│ [View Full Profile →]                   │
 └─────────────────────────────────────────┘
 ```
 
@@ -89,7 +89,7 @@ _Comprehensive UI/UX design document for the Riichi Mahjong League PWA_
 ```
 ┌─────────────────────────────────────────┐
 │ ← Joseph                                │
-│ Rank #1 • Rating: 46.3 • 20 games      │
+│ Rank #1 (placement in leaderboard) • Rating: 46.3 • 20 games      │
 ├─────────────────────────────────────────┤
 │ 📈 Rating Trend                         │
 │     /\  /\                              │
@@ -98,28 +98,23 @@ _Comprehensive UI/UX design document for the Riichi Mahjong League PWA_
 │  /            \  Season: ↑8.1          │
 ├─────────────────────────────────────────┤
 │ 🎯 Quick Stats                          │
-│ Win Rate: 40% (8/20)                    │
 │ Average Placement: 2.1                  │
 │ Last Played: 3 days ago                 │
 ├─────────────────────────────────────────┤
 │ 🎮 Recent Games                         │
-│ Jul 6  • 1st • +32,700 pts • ↑0.8      │
+│ Jul 6  • 1st • +32,700 pts • ↑0.8 (link to game details)      │
 │ Jul 3  • 2nd • +15,200 pts • ↑0.3      │
 │ Jul 1  • 3rd • -5,100 pts  • ↓0.2      │
 │                                         │
-│ [📊 Advanced Stats] [🎲 All Games]      │
+│ [📊 Advanced Stats] [🎲 All Games] (link to all game logs)     │
 └─────────────────────────────────────────┘
 ```
 
 **Progressive Disclosure Layers:**
 
 1. **Default View**: Shows essential performance metrics
-2. **Advanced Stats Tab**: 
-   - Season totals (+8,965 points from 20 games)
-   - Best/worst games with context
-   - Placement distribution chart
-   - Head-to-head records
-   - Favorite seat analysis
+2. **Advanced Stats Tab**:
+   - More advanced stats will be developed later
 3. **Rating Details** (collapsed by default):
    - "How ratings work" explanation
    - Current μ: 50.59, σ: 2.17
@@ -200,6 +195,7 @@ _Comprehensive UI/UX design document for the Riichi Mahjong League PWA_
    - "Curse of the North Seat"
 
 **Design Principles:**
+
 - Start with highlights, let users dig deeper
 - Each section rewards exploration
 - Mix serious stats with fun discoveries

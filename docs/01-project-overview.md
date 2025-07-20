@@ -11,7 +11,6 @@ Create a **Progressive Web App (PWA)** to track Riichi Mahjong games and ranking
 ### Core Requirements
 
 - **Mobile-first**: PWA optimized for iOS (no native app needed)
-- **Seasonal**: 12-week seasons with qualification requirements
 - **Social**: Hype-driven leaderboard that rewards skill and participation
 - **Hobby-scale**: Single location, ~20 players, 2 mahjong tables
 
@@ -26,13 +25,11 @@ Create a **Progressive Web App (PWA)** to track Riichi Mahjong games and ranking
 - **Track statistics** like tsumo rate, riichi rate, deal-in rate
 - **Get notifications** for scheduled games
 - **Set availability** for game scheduling (Phase 2)
+- **Explore data** with configurable rules)
 
 ### League Commissioner (Admin)
 
 - **Record game results** manually (Phase 0) or via webapp (Phase 1)
-- **Manage seasons** with configurable rules
-- **Monitor player activity** and rating decay
-- **Schedule games** based on player availability (Phase 2)
 
 ---
 
@@ -68,9 +65,7 @@ Create a **Progressive Web App (PWA)** to track Riichi Mahjong games and ranking
 
 - **Configuration UI**: Sliders and controls for all rating parameters
 - **Live Preview**: See how rule changes affect current rankings
-- **Smart Caching**: Hash-based caching for instant configuration switching
-- **Compare Mode**: Side-by-side comparison of different rule sets
-- **Save Configurations**: Users can save and share interesting rule combinations
+- **Save Configurations**: Users can save rule combinations
 
 **Key Innovation**: Source data remains season-agnostic; all rating logic is configuration-driven
 
@@ -144,9 +139,8 @@ Create a **Progressive Web App (PWA)** to track Riichi Mahjong games and ranking
 
 ### Season Rules
 
-- **Length**: 12 weeks
-- **Qualification**: ≥ 8 games
-- **Safety Net**: Drop worst 2 games
+- **Length**: configurable per season (roughly 12 weeks)
+- **Qualification**: Every player is already qualified
 - **Decay**: σ \*= 1.02 weekly if inactive
 
 _See [Rating System](./05-rating-system.md) for detailed algorithm specification._
@@ -212,9 +206,7 @@ This separation ensures:
 ### Phase 0.5
 
 - 🎯 Interactive configuration playground implementation
-- 🎯 Smart caching system deployment
 - 🎯 User experimentation features
-- 🎯 Cache performance >90% hit rate
 
 ### Phase 1
 
@@ -224,9 +216,9 @@ This separation ensures:
 
 ### Phase 2
 
-- ✅ 80% of games scheduled automatically
-- ✅ <24 hour average from queue to scheduled game
-- ✅ Zero scheduling conflicts
+- 🎯80% of games scheduled automatically
+- 🎯 <24 hour average from queue to scheduled game
+- 🎯 Zero scheduling conflicts
 
 ---
 

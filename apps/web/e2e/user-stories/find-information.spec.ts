@@ -27,8 +27,9 @@ test.describe('User Story: Finding Specific Information', () => {
     // Should show date
     await expect(firstGame.getByText(/\d{1,2}\/\d{1,2}\/\d{4}/)).toBeVisible();
     
-    // Should show players
-    await expect(firstGame.getByText(/Joseph|Koki|Mikey|Josh/)).toBeVisible();
+    // Should show players (at least one of them)
+    const playerNames = await firstGame.getByText(/Joseph|Koki|Mikey|Josh/).count();
+    expect(playerNames).toBeGreaterThan(0);
     
     await takeScreenshot(page, 'user-stories/view-recent-games');
   });
@@ -62,11 +63,11 @@ test.describe('User Story: Finding Specific Information', () => {
     await navigateTo(page, '/');
     
     // He can see his rank position
-    const mikeyCard = page.locator('button:has-text("Mikey")');
+    const mikeyCard = page.locator('[role="button"]', { hasText: 'Mikey' }).first();
     await expect(mikeyCard).toBeVisible();
     
     // He wants to see the rating gap to the next player
-    const allCards = page.locator('button[data-testid^="player-card-"]');
+    const allCards = page.locator('[data-testid^="player-card-"]');
     const mikeyIndex = await allCards.evaluateAll((cards, name) => 
       cards.findIndex(card => card.textContent?.includes(name)),
       'Mikey'

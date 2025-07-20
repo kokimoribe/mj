@@ -85,7 +85,7 @@ function LeaderboardViewComponent() {
 
 export const LeaderboardView = React.memo(LeaderboardViewComponent)
 
-const LeaderboardSkeleton = React.memo(() => {
+const LeaderboardSkeleton = React.memo(function LeaderboardSkeleton() {
   return (
     <div className="space-y-6">
       {/* Header skeleton */}

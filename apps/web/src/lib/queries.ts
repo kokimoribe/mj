@@ -3,6 +3,7 @@ import { hash } from 'ohash'
 import type { RatingConfiguration } from '@/stores/configStore'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://mj-skill-rating.vercel.app'
+const USE_LOCAL_API = false // Use Python API for now
 
 export interface Player {
   id: string
@@ -61,7 +62,8 @@ export function usePlayerProfile(playerId: string) {
   return useQuery({
     queryKey: ['player', playerId],
     queryFn: async (): Promise<Player> => {
-      const response = await fetch(`${API_BASE_URL}/players/${playerId}`)
+      const url = USE_LOCAL_API ? `/api/players/${playerId}` : `${API_BASE_URL}/players/${playerId}`
+      const response = await fetch(url)
       if (!response.ok) {
         throw new Error('Failed to fetch player profile')
       }
@@ -78,7 +80,10 @@ export function usePlayerGames(playerId: string, limit: number = 5) {
   return useQuery({
     queryKey: ['player-games', playerId, limit],
     queryFn: async () => {
-      const response = await fetch(`${API_BASE_URL}/players/${playerId}/games?limit=${limit}`)
+      const url = USE_LOCAL_API 
+        ? `/api/players/${playerId}/games?limit=${limit}`
+        : `${API_BASE_URL}/players/${playerId}/games?limit=${limit}`
+      const response = await fetch(url)
       if (!response.ok) {
         throw new Error('Failed to fetch player games')
       }

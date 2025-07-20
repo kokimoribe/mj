@@ -32,33 +32,9 @@ export function PlayerProfileView({ playerId }: PlayerProfileViewProps) {
   const { data: gamesData, isLoading: gamesLoading } = usePlayerGames(playerId)
   const [showAdvancedStats, setShowAdvancedStats] = useState(false)
 
-  if (isLoading) {
-    return <PlayerProfileSkeleton />
-  }
-
-  if (error || !player) {
-    return (
-      <div className="space-y-4">
-        <Button
-          variant="ghost"
-          onClick={() => router.back()}
-          className="mb-4"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back
-        </Button>
-        <Alert variant="destructive">
-          <AlertDescription>
-            Failed to load player profile
-          </AlertDescription>
-        </Alert>
-      </div>
-    )
-  }
-
   // Calculate rating history from games
   const ratingHistory = useMemo(() => {
-    if (!gamesData || gamesData.length === 0) return []
+    if (!gamesData || gamesData.length === 0 || !player) return []
     
     // Build rating history from games (newest to oldest)
     const history = []
@@ -85,7 +61,31 @@ export function PlayerProfileView({ playerId }: PlayerProfileViewProps) {
     })
     
     return history
-  }, [gamesData, player.rating])
+  }, [gamesData, player?.rating])
+
+  if (isLoading) {
+    return <PlayerProfileSkeleton />
+  }
+
+  if (error || !player) {
+    return (
+      <div className="space-y-4">
+        <Button
+          variant="ghost"
+          onClick={() => router.back()}
+          className="mb-4"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back
+        </Button>
+        <Alert variant="destructive">
+          <AlertDescription>
+            Failed to load player profile
+          </AlertDescription>
+        </Alert>
+      </div>
+    )
+  }
 
   // Mock calculations (would come from API)
   const winRate = 35

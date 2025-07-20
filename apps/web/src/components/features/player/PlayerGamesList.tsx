@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { format } from 'date-fns'
-import { Trophy, TrendingUp, TrendingDown, Users } from 'lucide-react'
+import { TrendingUp, TrendingDown, Users } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface PlayerGame {

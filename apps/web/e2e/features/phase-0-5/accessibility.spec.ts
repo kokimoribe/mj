@@ -28,7 +28,7 @@ test.describe('Phase 0.5: Accessibility Features', () => {
     // Tab through navigation
     for (let i = 0; i < 5; i++) {
       await page.keyboard.press('Tab');
-      focusedElement = await page.evaluate(() => ({
+      const focusedElementInfo = await page.evaluate(() => ({
         tag: document.activeElement?.tagName,
         text: document.activeElement?.textContent,
         ariaLabel: document.activeElement?.getAttribute('aria-label'),

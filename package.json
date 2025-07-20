@@ -19,10 +19,13 @@
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "verify": "turbo lint && turbo type-check && turbo build",
     "verify:web": "turbo lint --filter=web && turbo type-check --filter=web && turbo build --filter=web",
-    "pre-deploy": "npm run verify:web"
+    "pre-deploy": "npm run verify:web",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@turbo/gen": "^2.5.4",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.2",
     "prettier": "^3.6.2",
     "prettier-plugin-tailwindcss": "^0.6.9",
     "turbo": "^2.5.4",
@@ -34,5 +37,16 @@
   },
   "dependencies": {
     "dotenv": "^17.2.0"
+  },
+  "lint-staged": {
+    "apps/web/**/*.{js,jsx,ts,tsx}": [
+      "cd apps/web && npx next lint --fix --file"
+    ],
+    "apps/rating-engine/**/*.py": [
+      "cd apps/rating-engine && ruff check --fix"
+    ],
+    "**/*.{js,jsx,ts,tsx,md,json}": [
+      "prettier --write"
+    ]
   }
 }

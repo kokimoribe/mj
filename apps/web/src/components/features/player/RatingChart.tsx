@@ -8,8 +8,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
-  Dot
+  ResponsiveContainer
 } from 'recharts'
 import { format } from 'date-fns'
 

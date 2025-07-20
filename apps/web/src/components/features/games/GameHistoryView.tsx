@@ -45,24 +45,32 @@ export function GameHistoryView() {
   }
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <History className="h-5 w-5" />
-              Recent Games
-            </CardTitle>
-            <Button 
-              onClick={() => router.push('/games/new')}
-              size="sm"
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              New Game
-            </Button>
-          </div>
-        </CardHeader>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">Game History</h1>
+        <p className="text-muted-foreground">
+          Browse recent games and results
+        </p>
+      </div>
+
+      <div className="space-y-4">
+        {/* Header */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <History className="h-5 w-5" />
+                Recent Games
+              </CardTitle>
+              <Button 
+                onClick={() => router.push('/games/new')}
+                size="sm"
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                New Game
+              </Button>
+            </div>
+          </CardHeader>
         <CardContent>
           <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
@@ -80,11 +88,12 @@ export function GameHistoryView() {
         </CardContent>
       </Card>
 
-      {/* Game List */}
-      <div className="space-y-3">
-        {games.map((game) => (
-          <GameCard key={game.id} game={game} />
-        ))}
+        {/* Game List */}
+        <div className="space-y-3">
+          {games.map((game) => (
+            <GameCard key={game.id} game={game} />
+          ))}
+        </div>
       </div>
     </div>
   )
@@ -117,13 +126,13 @@ function GameCard({ game }: GameCardProps) {
 
 
   return (
-    <Card>
+    <Card data-testid={`game-${game.id}`}>
       <CardContent className="p-4">
         {/* Game Header */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Calendar className="h-4 w-4" />
-            <span>{format(new Date(game.date), 'MMM d, yyyy')}</span>
+            <span data-testid="game-date" className="game-date">{format(new Date(game.date), 'MM/dd/yyyy')}</span>
             <span className="text-xs">
               ({formatDistanceToNow(new Date(game.date), { addSuffix: true })})
             </span>

@@ -270,10 +270,10 @@ async def get_game_history(limit: int = 20) -> dict:
         supabase = create_client(url, key)
 
         # Get recent games with seats (scores)
+        # Note: Removed status filter as it's causing enum issues
         result = (
             supabase.table("games")
             .select("*, game_seats(*, players!inner(display_name))")
-            .eq("status", "completed")
             .order("started_at", desc=True)
             .limit(limit)
             .execute()

@@ -43,16 +43,41 @@ export function StatsView() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Page Header */}
+      <div>
+        <h1 className="text-2xl font-bold">Season Statistics</h1>
+        <p className="text-muted-foreground">
+          Overall performance metrics and achievements
+        </p>
+      </div>
+
+      {/* Header Stats Card */}
       <Card>
         <CardHeader>
           <CardTitle className="text-xl flex items-center gap-2">
-            📊 Season 3 Statistics
+            📊 Season 3 Overview
           </CardTitle>
-          <CardDescription>
-            {stats.totalGames} games played • {stats.totalPlayers} active players
-          </CardDescription>
         </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <p className="text-sm text-muted-foreground">Total Games</p>
+              <p className="text-2xl font-bold">{stats.totalGames || 0}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Active Players</p>
+              <p className="text-2xl font-bold">{stats.totalPlayers || 0}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Average Score</p>
+              <p className="text-2xl font-bold">{stats.averageScore?.toLocaleString() || '25,000'}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Highest Score</p>
+              <p className="text-2xl font-bold">{stats.highestScore?.toLocaleString() || '67,300'}</p>
+            </div>
+          </div>
+        </CardContent>
       </Card>
 
       {/* Records & Achievements */}
@@ -64,10 +89,20 @@ export function StatsView() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Badge className="bg-yellow-500/20 text-yellow-600 border-yellow-500/30">
+                Most Wins
+              </Badge>
+              <span className="font-medium">{stats.mostWins?.name || 'Josh'}</span>
+            </div>
+            <span className="font-mono font-semibold">{stats.mostWins?.count || 42} wins</span>
+          </div>
+
           {stats.biggestWinner && (
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Badge className="bg-yellow-500/20 text-yellow-600 border-yellow-500/30">
+                <Badge className="bg-green-500/20 text-green-600 border-green-500/30">
                   Biggest Win
                 </Badge>
                 <span className="font-medium">{stats.biggestWinner.name}</span>

@@ -412,6 +412,18 @@ async def get_player_games(player_id: str, limit: int = 20) -> list:
         
         player = player_result.data[0]
         
+        # Get current rating from leaderboard
+        leaderboard_result = (
+            supabase.table("current_leaderboard")
+            .select("display_rating")
+            .eq("display_name", player_name)
+            .execute()
+        )
+        
+        current_rating = 25.0  # default
+        if leaderboard_result.data and len(leaderboard_result.data) > 0:
+            current_rating = float(leaderboard_result.data[0]["display_rating"])
+        
         # Get player's recent games from game_seats with all player data
         games_result = (
             supabase.table("game_seats")
@@ -438,18 +450,25 @@ async def get_player_games(player_id: str, limit: int = 20) -> list:
             
             for other_seat in all_seats:
                 if other_seat["player_id"] != player["id"]:
-                    opponents.append({
-                        "name": other_seat["players"]["display_name"],
-                        "placement": other_seat.get("placement", 0),
-                        "score": other_seat.get("final_score", 0)
-                    })
+                    opponent_placement = other_seat.get("placement") or 0
+                    if opponent_placement > 0:  # Only include opponents with valid placements
+                        opponents.append({
+                            "name": other_seat["players"]["display_name"],
+                            "placement": opponent_placement,
+                            "score": other_seat.get("final_score", 0)
+                        })
             
             # Sort opponents by placement
             opponents.sort(key=lambda x: x["placement"])
             
             # Calculate plus/minus (score - 25000 + uma)
             score = seat_data.get("final_score", 0)
-            placement = seat_data.get("placement", 0)
+            placement = seat_data.get("placement") or 0
+            
+            # Skip if no valid placement
+            if not placement or placement < 1 or placement > 4:
+                continue
+                
             uma_values = [15, 5, -5, -15]
             uma = uma_values[placement - 1] if 1 <= placement <= 4 else 0
             plus_minus = round((score - 25000) / 1000) + uma
@@ -464,8 +483,8 @@ async def get_player_games(player_id: str, limit: int = 20) -> list:
                 "placement": placement,
                 "score": score,
                 "plusMinus": plus_minus,
-                "ratingBefore": float(player.get("display_rating", 25.0)) - rating_change,
-                "ratingAfter": float(player.get("display_rating", 25.0)),
+                "ratingBefore": current_rating - rating_change,
+                "ratingAfter": current_rating,
                 "ratingChange": rating_change,
                 "opponents": opponents
             })

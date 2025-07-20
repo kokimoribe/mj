@@ -14,9 +14,10 @@ interface ExpandablePlayerCardProps {
   rank: number
   isExpanded: boolean
   onToggle: () => void
+  'data-testid'?: string
 }
 
-function ExpandablePlayerCardComponent({ player, isExpanded, onToggle }: ExpandablePlayerCardProps) {
+function ExpandablePlayerCardComponent({ player, isExpanded, onToggle, 'data-testid': dataTestId }: ExpandablePlayerCardProps) {
   const router = useRouter()
 
   const handleProfileClick = (e: React.MouseEvent) => {
@@ -40,6 +41,7 @@ function ExpandablePlayerCardComponent({ player, isExpanded, onToggle }: Expanda
       tabIndex={0}
       aria-expanded={isExpanded}
       aria-label={`${player.name} - Rank ${player.rating.toFixed(1)} - Click to ${isExpanded ? 'collapse' : 'expand'} details`}
+      data-testid={dataTestId}
       className={cn(
         "cursor-pointer transition-all duration-200",
         "hover:shadow-md active:scale-[0.99]",

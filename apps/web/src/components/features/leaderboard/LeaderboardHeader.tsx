@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { RefreshCw } from "lucide-react"
+import { TEST_IDS } from '@/lib/test-ids'
 
 interface LeaderboardHeaderProps {
   seasonName: string
@@ -9,6 +10,7 @@ interface LeaderboardHeaderProps {
   lastUpdated: string
   onRefresh?: () => void
   isRefreshing?: boolean
+  'data-testid'?: string
 }
 
 export function LeaderboardHeader({
@@ -17,7 +19,8 @@ export function LeaderboardHeader({
   totalPlayers,
   lastUpdated,
   onRefresh,
-  isRefreshing = false
+  isRefreshing = false,
+  'data-testid': dataTestId
 }: LeaderboardHeaderProps) {
   const formatLastUpdated = (dateString: string) => {
     const date = new Date(dateString)
@@ -33,7 +36,7 @@ export function LeaderboardHeader({
   }
 
   return (
-    <Card>
+    <Card data-testid={dataTestId || TEST_IDS.LEADERBOARD_HEADER}>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-xl font-bold">
@@ -45,6 +48,7 @@ export function LeaderboardHeader({
             className="h-8 w-8"
             onClick={onRefresh}
             disabled={isRefreshing}
+            data-testid={TEST_IDS.REFRESH_BUTTON}
           >
             <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
           </Button>

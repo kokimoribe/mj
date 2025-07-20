@@ -308,3 +308,11 @@ PHASE_0_BACKEND_REVIEW.md
 PROJECT_STATUS.md
 RATING_ENGINE_ANALYSIS.md
 VERCEL_DEPLOYMENT_INSTRUCTIONS.md
+
+# Playwright
+/apps/web/test-results/
+/apps/web/playwright-report/
+/apps/web/playwright/.cache/
+/apps/web/e2e/screenshots/
+/apps/web/e2e/.screenshots-temp/
+/apps/web/screenshot-review.html

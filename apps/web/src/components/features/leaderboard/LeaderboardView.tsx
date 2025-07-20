@@ -9,6 +9,7 @@ import { AlertCircle } from 'lucide-react'
 import { LeaderboardHeader } from './LeaderboardHeader'
 import { ExpandablePlayerCard } from './ExpandablePlayerCard'
 import { toast } from "sonner"
+import { TEST_IDS } from '@/lib/test-ids'
 
 function LeaderboardViewComponent() {
   const { data, isLoading, error, refetch, isRefetching } = useLeaderboard()
@@ -58,7 +59,7 @@ function LeaderboardViewComponent() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid={TEST_IDS.LEADERBOARD_VIEW}>
       <LeaderboardHeader
         seasonName={data.seasonName}
         totalGames={data.totalGames}
@@ -66,6 +67,7 @@ function LeaderboardViewComponent() {
         lastUpdated={data.lastUpdated}
         onRefresh={handleRefresh}
         isRefreshing={isRefetching}
+        data-testid={TEST_IDS.LEADERBOARD_HEADER}
       />
 
       <div className="space-y-2">
@@ -76,6 +78,7 @@ function LeaderboardViewComponent() {
             rank={index + 1}
             isExpanded={expandedCard === player.id}
             onToggle={() => handleCardToggle(player.id)}
+            data-testid={`${TEST_IDS.PLAYER_CARD}-${player.id}`}
           />
         ))}
       </div>

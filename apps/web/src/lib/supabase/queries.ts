@@ -1,5 +1,11 @@
 import { createClient } from "./client";
 import type { Player, LeaderboardData } from "../queries";
+import type {
+  CachedGameResult,
+  GameSeat,
+  GameWithResults,
+  CachedPlayerRating,
+} from "./types";
 
 // Default season configuration hash (hardcoded for Season 3)
 const DEFAULT_SEASON_CONFIG_HASH = "season_3_2024";
@@ -37,14 +43,16 @@ export async function fetchLeaderboardData(): Promise<LeaderboardData> {
   }
 
   // Transform data to match interface
-  const transformedPlayers: Player[] = (players || []).map(p => ({
+  const transformedPlayers: Player[] = (
+    (players as CachedPlayerRating[]) || []
+  ).map(p => ({
     id: p.player_id,
     name: p.players[0].name,
     rating: p.rating,
     mu: p.mu,
     sigma: p.sigma,
     games: p.games_played,
-    lastGameDate: p.last_game_date,
+    lastGameDate: p.last_game_date || "",
     totalPlusMinus: 0, // TODO: Calculate from games if needed
     averagePlusMinus: 0, // TODO: Calculate from games if needed
     bestGame: 0, // TODO: Calculate from games if needed
@@ -250,34 +258,42 @@ export async function fetchGameHistory(
   }
 
   // Transform the data to match our interface
-  const transformedGames: Game[] = (games || []).map(game => {
-    // Group results by game
-    const gameResults: GameResult[] = game.cached_game_results
-      .filter((result: any) => result.config_hash === currentSeasonConfigHash)
-      .map((result: any) => {
-        const seat = game.game_seats.find(
-          (seat: any) => seat.player_id === result.player_id
-        );
-        return {
-          playerId: result.player_id,
-          playerName: (seat?.players as any)?.name || "Unknown",
-          placement: result.placement,
-          rawScore: result.raw_score,
-          scoreAdjustment: result.score_delta,
-          ratingBefore: result.rating_before,
-          ratingAfter: result.rating_after,
-          ratingChange: result.rating_change,
-        };
-      })
-      .sort((a: GameResult, b: GameResult) => a.placement - b.placement);
+  const transformedGames: Game[] = ((games as GameWithResults[]) || []).map(
+    game => {
+      // Group results by game
+      const gameResults: GameResult[] = game.cached_game_results
+        .filter(
+          (result: CachedGameResult) =>
+            result.config_hash === currentSeasonConfigHash
+        )
+        .map((result: CachedGameResult) => {
+          const seat = game.game_seats.find(
+            (seat: GameSeat) => seat.player_id === result.player_id
+          );
+          return {
+            playerId: result.player_id,
+            playerName:
+              (Array.isArray(seat?.players)
+                ? seat?.players[0]?.name
+                : seat?.players?.name) || "Unknown",
+            placement: result.placement,
+            rawScore: result.raw_score,
+            scoreAdjustment: result.score_delta,
+            ratingBefore: result.rating_before,
+            ratingAfter: result.rating_after,
+            ratingChange: result.rating_change,
+          };
+        })
+        .sort((a: GameResult, b: GameResult) => a.placement - b.placement);
 
-    return {
-      id: game.id,
-      date: game.finished_at,
-      seasonId: currentSeasonConfigHash,
-      results: gameResults,
-    };
-  });
+      return {
+        id: game.id,
+        date: game.finished_at,
+        seasonId: currentSeasonConfigHash,
+        results: gameResults,
+      };
+    }
+  );
 
   return {
     games: transformedGames,

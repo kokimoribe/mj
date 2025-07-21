@@ -43,12 +43,9 @@ export function RatingChart({ data }: RatingChartProps) {
     );
   }
 
-  const CustomDot = (props: {
-    cx: number;
-    cy: number;
-    payload: { isLatest?: boolean };
-  }) => {
+  const CustomDot = (props: any) => {
     const { cx, cy, payload } = props;
+    if (!cx || !cy) return <></>; // Return empty fragment instead of null
 
     if (payload.isLatest) {
       return (
@@ -125,7 +122,7 @@ export function RatingChart({ data }: RatingChartProps) {
             dataKey="rating"
             stroke="hsl(var(--primary))"
             strokeWidth={2}
-            dot={CustomDot as any}
+            dot={CustomDot}
           />
         </LineChart>
       </ResponsiveContainer>

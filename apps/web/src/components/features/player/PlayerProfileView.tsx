@@ -32,7 +32,17 @@ import { PlayerGamesList } from "./PlayerGamesList";
 interface PlayerGame {
   id: string;
   date: string;
-  ratingChange?: number;
+  placement: number;
+  score: number;
+  plusMinus: number;
+  ratingBefore: number;
+  ratingAfter: number;
+  ratingChange: number;
+  opponents: Array<{
+    name: string;
+    placement: number;
+    score: number;
+  }>;
 }
 
 interface PlayerProfileViewProps {
@@ -95,6 +105,42 @@ export function PlayerProfileView({ playerId }: PlayerProfileViewProps) {
     return history;
   }, [gamesData, player]);
 
+  // Calculate statistics from game history
+  const avgPlacement = useMemo(() => {
+    if (!gamesData || gamesData.length === 0) return null;
+    const placements = gamesData
+      .map((g: any) => g.placement)
+      .filter((p: number) => p >= 1 && p <= 4);
+    if (placements.length === 0) return null;
+    const sum = placements.reduce((a: number, b: number) => a + b, 0);
+    return sum / placements.length;
+  }, [gamesData]);
+
+  const recentTrend = useMemo(() => {
+    if (!gamesData || gamesData.length === 0) return 0;
+    if (!player) return 0;
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const recentGames = gamesData.filter(
+      (g: any) => new Date(g.date) > thirtyDaysAgo
+    );
+    if (recentGames.length === 0) return player.ratingChange || 0;
+
+    return recentGames.reduce(
+      (sum: number, g: any) => sum + (g.ratingChange || 0),
+      0
+    );
+  }, [gamesData, player]);
+
+  const seasonChange = useMemo(() => {
+    if (!gamesData || gamesData.length === 0) return 0;
+    if (!player) return 0;
+    // Assuming season starts at 1500 rating (25 mu, 8.33 sigma => ~25-16.66 = 8.34)
+    const seasonStartRating = 8.34;
+    return player.rating - seasonStartRating;
+  }, [gamesData, player]);
+
   if (isLoading) {
     return <PlayerProfileSkeleton />;
   }
@@ -112,11 +158,6 @@ export function PlayerProfileView({ playerId }: PlayerProfileViewProps) {
       </div>
     );
   }
-
-  // Mock calculations (would come from API)
-  const avgPlacement = 2.4; // TODO: Calculate from game history
-  const recentTrend = player.ratingChange || 4.2; // TODO: Calculate 30-day change from game history
-  const seasonChange = 8.1; // TODO: Calculate season total change
 
   return (
     <div className="space-y-6">
@@ -211,7 +252,9 @@ export function PlayerProfileView({ playerId }: PlayerProfileViewProps) {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <p className="text-muted-foreground text-sm">Average Placement</p>
-              <p className="font-semibold">{avgPlacement.toFixed(1)}</p>
+              <p className="font-semibold">
+                {avgPlacement !== null ? avgPlacement.toFixed(1) : "—"}
+              </p>
             </div>
             <div className="flex items-center justify-between">
               <p className="text-muted-foreground text-sm">Last Played</p>

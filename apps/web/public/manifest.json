@@ -1,6 +1,6 @@
 {
   "name": "Riichi Mahjong League",
-  "short_name": "MJ League",
+  "short_name": "Mahjong",
   "description": "Track Riichi Mahjong ratings and games",
   "start_url": "/",
   "display": "standalone",

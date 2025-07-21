@@ -29,6 +29,12 @@ import { cn } from "@/lib/utils";
 import { RatingChart } from "./RatingChart";
 import { PlayerGamesList } from "./PlayerGamesList";
 
+interface PlayerGame {
+  id: string;
+  date: string;
+  ratingChange?: number;
+}
+
 interface PlayerProfileViewProps {
   playerId: string;
 }
@@ -75,7 +81,7 @@ export function PlayerProfileView({ playerId }: PlayerProfileViewProps) {
     });
 
     // Work backwards through games to build history
-    gamesData.forEach((game: any) => {
+    gamesData.forEach((game: PlayerGame) => {
       const previousRating = currentRating - (game.ratingChange || 0);
       history.unshift({
         date: game.date,

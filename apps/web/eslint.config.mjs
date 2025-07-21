@@ -20,6 +20,13 @@ const eslintConfig = [
       "no-console": ["warn", { allow: ["warn", "error"] }],
     },
   },
+  // Disable no-explicit-any warnings in test files
+  {
+    files: ["**/*.spec.ts", "**/*.spec.tsx", "**/*.test.ts", "**/*.test.tsx"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+    },
+  },
 ];
 
 export default eslintConfig;

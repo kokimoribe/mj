@@ -36,9 +36,8 @@ function ExpandablePlayerCardComponent({
 
   // Calculate stats from available data
   // Note: Without full game history in the leaderboard view, we can't calculate
-  // win rate and average placement. These would need to be added to the Player
+  // average placement. This would need to be added to the Player
   // interface or fetched on-demand when the card is expanded.
-  const winRate: number | null = null; // Not available without game history
   const avgPlacement: number | null = null; // Not available without game history
 
   return (
@@ -131,13 +130,7 @@ function ExpandablePlayerCardComponent({
         {isExpanded && (
           <div className="bg-muted/30 space-y-3 border-t px-4 py-4">
             {/* Quick Stats */}
-            <div className="grid grid-cols-3 gap-3 text-center">
-              <div>
-                <div className="text-muted-foreground text-sm">Win Rate:</div>
-                <div className="font-semibold">
-                  {winRate !== null ? `${winRate}%` : "—"}
-                </div>
-              </div>
+            <div className="grid grid-cols-2 gap-3 text-center">
               <div>
                 <div className="text-muted-foreground text-sm">
                   Avg Placement:

@@ -122,6 +122,9 @@ export function useGameHistory(playerId?: string, offset = 0, limit = 10) {
       if (limit) {
         url.searchParams.set("limit", limit.toString());
       }
+      if (playerId) {
+        url.searchParams.set("playerId", playerId);
+      }
 
       const response = await fetch(url);
       if (!response.ok) {
@@ -129,10 +132,30 @@ export function useGameHistory(playerId?: string, offset = 0, limit = 10) {
       }
       const data = await response.json();
 
-      // Transform to match GameHistoryData interface
+      // Transform API data to match component expectations
+      let transformedGames = (data.games || []).map((game: any) => ({
+        id: game.id,
+        date: game.date,
+        results: game.players.map((player: any) => ({
+          playerId: player.id || player.name.toLowerCase().replace(/\s+/g, "-"),
+          playerName: player.name,
+          placement: player.placement,
+          rawScore: player.score,
+          scoreAdjustment: player.plusMinus * 1000, // Convert to score adjustment
+          ratingChange: player.ratingDelta || 0,
+        })),
+      }));
+
+      // Client-side filtering if playerId is provided and API doesn't support it
+      if (playerId && !USE_SUPABASE) {
+        transformedGames = transformedGames.filter((game: any) =>
+          game.results.some((result: any) => result.playerId === playerId)
+        );
+      }
+
       return {
-        games: data.games || [],
-        totalGames: data.totalGames || 0,
+        games: transformedGames,
+        totalGames: transformedGames.length,
         hasMore: false,
         showingAll: false,
       };
@@ -151,9 +174,16 @@ export function useAllPlayers() {
         return fetchAllPlayers();
       }
 
-      // Fallback - extract unique players from leaderboard
-      const leaderboard = await fetchLeaderboardData();
-      return leaderboard.players.map(p => ({ id: p.id, name: p.name }));
+      // Fallback - fetch from API
+      const response = await fetch(`${API_BASE_URL}/leaderboard`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch leaderboard");
+      }
+      const data = await response.json();
+      return data.players.map((p: any) => ({
+        id: p.id || p.name.toLowerCase().replace(/\s+/g, "-"),
+        name: p.name,
+      }));
     },
     staleTime: 10 * 60 * 1000, // 10 minutes
     gcTime: 30 * 60 * 1000,
@@ -169,11 +199,16 @@ export function usePlayerGameCounts() {
         return fetchPlayerGameCounts();
       }
 
-      // Fallback - use data from leaderboard
-      const leaderboard = await fetchLeaderboardData();
+      // Fallback - fetch from API and calculate counts
+      const response = await fetch(`${API_BASE_URL}/leaderboard`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch leaderboard");
+      }
+      const data = await response.json();
       const counts: Record<string, number> = {};
-      leaderboard.players.forEach(p => {
-        counts[p.id] = p.games;
+      data.players.forEach((p: any) => {
+        const playerId = p.id || p.name.toLowerCase().replace(/\s+/g, "-");
+        counts[playerId] = p.games || 0;
       });
       return counts;
     },

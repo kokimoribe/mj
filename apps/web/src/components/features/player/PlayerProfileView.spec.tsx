@@ -35,24 +35,27 @@ vi.mock("date-fns", async importOriginal => {
   return {
     ...actual,
     formatDistanceToNow: vi.fn(() => "3 days ago"),
-    format: vi.fn((date, format) => {
+    format: vi.fn((date, formatStr) => {
       const d = new Date(date);
-      if (format === "MMM d") {
-        const months = [
-          "Jan",
-          "Feb",
-          "Mar",
-          "Apr",
-          "May",
-          "Jun",
-          "Jul",
-          "Aug",
-          "Sep",
-          "Oct",
-          "Nov",
-          "Dec",
-        ];
+      const months = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+      ];
+
+      if (formatStr === "MMM d") {
         return `${months[d.getMonth()]} ${d.getDate()}`;
+      } else if (formatStr === "MMM d, yyyy • h:mm a") {
+        return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()} • 12:00 AM`;
       }
       return d.toLocaleDateString();
     }),
@@ -180,8 +183,9 @@ describe("Player Profile Component Tests", () => {
 
       // Check header displays name
       expect(screen.getByText("Joseph")).toBeInTheDocument();
-      // NOTE: Currently showing rating as rank - needs to be fixed to show actual rank position
-      expect(screen.getByText(/Rank #46\.3/)).toBeInTheDocument();
+      // Check rank and rating are displayed correctly
+      expect(screen.getByText(/Rank #1/)).toBeInTheDocument(); // Joseph is first in leaderboard
+      expect(screen.getByText(/Rating: 46\.3/)).toBeInTheDocument();
       expect(screen.getByText(/20 games/)).toBeInTheDocument();
     });
 
@@ -206,9 +210,9 @@ describe("Player Profile Component Tests", () => {
 
       renderWithQuery(<PlayerProfileView playerId="mikey" />);
 
-      // NOTE: Currently showing rating instead of rank - needs implementation
-      // Mikey is 3rd in the leaderboard but shows rating
-      expect(screen.getByText(/Rank #36\.0/)).toBeInTheDocument();
+      // Mikey is 3rd in the leaderboard
+      expect(screen.getByText(/Rank #3/)).toBeInTheDocument();
+      expect(screen.getByText(/Rating: 36\.0/)).toBeInTheDocument();
     });
   });
 
@@ -237,8 +241,10 @@ describe("Player Profile Component Tests", () => {
       const chartSection = screen.getByTestId("rating-chart");
       expect(chartSection).toBeInTheDocument();
 
-      // Should show current rating
-      expect(screen.getByText(/Current: 46\.3/)).toBeInTheDocument();
+      // Chart section should show current rating (inside the mocked chart)
+      expect(
+        within(chartSection).getByText(/Current: 46\.3/)
+      ).toBeInTheDocument();
     });
 
     it("shows N/A for 30-day change when no data", () => {
@@ -353,12 +359,15 @@ describe("Player Profile Component Tests", () => {
 
       renderWithQuery(<PlayerProfileView playerId="joseph" />);
 
-      // NOTE: Currently called "Quick Stats" instead of "Performance Stats"
-      // and shows different stats than spec requires
-      expect(screen.getByText("Quick Stats")).toBeInTheDocument();
-      expect(screen.getByText(/Avg Placement/)).toBeInTheDocument();
-      // Average is hardcoded in component, not calculated from games
-      expect(screen.getByText(/2\.4/)).toBeInTheDocument();
+      // Check Performance Stats section
+      expect(screen.getByText("🎯")).toBeInTheDocument();
+      expect(screen.getByText("Performance Stats")).toBeInTheDocument();
+      const perfStats = screen.getByTestId("performance-stats");
+      expect(
+        within(perfStats).getByText(/Average Placement:/)
+      ).toBeInTheDocument();
+      // Average of placements 1 and 2 is 1.5
+      expect(within(perfStats).getByText(/1\.5/)).toBeInTheDocument();
     });
 
     it("shows last played date", () => {
@@ -408,8 +417,8 @@ describe("Player Profile Component Tests", () => {
 
       renderWithQuery(<PlayerProfileView playerId="joseph" />);
 
-      // NOTE: Win Rate is currently shown and needs to be removed
-      expect(screen.queryByText(/Win Rate/)).toBeInTheDocument();
+      // Win Rate should NOT be shown per specifications
+      expect(screen.queryByText(/Win Rate/)).not.toBeInTheDocument();
     });
   });
 
@@ -435,8 +444,11 @@ describe("Player Profile Component Tests", () => {
 
       renderWithQuery(<PlayerProfileView playerId="joseph" />);
 
-      // NOTE: Component doesn't show "Showing X of Y" - needs implementation
+      // Check the Recent Games section
       expect(screen.getByText(/Recent Games/)).toBeInTheDocument();
+      // There are two "Showing 5 of 10" texts, one in header and one in the games list
+      const showingTexts = screen.getAllByText(/Showing 5 of 10/);
+      expect(showingTexts).toHaveLength(2);
     });
 
     it("shows 5 games initially with client-side pagination", () => {
@@ -460,14 +472,13 @@ describe("Player Profile Component Tests", () => {
 
       renderWithQuery(<PlayerProfileView playerId="joseph" />);
 
-      // NOTE: Component loads data from API, not client-side pagination
-      // Also uses different test IDs
-      const gameEntries = screen.getAllByTestId(/^player-game-/);
-      expect(gameEntries).toHaveLength(10); // Shows all games
+      // Component shows 5 games initially
+      const gameEntries = screen.getAllByTestId(/^game-entry-/);
+      expect(gameEntries).toHaveLength(5); // Shows 5 games initially
 
-      // Should have "Load More Games" button
+      // Should have "Show More Games" button when there are more games
       expect(
-        screen.getByRole("button", { name: /Load More Games/ })
+        screen.getByRole("button", { name: /Show More Games/ })
       ).toBeInTheDocument();
     });
 
@@ -485,18 +496,18 @@ describe("Player Profile Component Tests", () => {
       } as any);
 
       vi.mocked(queries.usePlayerGames).mockReturnValue({
-        data: mockGamesData.slice(0, 5), // Only 5 games initially
+        data: mockGamesData, // Pass all 10 games (component shows 5 initially)
         isLoading: false,
         error: null,
       } as any);
 
       renderWithQuery(<PlayerProfileView playerId="joseph" />);
 
-      // NOTE: Component makes API call on button click, not client-side pagination
-      // This test would need to mock the fetch call
-      await expect(
-        screen.getByRole("button", { name: /Load More Games/ })
-      ).toBeInTheDocument();
+      // Component uses client-side pagination with "Show More Games" button
+      const showMoreButton = screen.getByRole("button", {
+        name: /Show More Games/,
+      });
+      expect(showMoreButton).toBeInTheDocument();
     });
 
     it("displays opponent names as clickable links", () => {
@@ -520,16 +531,17 @@ describe("Player Profile Component Tests", () => {
 
       renderWithQuery(<PlayerProfileView playerId="joseph" />);
 
-      const firstGame = screen.getByTestId("player-game-game1");
+      const firstGame = screen.getByTestId("game-entry-game1");
 
       // Should show vs. text
       expect(within(firstGame).getByText(/vs\./)).toBeInTheDocument();
 
-      // NOTE: Opponent names are NOT clickable links in current implementation
-      // They are shown as plain text
-      expect(
-        within(firstGame).getByText(/Josh, Mikey, Hyun/)
-      ).toBeInTheDocument();
+      // Opponent names are clickable links in the current implementation
+      const links = within(firstGame).getAllByRole("link");
+      const opponentLinks = links.filter(link =>
+        ["Josh", "Mikey", "Hyun"].includes(link.textContent || "")
+      );
+      expect(opponentLinks).toHaveLength(3);
     });
 
     it("shows correct game format", () => {
@@ -553,10 +565,10 @@ describe("Player Profile Component Tests", () => {
 
       renderWithQuery(<PlayerProfileView playerId="joseph" />);
 
-      const firstGame = screen.getByTestId("player-game-game1");
+      const firstGame = screen.getByTestId("game-entry-game1");
 
-      // Current format shows date differently than mocked
-      expect(within(firstGame).getByText(/1\/14\/2024/)).toBeInTheDocument();
+      // Date is formatted as "Jan 14, 2024 • 12:00 AM" by the component
+      expect(within(firstGame).getByText(/Jan 14, 2024/)).toBeInTheDocument();
       expect(within(firstGame).getByText(/1st Place/)).toBeInTheDocument();
       expect(within(firstGame).getByText(/32,700 pts/)).toBeInTheDocument();
       expect(within(firstGame).getByText(/↑0\.2/)).toBeInTheDocument();
@@ -701,10 +713,10 @@ describe("Player Profile Component Tests", () => {
       // NOTE: Back button doesn't have aria-label, the text is visible
       expect(backButton).toBeInTheDocument();
 
-      const loadMoreButton = screen.getByRole("button", {
-        name: /Load More Games/,
+      const showMoreButton = screen.getByRole("button", {
+        name: /Show More Games/,
       });
-      expect(loadMoreButton).toBeInTheDocument();
+      expect(showMoreButton).toBeInTheDocument();
     });
 
     it("supports keyboard navigation", () => {
@@ -728,14 +740,14 @@ describe("Player Profile Component Tests", () => {
 
       renderWithQuery(<PlayerProfileView playerId="joseph" />);
 
-      const loadMoreButton = screen.getByRole("button", {
-        name: /Load More Games/,
+      const showMoreButton = screen.getByRole("button", {
+        name: /Show More Games/,
       });
-      loadMoreButton.focus();
+      showMoreButton.focus();
 
-      expect(document.activeElement).toBe(loadMoreButton);
+      expect(document.activeElement).toBe(showMoreButton);
 
-      // NOTE: Load More functionality makes API call, not client-side pagination
+      // Show More functionality uses client-side pagination
     });
   });
 });

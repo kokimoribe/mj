@@ -22,6 +22,11 @@ import { format } from "date-fns";
 import { Calendar } from "lucide-react";
 import { testIds } from "@/lib/test-ids";
 
+interface Player {
+  id: string;
+  name: string;
+}
+
 export const GameHistoryView = memo(function GameHistoryView() {
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | undefined>(
     undefined
@@ -96,7 +101,7 @@ export const GameHistoryView = memo(function GameHistoryView() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Games</SelectItem>
-            {players?.map(player => {
+            {players?.map((player: Player) => {
               const count = gameCounts?.[player.id] || 0;
               return (
                 <SelectItem key={player.id} value={player.id}>

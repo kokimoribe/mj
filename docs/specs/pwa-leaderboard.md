@@ -101,9 +101,16 @@ The PWA Leaderboard is the primary landing page of the Riichi Mahjong League app
 └─────────────────────────────────────────┘
 ```
 
-**Note**: The sparkline shows the last 10 rating values from the `rating_history` array. If fewer than 10 games, show all available data points.
+**Note**: The sparkline shows the last 10 rating values from the `rating_history` array. If fewer than 10 games, show all available data points. The rating_history array should be materialized by the Python serverless function since it requires OpenSkill calculations.
 
 ## Technical Requirements
+
+### Data Architecture Notes
+
+- **Materialization**: All OpenSkill ratings (μ, σ, and derived rating) must be calculated by Python serverless function
+- **Supabase Triggers**: Rating materialization runs automatically when games are inserted/updated
+- **Real-time Updates**: "Updated X ago" shows time since last materialization (near real-time is sufficient)
+- **Data Access**: Direct Supabase queries are acceptable for this hobby project scale
 
 ### Data Model
 
@@ -114,7 +121,7 @@ interface Player {
   rating: number;
   ratingChange: number;
   gamesPlayed: number;
-  rank: number; // Calculated client-side based on rating order
+  rank: number; // Calculated client-side from leaderboard position
   ratingHistory?: number[]; // Array of last 10 ratings for sparkline
   averagePlacement?: number; // Calculated on-demand
   winRate?: number; // Calculated on-demand
@@ -137,6 +144,8 @@ interface LeaderboardData {
 
 ```typescript
 // Default season config hash (manually updated per season)
+// This hash references the configuration stored in Supabase
+// The frontend uses this default to fetch initial data
 const DEFAULT_SEASON_CONFIG_HASH = "season_3_2024"; // Update this value for new seasons
 
 // Get current season configuration
@@ -171,6 +180,7 @@ const { data: leaderboard } = await supabase
   .order("rating", { ascending: false });
 
 // Calculate season metadata client-side
+// Note: All metadata is derived from the player data to keep queries simple
 const seasonData = {
   totalGames: Math.max(...leaderboard.map(p => p.games_played)),
   activePlayers: leaderboard.length,
@@ -223,7 +233,7 @@ const { data: playerGameResults } = await supabase
 - **Time to Interactive**: < 1 second
 - **Refresh Action**: < 500ms with optimistic UI
 - **Card Expansion**: < 100ms animation
-- **Offline Support**: Show cached data when offline
+- **Offline Support**: Show cached data when offline (basic support, app may be non-functional without connection)
 
 ### PWA Requirements
 
@@ -313,8 +323,8 @@ const { data: playerGameResults } = await supabase
 3. **Tied Ratings**: Sort by rating (descending), then games played (descending), then name (alphabetically)
 4. **Very Long Names**: Truncate with ellipsis on mobile
 5. **Stale Data**: Show warning if data > 24 hours old
-6. **Query Failures**: Show stale data if available, otherwise error message
-7. **Offline Mode**: Basic functionality maintained, no pull-to-refresh
+6. **Query Failures**: Show stale data if available, otherwise simple error message (app may be non-functional)
+7. **Offline Mode**: Show cached data when available (up to 2 days old), app may be non-functional without connection
 
 ## Accessibility Requirements
 

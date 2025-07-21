@@ -84,8 +84,9 @@ The Player Profile page provides comprehensive information about an individual p
 1. **Rating Chart Interactions**
    - Tap/hover on data points to see exact values
    - Single green color (#10b981) for all data points
-   - Discrete points for each game (no line interpolation)
+   - Discrete points for each game (no connecting lines by default)
    - Highlight current rating point
+   - Simple scatter plot visualization (simpler is better)
 
 2. **Game History**
    - All games loaded initially (single query)
@@ -96,7 +97,7 @@ The Player Profile page provides comprehensive information about an individual p
    - Opponent names are clickable links to their profiles
 
 3. **Navigation**
-   - Back arrow returns to previous page
+   - Back arrow returns to leaderboard (simplest approach)
    - Swipe right to go back (iOS gesture)
    - Bottom navigation remains accessible
    - Direct URL access via `/player/[id]`
@@ -104,17 +105,18 @@ The Player Profile page provides comprehensive information about an individual p
 ### Rating Chart Specifications
 
 ```
-Chart Type: Scatter Plot with optional connecting lines
+Chart Type: Scatter Plot (discrete points only)
 X-axis: Date of games (chronological)
 Y-axis: Rating value (auto-scaled with padding)
 Data Points: One per game played
 Point Style: Filled circles, 6px diameter
 Colors:
-  - All points: Green (#10b981)
+  - All points: Green (#10b981) - single color regardless of trend
   - Current point: Highlighted with larger size (8px)
   - Background grid: Subtle gray
 Touch Feedback: Show tooltip with exact rating and date
 Chart Library: @shadcn/ui charts (based on Recharts)
+Note: Keep visualization simple - no interpolation or trend lines
 ```
 
 ### Game Entry Format
@@ -141,7 +143,7 @@ Chart Library: @shadcn/ui charts (based on Recharts)
 
 - Current rank - Calculated from leaderboard position
 - Average placement - Mean of all game placements
-- 30-day rating change - Calculated from game history
+- 30-day rating change - Delta between rating 30 days ago and now (show N/A if no games)
 - Season rating change - Calculated from first game rating
 
 **Runtime Queries:**
@@ -156,7 +158,7 @@ interface PlayerProfile {
   id: string;
   name: string;
   currentRating: number;
-  currentRank: number; // Position in leaderboard (calculated client-side)
+  currentRank: number; // Position in leaderboard (calculated client-side from cached leaderboard data)
   totalGamesPlayed: number;
   seasonStats: {
     averagePlacement: number; // Mean of all placements
@@ -202,6 +204,7 @@ interface PlayerProfileData {
 
 ```typescript
 // Configuration from environment or default
+// Must match the configuration used in leaderboard feature
 const currentSeasonConfigHash =
   process.env.NEXT_PUBLIC_SEASON_CONFIG_HASH || "season_3_2024";
 
@@ -233,7 +236,7 @@ const { data: leaderboard } = await supabase
   .eq("config_hash", currentSeasonConfigHash)
   .order("rating", { ascending: false });
 
-// Calculate rank client-side
+// Calculate rank client-side from cached leaderboard position
 const currentRank = leaderboard.findIndex(p => p.player_id === playerId) + 1;
 
 // Get ALL games for this player (no pagination in query)
@@ -412,7 +415,7 @@ const ratingChange30Days = ratingThirtyDaysAgo
 5. **Missing 30-day Data**: Show "N/A" for 30-day rating change
 6. **Rating Decrease Only**: Chart displays normally with green points
 7. **Timezone Handling**: Show dates in user's timezone
-8. **Name Changes**: Always show current name (queried by player_id)
+8. **Name Changes**: Always show current name (queried by player_id from denormalized database)
 9. **Tied Placements**: Display as provided by data
 10. **High Sigma (Provisional)**: Display same as established ratings
 
@@ -430,9 +433,11 @@ const ratingChange30Days = ratingThirtyDaysAgo
 1. **Removed Features**: The following features from existing tests should be removed as they don't align with the simplified requirements:
    - "Advanced Stats" toggle showing μ, σ, total points
    - "Quick Stats" section distinction
-   - Win rate calculations and display
+   - Win rate calculations and display (removed per feedback)
 2. **Configuration**: Use the same configuration hash as the leaderboard feature for consistency
 
-3. **Performance**: With expected < 100 games per player, loading all games at once is acceptable
+3. **Performance**: With expected < 100 games per player and < 20 users total, loading all games at once is acceptable
 
 4. **Chart Implementation**: Use @shadcn/ui charts for consistency with the design system
+
+5. **Development Environment**: Test against production Supabase data (no mock data needed)

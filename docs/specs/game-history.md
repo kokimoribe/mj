@@ -120,8 +120,8 @@ Raw Score → Adjusted Score
 
 ```
 Rating changes use the precision from the data:
-↑0.8 or ↑1.23 (based on actual value)
-↓0.5 or ↓0.567 (based on actual value)
+↑0.8 or ↑1.23 (display as provided by data)
+↓0.5 or ↓0.567 (display as provided by data)
 ```
 
 ### Date Format
@@ -129,7 +129,7 @@ Rating changes use the precision from the data:
 ```
 Use a simple, consistent format:
 "Jul 6, 2025 • 7:46 PM" (or similar readable format)
-Can use browser's default locale or a fixed format
+Browser's default locale is acceptable (all users are in same timezone)
 ```
 
 ## Technical Requirements
@@ -174,6 +174,7 @@ interface FilterOptions {
 
 ```typescript
 // Default season config hash (hardcoded for Season 3)
+// Must match configuration used in leaderboard and player profile features
 const DEFAULT_SEASON_CONFIG_HASH = "season_3_2024";
 const currentSeasonConfigHash = DEFAULT_SEASON_CONFIG_HASH;
 ```
@@ -259,7 +260,7 @@ const { data: allPlayers } = await supabase
 - **Filter Application**: < 300ms response time
 - **Load More**: < 500ms for additional games
 - **Scroll Performance**: 60fps during scroll
-- **Memory Management**: Virtualize list if > 50 games
+- **Memory Management**: Simple pagination is sufficient (no virtualization needed for hobby project scale)
 
 ## Success Criteria
 
@@ -349,7 +350,7 @@ const { data: allPlayers } = await supabase
 ### Player Filter Rules
 
 1. **Default State**: "All Games" selected
-2. **Player List**: Show all players from the database (even with 0 games)
+2. **Player List**: Show all players from the database (including those with 0 games)
 3. **Player Option Format**: "PlayerName (X games)"
 4. **Sort Order**: By game count descending
 5. **Persistence**: Remember during session

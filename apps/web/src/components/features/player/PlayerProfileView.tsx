@@ -56,8 +56,8 @@ export const PlayerProfileView = memo(function PlayerProfileView({
       if (a.rating !== b.rating) {
         return b.rating - a.rating;
       }
-      if (a.games !== b.games) {
-        return b.games - a.games;
+      if (a.gamesPlayed !== b.gamesPlayed) {
+        return b.gamesPlayed - a.gamesPlayed;
       }
       return a.name.localeCompare(b.name);
     });
@@ -114,19 +114,24 @@ export const PlayerProfileView = memo(function PlayerProfileView({
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const recentGames = gamesData.filter(
-      (g: PlayerGame) => new Date(g.date) > thirtyDaysAgo
+    // Find the first game that is older than 30 days
+    const gamesOlderThan30Days = gamesData.filter(
+      (g: PlayerGame) => new Date(g.date) <= thirtyDaysAgo
     );
 
-    // Find the oldest game within 30 days window to calculate change
-    if (recentGames.length === 0) {
-      // No games in last 30 days
+    if (gamesOlderThan30Days.length === 0) {
+      // All games are within 30 days, use the oldest game's rating before
+      if (gamesData.length > 0) {
+        const oldestGame = gamesData[gamesData.length - 1];
+        return player.rating - oldestGame.ratingBefore;
+      }
       return null;
     }
 
-    // Calculate change from 30 days ago to now
-    const oldestRecentGame = recentGames[recentGames.length - 1];
-    const ratingThirtyDaysAgo = oldestRecentGame.ratingBefore;
+    // Get the rating after the most recent game that's older than 30 days
+    // This represents the player's rating 30 days ago
+    const mostRecentOldGame = gamesOlderThan30Days[0];
+    const ratingThirtyDaysAgo = mostRecentOldGame.ratingAfter;
     return player.rating - ratingThirtyDaysAgo;
   }, [gamesData, player]);
 
@@ -165,7 +170,7 @@ export const PlayerProfileView = memo(function PlayerProfileView({
         <h1 className="text-2xl font-bold">{player.name}</h1>
         <h2 className="text-muted-foreground text-base">
           Rank #{playerRank || "—"} • Rating: {player.rating.toFixed(1)} •{" "}
-          {player.games} games
+          {player.gamesPlayed} games
         </h2>
       </div>
 

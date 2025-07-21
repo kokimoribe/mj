@@ -48,10 +48,20 @@ export const GameHistoryView = memo(function GameHistoryView() {
     return showingAll ? gameData.games : gameData.games.slice(0, 10);
   }, [gameData?.games, showingAll]);
 
-  // Calculate total games (max of all player game counts)
+  // Calculate total games
   const totalGames = useMemo(() => {
     if (selectedPlayerId && gameCounts) {
+      // When filtered by player, show that player's game count
       return gameCounts[selectedPlayerId] || 0;
+    }
+    // For all games, calculate the actual total number of games
+    // Each game has 4 players, so total unique games = sum of all player games / 4
+    if (gameCounts) {
+      const totalPlayerGames = Object.values(gameCounts).reduce(
+        (sum, count) => sum + count,
+        0
+      );
+      return Math.floor(totalPlayerGames / 4);
     }
     return gameData?.totalGames || 0;
   }, [gameData?.totalGames, selectedPlayerId, gameCounts]);

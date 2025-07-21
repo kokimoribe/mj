@@ -4,7 +4,7 @@
   "description": "Track Riichi Mahjong ratings and games",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
+  "background_color": "#1f2937",
   "theme_color": "#1f2937",
   "orientation": "portrait-primary",
   "icons": [

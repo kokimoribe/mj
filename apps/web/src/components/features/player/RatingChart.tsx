@@ -54,16 +54,19 @@ export function RatingChart({ data }: RatingChartProps) {
     const { cx, cy, payload } = props;
     if (!cx || !cy) return <></>; // Return empty fragment instead of null
 
+    // All points green (#10b981) as per spec
+    const greenColor = "#10b981";
+
     if (payload?.isLatest) {
       return (
         <g>
-          <circle cx={cx} cy={cy} r={6} fill="hsl(var(--primary))" />
+          <circle cx={cx} cy={cy} r={6} fill={greenColor} />
           <circle cx={cx} cy={cy} r={3} fill="white" />
         </g>
       );
     }
 
-    return <circle cx={cx} cy={cy} r={4} fill="hsl(var(--primary))" />;
+    return <circle cx={cx} cy={cy} r={4} fill={greenColor} />;
   };
 
   const CustomTooltip = ({
@@ -127,8 +130,8 @@ export function RatingChart({ data }: RatingChartProps) {
           <Line
             type="monotone"
             dataKey="rating"
-            stroke="hsl(var(--primary))"
-            strokeWidth={2}
+            stroke="transparent"
+            strokeWidth={0}
             dot={CustomDot}
           />
         </LineChart>

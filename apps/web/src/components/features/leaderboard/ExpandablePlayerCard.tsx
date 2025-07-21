@@ -70,7 +70,7 @@ function ExpandablePlayerCardComponent({
             <div className="min-w-0 flex-1">
               <h3 className="truncate font-medium">{player.name}</h3>
               <p className="text-muted-foreground text-sm">
-                {player.games} games
+                {player.gamesPlayed} games
               </p>
             </div>
 
@@ -208,7 +208,7 @@ export const ExpandablePlayerCard = React.memo(
     return (
       prevProps.player.id === nextProps.player.id &&
       prevProps.player.rating === nextProps.player.rating &&
-      prevProps.player.games === nextProps.player.games &&
+      prevProps.player.gamesPlayed === nextProps.player.gamesPlayed &&
       prevProps.isExpanded === nextProps.isExpanded &&
       prevProps.rank === nextProps.rank
     );

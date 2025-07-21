@@ -100,8 +100,8 @@ export async function fetchLeaderboardData(): Promise<LeaderboardData> {
       rating: p.rating,
       mu: p.mu,
       sigma: p.sigma,
-      games: p.games_played,
-      lastGameDate: p.last_game_date || "",
+      gamesPlayed: p.games_played,
+      lastPlayed: p.last_game_date || "",
       totalPlusMinus: stats.totalPlusMinus,
       averagePlusMinus:
         stats.gameCount > 0 ? stats.totalPlusMinus / stats.gameCount : 0,
@@ -182,8 +182,8 @@ export async function fetchPlayerProfile(playerId: string): Promise<Player> {
     rating: data.rating,
     mu: data.mu,
     sigma: data.sigma,
-    games: data.games_played,
-    lastGameDate: data.last_game_date || "",
+    gamesPlayed: data.games_played,
+    lastPlayed: data.last_game_date || "",
     totalPlusMinus,
     averagePlusMinus:
       data.games_played > 0 ? totalPlusMinus / data.games_played : 0,

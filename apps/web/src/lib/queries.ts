@@ -20,14 +20,16 @@ export interface Player {
   rating: number;
   mu: number;
   sigma: number;
-  games: number;
-  lastGameDate: string;
+  gamesPlayed: number; // Single source of truth
+  lastPlayed: string; // Single source of truth
   totalPlusMinus: number;
   averagePlusMinus: number;
   bestGame: number;
   worstGame: number;
   ratingChange?: number; // Rating change since last game
   ratingHistory?: number[]; // Array of historical ratings for sparkline
+  rank?: number; // Calculated client-side from leaderboard position
+  averagePlacement?: number; // Calculated on-demand
 }
 
 export interface LeaderboardData {
@@ -61,7 +63,19 @@ export function useLeaderboard() {
       if (!response.ok) {
         throw new Error("Failed to fetch leaderboard");
       }
-      return response.json();
+      const data = await response.json();
+      // Transform field names to match our interface
+      return {
+        ...data,
+        players: data.players.map((p: any) => ({
+          ...p,
+          gamesPlayed: p.games || p.gamesPlayed,
+          lastPlayed: p.lastGameDate || p.lastPlayed,
+          // Remove duplicate fields
+          games: undefined,
+          lastGameDate: undefined,
+        })),
+      };
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 30 * 60 * 1000, // 30 minutes
@@ -180,10 +194,12 @@ export function useAllPlayers() {
         throw new Error("Failed to fetch leaderboard");
       }
       const data = await response.json();
-      return data.players.map((p: any) => ({
-        id: p.id || p.name.toLowerCase().replace(/\s+/g, "-"),
-        name: p.name,
-      }));
+      return data.players.map((p: any) => {
+        return {
+          id: p.id || p.name.toLowerCase().replace(/\s+/g, "-"),
+          name: p.name,
+        };
+      });
     },
     staleTime: 10 * 60 * 1000, // 10 minutes
     gcTime: 30 * 60 * 1000,

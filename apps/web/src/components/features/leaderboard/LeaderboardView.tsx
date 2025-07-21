@@ -63,8 +63,8 @@ function LeaderboardViewComponent() {
       return b.rating - a.rating;
     }
     // Secondary: Games played (descending)
-    if (a.games !== b.games) {
-      return b.games - a.games;
+    if (a.gamesPlayed !== b.gamesPlayed) {
+      return b.gamesPlayed - a.gamesPlayed;
     }
     // Tertiary: Name (alphabetical)
     return a.name.localeCompare(b.name);

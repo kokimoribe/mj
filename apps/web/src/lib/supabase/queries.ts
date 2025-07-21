@@ -113,7 +113,10 @@ export async function fetchLeaderboardData(): Promise<LeaderboardData> {
   });
 
   // Get season metadata
-  const totalGames = transformedPlayers.reduce((sum, p) => sum + p.games, 0);
+  const totalGames = transformedPlayers.reduce(
+    (sum, p) => sum + p.gamesPlayed,
+    0
+  );
   const lastUpdated = players?.[0]?.materialized_at || new Date().toISOString();
 
   // Get season name from config or default

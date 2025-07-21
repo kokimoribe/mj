@@ -229,7 +229,7 @@ export const PlayerProfileView = memo(function PlayerProfileView({
             <div>
               <p className="text-sm">
                 Last Played:{" "}
-                {formatDistanceToNow(new Date(player.lastGameDate), {
+                {formatDistanceToNow(new Date(player.lastPlayed), {
                   addSuffix: true,
                 })}
               </p>

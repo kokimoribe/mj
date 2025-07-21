@@ -146,8 +146,8 @@ function ExpandablePlayerCardComponent({
                   Last Played:
                 </span>
                 <span className="font-semibold">
-                  {player.lastGameDate
-                    ? formatDistanceToNow(new Date(player.lastGameDate), {
+                  {player.lastPlayed
+                    ? formatDistanceToNow(new Date(player.lastPlayed), {
                         addSuffix: true,
                       })
                     : "N/A"}

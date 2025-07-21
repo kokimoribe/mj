@@ -4,14 +4,12 @@ import {
   takeScreenshot,
   navigateTo,
   waitForElement,
-  mockAPIResponses,
   checkAccessibility,
 } from "../../utils/test-helpers";
 
 test.describe("Player Profiles - Specification Tests", () => {
   test.beforeEach(async ({ page }) => {
-    // Use mock data for consistent testing
-    await mockAPIResponses(page);
+    // Use production data for testing
   });
 
   // Test Scenario 1: View Player Profile

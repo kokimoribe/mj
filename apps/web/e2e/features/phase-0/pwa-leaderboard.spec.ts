@@ -4,16 +4,12 @@ import {
   takeScreenshot,
   navigateTo,
   waitForElement,
-  mockAPIResponses,
   checkAccessibility,
 } from "../../utils/test-helpers";
 
 test.describe("PWA Leaderboard - Specification Tests", () => {
   test.beforeEach(async ({ page }) => {
-    // Use mock data for consistent testing
-    await mockAPIResponses(page);
-    // Ensure mocks are applied before navigation
-    await page.waitForTimeout(100);
+    // Use production data for testing
   });
 
   // Test Scenario 1: PWA Installation Flow

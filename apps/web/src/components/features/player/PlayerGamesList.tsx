@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, memo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -31,18 +31,24 @@ interface PlayerGamesListProps {
   initialGames: PlayerGame[];
 }
 
-export function PlayerGamesList({
+export const PlayerGamesList = memo(function PlayerGamesList({
   playerId: _playerId,
   initialGames,
 }: PlayerGamesListProps) {
   const [displayedGames, setDisplayedGames] = useState(5); // Start by showing 5 games
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const allGames = initialGames; // All games are loaded initially
   const visibleGames = allGames.slice(0, displayedGames);
   const hasMore = displayedGames < allGames.length;
 
   const loadMore = () => {
     // Show 5 more games each time
-    setDisplayedGames(prev => Math.min(prev + 5, allGames.length));
+    setIsLoadingMore(true);
+    // Simulate async loading with a small delay
+    setTimeout(() => {
+      setDisplayedGames(prev => Math.min(prev + 5, allGames.length));
+      setIsLoadingMore(false);
+    }, 300);
   };
 
   const showLess = () => {
@@ -181,8 +187,13 @@ export function PlayerGamesList({
       {/* Load More / Show Less buttons */}
       <div className="flex gap-2">
         {hasMore && (
-          <Button variant="outline" className="flex-1" onClick={loadMore}>
-            Load More Games
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={loadMore}
+            disabled={isLoadingMore}
+          >
+            {isLoadingMore ? "Loading..." : "Load More Games"}
           </Button>
         )}
         {displayedGames > 5 && (
@@ -193,7 +204,7 @@ export function PlayerGamesList({
       </div>
     </div>
   );
-}
+});
 
 export function PlayerGamesListSkeleton() {
   return (

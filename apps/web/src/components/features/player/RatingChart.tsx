@@ -43,11 +43,15 @@ export function RatingChart({ data }: RatingChartProps) {
     );
   }
 
-  const CustomDot = (props: any) => {
+  const CustomDot = (props: {
+    cx?: number;
+    cy?: number;
+    payload?: { isLatest?: boolean };
+  }) => {
     const { cx, cy, payload } = props;
     if (!cx || !cy) return <></>; // Return empty fragment instead of null
 
-    if (payload.isLatest) {
+    if (payload?.isLatest) {
       return (
         <g>
           <circle cx={cx} cy={cy} r={6} fill="hsl(var(--primary))" />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, memo } from "react";
 import {
   usePlayerProfile,
   usePlayerGames,
@@ -49,7 +49,9 @@ interface PlayerProfileViewProps {
   playerId: string;
 }
 
-export function PlayerProfileView({ playerId }: PlayerProfileViewProps) {
+export const PlayerProfileView = memo(function PlayerProfileView({
+  playerId,
+}: PlayerProfileViewProps) {
   const router = useRouter();
   const { data: player, isLoading, error } = usePlayerProfile(playerId);
   const { data: gamesData, isLoading: gamesLoading } = usePlayerGames(playerId);
@@ -109,7 +111,7 @@ export function PlayerProfileView({ playerId }: PlayerProfileViewProps) {
   const avgPlacement = useMemo(() => {
     if (!gamesData || gamesData.length === 0) return null;
     const placements = gamesData
-      .map((g: any) => g.placement)
+      .map((g: PlayerGame) => g.placement)
       .filter((p: number) => p >= 1 && p <= 4);
     if (placements.length === 0) return null;
     const sum = placements.reduce((a: number, b: number) => a + b, 0);
@@ -123,12 +125,12 @@ export function PlayerProfileView({ playerId }: PlayerProfileViewProps) {
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
     const recentGames = gamesData.filter(
-      (g: any) => new Date(g.date) > thirtyDaysAgo
+      (g: PlayerGame) => new Date(g.date) > thirtyDaysAgo
     );
     if (recentGames.length === 0) return player.ratingChange || 0;
 
     return recentGames.reduce(
-      (sum: number, g: any) => sum + (g.ratingChange || 0),
+      (sum: number, g: PlayerGame) => sum + (g.ratingChange || 0),
       0
     );
   }, [gamesData, player]);
@@ -287,7 +289,7 @@ export function PlayerProfileView({ playerId }: PlayerProfileViewProps) {
       </Card>
     </div>
   );
-}
+});
 
 function PlayerProfileSkeleton() {
   return (

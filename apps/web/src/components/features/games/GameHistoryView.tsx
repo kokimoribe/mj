@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, memo } from "react";
 import {
   useGameHistory,
   useAllPlayers,
@@ -22,7 +22,7 @@ import { format } from "date-fns";
 import { Calendar } from "lucide-react";
 import { testIds } from "@/lib/test-ids";
 
-export function GameHistoryView() {
+export const GameHistoryView = memo(function GameHistoryView() {
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | undefined>(
     undefined
   );
@@ -154,7 +154,7 @@ export function GameHistoryView() {
       )}
     </div>
   );
-}
+});
 
 interface GameCardProps {
   game: {
@@ -171,7 +171,7 @@ interface GameCardProps {
   };
 }
 
-function GameCard({ game }: GameCardProps) {
+const GameCard = memo(function GameCard({ game }: GameCardProps) {
   const getPlacementMedal = (placement: number) => {
     switch (placement) {
       case 1:
@@ -252,7 +252,7 @@ function GameCard({ game }: GameCardProps) {
       </CardContent>
     </Card>
   );
-}
+});
 
 function GameHistorySkeleton() {
   return (

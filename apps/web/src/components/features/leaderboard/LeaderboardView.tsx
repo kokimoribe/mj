@@ -1,35 +1,35 @@
-'use client'
+"use client";
 
-import React, { useState, useCallback } from 'react'
-import { useLeaderboard } from '@/lib/queries'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Button } from '@/components/ui/button'
-import { AlertCircle } from 'lucide-react'
-import { LeaderboardHeader } from './LeaderboardHeader'
-import { ExpandablePlayerCard } from './ExpandablePlayerCard'
-import { toast } from "sonner"
-import { TEST_IDS } from '@/lib/test-ids'
+import React, { useState, useCallback } from "react";
+import { useLeaderboard } from "@/lib/queries";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { AlertCircle } from "lucide-react";
+import { LeaderboardHeader } from "./LeaderboardHeader";
+import { ExpandablePlayerCard } from "./ExpandablePlayerCard";
+import { toast } from "sonner";
+import { TEST_IDS } from "@/lib/test-ids";
 
 function LeaderboardViewComponent() {
-  const { data, isLoading, error, refetch, isRefetching } = useLeaderboard()
-  const [expandedCard, setExpandedCard] = useState<string | null>(null)
+  const { data, isLoading, error, refetch, isRefetching } = useLeaderboard();
+  const [expandedCard, setExpandedCard] = useState<string | null>(null);
 
   const handleRefresh = useCallback(async () => {
     try {
-      await refetch()
-      toast.success("Leaderboard updated!")
+      await refetch();
+      toast.success("Leaderboard updated!");
     } catch {
-      toast.error("Failed to refresh leaderboard")
+      toast.error("Failed to refresh leaderboard");
     }
-  }, [refetch])
+  }, [refetch]);
 
   const handleCardToggle = useCallback((playerId: string) => {
-    setExpandedCard(current => current === playerId ? null : playerId)
-  }, [])
+    setExpandedCard(current => (current === playerId ? null : playerId));
+  }, []);
 
   if (isLoading) {
-    return <LeaderboardSkeleton />
+    return <LeaderboardSkeleton />;
   }
 
   if (error && !data) {
@@ -45,30 +45,40 @@ function LeaderboardViewComponent() {
           Try Again
         </Button>
       </div>
-    )
+    );
   }
 
   if (!data) {
     return (
       <Alert>
-        <AlertDescription>
-          No leaderboard data available
-        </AlertDescription>
+        <AlertDescription>No leaderboard data available</AlertDescription>
       </Alert>
-    )
+    );
   }
+
+  // Sort players by rating (desc), then games (desc), then name (alphabetically)
+  const sortedPlayers = [...data.players].sort((a, b) => {
+    // Primary: Rating (descending)
+    if (a.rating !== b.rating) {
+      return b.rating - a.rating;
+    }
+    // Secondary: Games played (descending)
+    if (a.games !== b.games) {
+      return b.games - a.games;
+    }
+    // Tertiary: Name (alphabetical)
+    return a.name.localeCompare(b.name);
+  });
 
   return (
     <div className="space-y-6" data-testid={TEST_IDS.LEADERBOARD_VIEW}>
       {error && data && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Failed to load leaderboard
-          </AlertDescription>
+          <AlertDescription>Failed to load leaderboard</AlertDescription>
         </Alert>
       )}
-      
+
       <LeaderboardHeader
         seasonName={data.seasonName}
         totalGames={data.totalGames}
@@ -80,7 +90,7 @@ function LeaderboardViewComponent() {
       />
 
       <div className="space-y-2">
-        {data.players.map((player, index) => (
+        {sortedPlayers.map((player, index) => (
           <ExpandablePlayerCard
             key={player.id}
             player={player}
@@ -92,10 +102,10 @@ function LeaderboardViewComponent() {
         ))}
       </div>
     </div>
-  )
+  );
 }
 
-export const LeaderboardView = React.memo(LeaderboardViewComponent)
+export const LeaderboardView = React.memo(LeaderboardViewComponent);
 
 const LeaderboardSkeleton = React.memo(function LeaderboardSkeleton() {
   return (
@@ -113,5 +123,5 @@ const LeaderboardSkeleton = React.memo(function LeaderboardSkeleton() {
         ))}
       </div>
     </div>
-  )
-})
+  );
+});

@@ -72,7 +72,7 @@ The Game History page provides a chronological view of all games played in the c
       - `GameHeader` - Date and time
       - `PlayerResults` - 4 player results
         - `PlayerResult` - Individual result line
-  - `LoadMoreButton` - Pagination control
+  - `LoadMoreButton` - Pagination control (toggles to ShowLessButton)
 
 ### Interaction Patterns
 
@@ -88,9 +88,11 @@ The Game History page provides a chronological view of all games played in the c
    - Visual hierarchy with placement medals
    - Tap entire card for details (Phase 1)
 
-3. **Pagination**
+3. **Pagination (Show/Hide Toggle)**
    - Load 10 games initially
-   - "Load More" adds 10 more games
+   - "Load More Games" adds 10 more games
+   - After loading more, button changes to "Show Less Games"
+   - "Show Less Games" hides the additional games (back to initial 10)
    - Smooth scroll preservation
    - Loading indicator during fetch
 
@@ -112,6 +114,22 @@ Each game card contains:
 Raw Score → Adjusted Score
 42,700 → +32,700 (Uma/Oka applied)
 11,800 → -28,200 (Uma/Oka applied)
+```
+
+### Rating Change Display
+
+```
+Rating changes use the precision from the data:
+↑0.8 or ↑1.23 (based on actual value)
+↓0.5 or ↓0.567 (based on actual value)
+```
+
+### Date Format
+
+```
+Use a simple, consistent format:
+"Jul 6, 2025 • 7:46 PM" (or similar readable format)
+Can use browser's default locale or a fixed format
 ```
 
 ## Technical Requirements
@@ -142,6 +160,7 @@ interface GameHistoryData {
   totalGames: number;
   hasMore: boolean;
   nextCursor?: string;
+  showingAll: boolean; // Track if showing all loaded games or just initial 10
 }
 
 interface FilterOptions {
@@ -149,6 +168,14 @@ interface FilterOptions {
   dateFrom?: string;
   dateTo?: string;
 }
+```
+
+### Configuration
+
+```typescript
+// Default season config hash (hardcoded for Season 3)
+const DEFAULT_SEASON_CONFIG_HASH = "season_3_2024";
+const currentSeasonConfigHash = DEFAULT_SEASON_CONFIG_HASH;
 ```
 
 ### Supabase Queries
@@ -211,6 +238,12 @@ const { data: filteredGames } = await supabase
   .from("games")
   .select(/* same select as above */)
   .in("id", gameIds);
+
+// Get all players for the filter dropdown
+const { data: allPlayers } = await supabase
+  .from("players")
+  .select("id, name")
+  .order("name", { ascending: true });
 ```
 
 **Query Performance Requirements:**
@@ -241,6 +274,8 @@ const { data: filteredGames } = await supabase
 - [x] Filtering by player shows only their games
 - [x] "All Games" option shows complete history
 - [x] Load More button fetches additional games
+- [x] Load More button changes to Show Less after loading
+- [x] Show Less button hides additional games (back to initial 10)
 - [x] Loading state shows during data fetch
 - [x] Season game count displays in header
 - [x] Empty state shows when no games match filter
@@ -259,6 +294,14 @@ const { data: filteredGames } = await supabase
    - Given: More than 10 games exist
    - When: User taps "Load More Games"
    - Then: 10 additional games append to list
+   - And: Button changes to "Show Less Games"
+
+2a. **Show Less Games**
+
+- Given: User has loaded additional games
+- When: User taps "Show Less Games"
+- Then: Additional games are hidden
+- And: Button changes back to "Load More Games"
 
 3. **Filter by Player**
    - Given: Games list is displayed
@@ -306,10 +349,11 @@ const { data: filteredGames } = await supabase
 ### Player Filter Rules
 
 1. **Default State**: "All Games" selected
-2. **Player Option Format**: "PlayerName (X games)"
-3. **Sort Order**: By game count descending
-4. **Persistence**: Remember during session
-5. **URL State**: Update URL for shareable links
+2. **Player List**: Show all players from the database (even with 0 games)
+3. **Player Option Format**: "PlayerName (X games)"
+4. **Sort Order**: By game count descending
+5. **Persistence**: Remember during session
+6. **URL State**: Update URL for shareable links
 
 ### Future Filters (Phase 1)
 

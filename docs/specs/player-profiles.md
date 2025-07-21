@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Player Profile page provides comprehensive information about an individual player's performance in the Riichi Mahjong League. It displays rating history visualization, detailed game logs, performance statistics, and trends over the current season. This page is accessible by tapping on a player from the leaderboard or through direct navigation.
+The Player Profile page provides comprehensive information about an individual player's performance in the Riichi Mahjong League. It displays rating history visualization, detailed game logs, performance statistics, and trends over the current season. This page is accessible by tapping on a player from the leaderboard or through direct navigation (e.g., `/player/[id]`).
 
 ## User Stories
 
@@ -10,8 +10,8 @@ The Player Profile page provides comprehensive information about an individual p
 
 - See my current rating and rank in the league
 - View my rating progression over time with a visual chart
-- Check my average placement and win rate
-- Review my recent game history with details
+- Check my average placement across all games
+- Review my complete game history with details
 
 ### As a player, I want to track my improvement so that I can measure progress
 
@@ -38,10 +38,10 @@ The Player Profile page provides comprehensive information about an individual p
 ├─────────────────────────────────────────┤
 │ 📈 Rating Progression                   │
 │                                         │
-│  50 ┤              ╱╲                  │
-│  45 ┤          ╱╲╱  ╲___              │
-│  40 ┤      ╱╲╱           ╲            │
-│  35 ┤  ___╱                           │
+│  50 ┤              •                   │
+│  45 ┤          •  •  •___              │
+│  40 ┤      •  •           •            │
+│  35 ┤  •__•                           │
 │  30 └─────────────────────────────     │
 │     Jun         Jul         Aug         │
 │                                         │
@@ -49,10 +49,9 @@ The Player Profile page provides comprehensive information about an individual p
 ├─────────────────────────────────────────┤
 │ 🎯 Performance Stats                    │
 │ Average Placement: 2.1                  │
-│ Win Rate: 30% (6/20)                    │
 │ Last Played: 3 days ago                 │
 ├─────────────────────────────────────────┤
-│ 🎮 Recent Games                         │
+│ 🎮 Recent Games • Showing 5 of 20       │
 │                                         │
 │ Jul 6 • 1st • +32,700 pts • ↑0.8      │
 │ vs. Alice, Mikey, Frank                 │
@@ -61,11 +60,13 @@ The Player Profile page provides comprehensive information about an individual p
 │ vs. Josh, Hyun, Mikey                   │
 │                                         │
 │ Jul 1 • 3rd • -5,100 pts • ↓0.2       │
-│ vs. Joseph, Jackie, Hyun                │
+│ vs. Koki, Jackie, Hyun                  │
 │                                         │
-│ [Load More Games]                       │
+│ [Show More Games]                       │
 └─────────────────────────────────────────┘
 ```
+
+**Note**: The chart shows discrete points for each game played. All games are loaded initially and paginated client-side (showing 5 at a time).
 
 ### Component Hierarchy
 
@@ -82,35 +83,38 @@ The Player Profile page provides comprehensive information about an individual p
 
 1. **Rating Chart Interactions**
    - Tap/hover on data points to see exact values
-   - Pinch to zoom on mobile (Phase 1 enhancement)
-   - Smooth line interpolation between games
+   - Single green color (#10b981) for all data points
+   - Discrete points for each game (no line interpolation)
    - Highlight current rating point
 
 2. **Game History**
-   - Initial load shows 5 most recent games
-   - "Load More" lists 5 additional games
-   - App can load all historical player games, load into memory instead of making two separate db queries for first 5 recent games + all games.
-   - Each game shows essential information
-   - Tap game for expanded view (Phase 1)
+   - All games loaded initially (single query)
+   - Client-side pagination showing 5 games at a time
+   - Shows "Showing X of Y" indicator in header
+   - "Show More Games" reveals next 5 games
+   - Each game shows placement, score, rating change
+   - Opponent names are clickable links to their profiles
 
 3. **Navigation**
    - Back arrow returns to previous page
    - Swipe right to go back (iOS gesture)
    - Bottom navigation remains accessible
+   - Direct URL access via `/player/[id]`
 
 ### Rating Chart Specifications
 
 ```
-Chart Type: Line Chart
+Chart Type: Scatter Plot with optional connecting lines
 X-axis: Date of games (chronological)
-Y-axis: Rating value (auto-scaled)
+Y-axis: Rating value (auto-scaled with padding)
 Data Points: One per game played
-Line Style: Smooth curve, 2px width
+Point Style: Filled circles, 6px diameter
 Colors:
-  - Upward trend: Green (#10b981)
-  - Downward trend: Red (#ef4444)
-  - Current point: Primary blue (#0ea5e9)
-Touch Feedback: Show tooltip with rating value
+  - All points: Green (#10b981)
+  - Current point: Highlighted with larger size (8px)
+  - Background grid: Subtle gray
+Touch Feedback: Show tooltip with exact rating and date
+Chart Library: @shadcn/ui charts (based on Recharts)
 ```
 
 ### Game Entry Format
@@ -124,6 +128,27 @@ Touch Feedback: Show tooltip with rating value
 
 ## Technical Requirements
 
+### Data Strategy
+
+**Materialization Requirements:**
+
+- OpenSkill ratings (μ, σ) - Must be calculated in Python serverless function
+- Rating history array - Materialized for efficient chart rendering
+- Games played count - Can be materialized or calculated from games
+- Last game date - Can be materialized or derived from games
+
+**Client-side Calculations:**
+
+- Current rank - Calculated from leaderboard position
+- Average placement - Mean of all game placements
+- 30-day rating change - Calculated from game history
+- Season rating change - Calculated from first game rating
+
+**Runtime Queries:**
+
+- Player names - Always fetch current names by player_id
+- Opponent information - Join with players table for current names
+
 ### Data Model
 
 ```typescript
@@ -131,15 +156,13 @@ interface PlayerProfile {
   id: string;
   name: string;
   currentRating: number;
-  currentRank: number;
+  currentRank: number; // Position in leaderboard (calculated client-side)
   totalGamesPlayed: number;
   seasonStats: {
-    averagePlacement: number;
-    winRate: number;
-    totalWins: number;
+    averagePlacement: number; // Mean of all placements
     lastPlayedDate: string;
-    ratingChange30Days: number;
-    ratingChangeSeason: number;
+    ratingChange30Days: number; // Delta between rating 30 days ago and now
+    ratingChangeSeason: number; // Delta since season start
   };
 }
 
@@ -164,25 +187,26 @@ interface GameHistoryEntry {
     id: string;
     name: string;
     placement: number;
-  }>;
+  }>; // Always 3 opponents in 4-player mahjong
 }
 
 interface PlayerProfileData {
   profile: PlayerProfile;
-  ratingHistory: RatingHistoryPoint[];
-  recentGames: {
-    games: GameHistoryEntry[];
-    hasMore: boolean;
-    nextCursor?: string;
-  };
+  ratingHistory: RatingHistoryPoint[]; // All games for chart
+  allGames: GameHistoryEntry[]; // All games loaded at once
+  currentSeasonConfigHash: string;
 }
 ```
 
 ### Supabase Queries
 
 ```typescript
-// Get player profile with stats and rating history
-const { data: profile } = await supabase
+// Configuration from environment or default
+const currentSeasonConfigHash =
+  process.env.NEXT_PUBLIC_SEASON_CONFIG_HASH || "season_3_2024";
+
+// Get player basic info and current rating
+const { data: playerData } = await supabase
   .from("players")
   .select(
     `
@@ -194,40 +218,26 @@ const { data: profile } = await supabase
       sigma,
       games_played,
       last_game_date,
-      rating_change_30d,
-      rating_change_season,
-      rank
-    ),
-    cached_player_stats!inner(
-      average_placement,
-      win_rate,
-      total_wins
+      rating_history
     )
   `
   )
   .eq("id", playerId)
   .eq("cached_player_ratings.config_hash", currentSeasonConfigHash)
-  .eq("cached_player_stats.config_hash", currentSeasonConfigHash)
   .single();
 
-// Get rating history for chart
-const { data: ratingHistory } = await supabase
-  .from("cached_game_player_results")
-  .select(
-    `
-    game_id,
-    games!inner(finished_at),
-    rating_after,
-    rating_change,
-    placement
-  `
-  )
-  .eq("player_id", playerId)
+// Get current leaderboard to calculate rank
+const { data: leaderboard } = await supabase
+  .from("cached_player_ratings")
+  .select("player_id, rating")
   .eq("config_hash", currentSeasonConfigHash)
-  .order("games.finished_at", { ascending: true });
+  .order("rating", { ascending: false });
 
-// Get paginated game history
-const { data: games } = await supabase
+// Calculate rank client-side
+const currentRank = leaderboard.findIndex(p => p.player_id === playerId) + 1;
+
+// Get ALL games for this player (no pagination in query)
+const { data: allGames } = await supabase
   .from("cached_game_player_results")
   .select(
     `
@@ -246,32 +256,64 @@ const { data: games } = await supabase
   )
   .eq("player_id", playerId)
   .eq("config_hash", currentSeasonConfigHash)
-  .order("games.finished_at", { ascending: false })
-  .range(offset, offset + limit - 1);
+  .order("games.finished_at", { ascending: false });
 
-// Get opponents for each game (separate query for efficiency)
-const gameIds = games.map(g => g.game_id);
-const { data: opponents } = await supabase
+// Get opponents for all games in a single query
+const gameIds = allGames.map(g => g.game_id);
+const { data: allOpponents } = await supabase
   .from("game_seats")
   .select(
     `
     game_id,
     seat,
     player_id,
-    players!inner(name),
-    final_score
+    players!inner(id, name),
+    final_score,
+    placement
   `
   )
   .in("game_id", gameIds)
-  .neq("player_id", playerId);
+  .order("seat", { ascending: true });
+
+// Group opponents by game
+const opponentsByGame = allOpponents.reduce((acc, opp) => {
+  if (!acc[opp.game_id]) acc[opp.game_id] = [];
+  if (opp.player_id !== playerId) {
+    acc[opp.game_id].push({
+      id: opp.player_id,
+      name: opp.players.name,
+      placement: opp.placement,
+    });
+  }
+  return acc;
+}, {});
+
+// Calculate statistics client-side
+const placements = allGames.map(g => g.placement);
+const averagePlacement =
+  placements.reduce((a, b) => a + b, 0) / placements.length;
+
+// Calculate 30-day rating change
+const thirtyDaysAgo = new Date();
+thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+const gamesThirtyDaysAgo = allGames.filter(
+  g => new Date(g.games.finished_at) <= thirtyDaysAgo
+);
+const ratingThirtyDaysAgo =
+  gamesThirtyDaysAgo.length > 0 ? gamesThirtyDaysAgo[0].rating_before : null;
+const ratingChange30Days = ratingThirtyDaysAgo
+  ? playerData.cached_player_ratings.rating - ratingThirtyDaysAgo
+  : null;
 ```
 
 **Query Performance Requirements:**
 
-- Profile query: < 200ms
-- Rating history: < 300ms
-- Game history: < 200ms per page
-- Use React Query with 5 minute cache
+- Player data query: < 200ms
+- Leaderboard query (for rank): < 200ms
+- All games query: < 500ms (expecting < 100 games per player)
+- Opponents query: < 300ms
+- Use React Query with 5 minute stale time
+- All queries can run in parallel
 
 ### Performance Requirements
 
@@ -283,14 +325,15 @@ const { data: opponents } = await supabase
 
 ### Chart Library Requirements
 
-- **Library**: Recharts or Chart.js (lightweight)
-- **Bundle Impact**: < 50KB gzipped
+- **Library**: @shadcn/ui charts (based on Recharts)
+- **Bundle Impact**: Included in shadcn/ui components
 - **Features Required**:
-  - Line chart with smooth curves
-  - Touch interactions
+  - Scatter plot with discrete points
+  - Touch/hover interactions for tooltips
   - Responsive sizing
-  - Custom tooltips
+  - Custom tooltips showing rating and date
   - Accessible (keyboard + screen reader)
+  - Single color theme (#10b981)
 
 ## Success Criteria
 
@@ -299,13 +342,14 @@ const { data: opponents } = await supabase
 - [x] Chart shows rating progression over time chronologically
 - [x] Chart has proper axis labels and scaling
 - [x] Touch/click on chart shows exact rating values
-- [x] Performance stats show average placement
-- [x] Performance stats show win rate with fraction
+- [x] Performance stats show average placement (mean)
 - [x] Performance stats show last played date
+- [x] Performance stats show 30-day rating change
 - [x] Recent games list shows 5 most recent by default
+- [x] Shows "Showing X of Y" games indicator
 - [x] Each game shows date, placement, score delta, rating change
-- [x] Each game lists opponent names
-- [x] Load more button fetches additional games
+- [x] Each game lists opponent names (clickable)
+- [x] Show more button reveals additional games (client-side)
 - [x] Back navigation returns to previous page
 - [x] Page loads within 1.5 seconds
 - [x] Chart renders smoothly without jank
@@ -331,8 +375,8 @@ const { data: opponents } = await supabase
 
 4. **Load Game History**
    - Given: Player has more than 5 games
-   - When: User taps "Load More Games"
-   - Then: Additional 5 games load below existing ones
+   - When: User taps "Show More Games"
+   - Then: Next 5 games appear instantly (client-side)
 
 5. **Navigate Back**
    - Given: User is viewing a profile
@@ -347,22 +391,30 @@ const { data: opponents } = await supabase
 7. **Performance Stats Calculation**
    - Given: Player has played games
    - When: Viewing stats section
-   - Then: Average placement calculates correctly
+   - Then: Average placement shows mean value
 
 8. **Opponent Display**
    - Given: Game history is shown
    - When: Viewing game entries
-   - Then: All three opponents listed for each game
+   - Then: All three opponents listed with clickable names
+
+9. **Direct URL Navigation**
+   - Given: User has player ID
+   - When: Navigating to /player/[id]
+   - Then: Profile loads for that specific player
 
 ## Edge Cases
 
 1. **Single Game**: Show message "Need more games for chart"
 2. **No Games**: Show empty state with encouraging message
-3. **Very High/Low Ratings**: Chart scales appropriately
+3. **Very High/Low Ratings**: Chart auto-scales with appropriate padding
 4. **Long Name**: Truncate with ellipsis in header
-5. **Missing Data**: Show placeholders for unavailable stats
-6. **Rating Decrease Only**: Chart still displays properly
+5. **Missing 30-day Data**: Show "N/A" for 30-day rating change
+6. **Rating Decrease Only**: Chart displays normally with green points
 7. **Timezone Handling**: Show dates in user's timezone
+8. **Name Changes**: Always show current name (queried by player_id)
+9. **Tied Placements**: Display as provided by data
+10. **High Sigma (Provisional)**: Display same as established ratings
 
 ## Mobile Optimizations
 
@@ -372,3 +424,15 @@ const { data: opponents } = await supabase
 4. **Scroll Performance**: Use CSS transforms for smooth scrolling
 5. **Load More**: Large button easy to tap
 6. **Font Sizes**: Minimum 14px for readability
+
+## Implementation Notes
+
+1. **Removed Features**: The following features from existing tests should be removed as they don't align with the simplified requirements:
+   - "Advanced Stats" toggle showing μ, σ, total points
+   - "Quick Stats" section distinction
+   - Win rate calculations and display
+2. **Configuration**: Use the same configuration hash as the leaderboard feature for consistency
+
+3. **Performance**: With expected < 100 games per player, loading all games at once is acceptable
+
+4. **Chart Implementation**: Use @shadcn/ui charts for consistency with the design system

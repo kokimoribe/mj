@@ -62,6 +62,8 @@ The PWA Leaderboard is the primary landing page of the Riichi Mahjong League app
       - `ExpandablePlayerCard` - Individual player row
   - `BottomNavigation` - Tab-based navigation
 
+**Note**: Season selector is reserved for future functionality when multiple seasons exist. Currently displays active season name only.
+
 ### Interaction Patterns
 
 1. **Pull to Refresh**
@@ -70,6 +72,7 @@ The PWA Leaderboard is the primary landing page of the Riichi Mahjong League app
    - Haptic feedback on refresh trigger
    - Invalidates all React Query caches
    - Shows dismissible error toast on failure
+   - Updates "Updated X ago" timestamp on successful refresh
 
 2. **Expandable Cards**
    - Tap player row to expand
@@ -137,7 +140,8 @@ interface LeaderboardData {
 const DEFAULT_SEASON_CONFIG_HASH = "season_3_2024"; // Update this value for new seasons
 
 // Get current season configuration
-const currentSeasonConfigHash = process.env.NEXT_PUBLIC_SEASON_CONFIG_HASH || DEFAULT_SEASON_CONFIG_HASH;
+const currentSeasonConfigHash =
+  process.env.NEXT_PUBLIC_SEASON_CONFIG_HASH || DEFAULT_SEASON_CONFIG_HASH;
 ```
 
 ### Supabase Queries
@@ -170,24 +174,25 @@ const { data: leaderboard } = await supabase
 const seasonData = {
   totalGames: Math.max(...leaderboard.map(p => p.games_played)),
   activePlayers: leaderboard.length,
-  lastUpdated: leaderboard[0]?.materialized_at || new Date().toISOString()
+  lastUpdated: leaderboard[0]?.materialized_at || new Date().toISOString(),
 };
 
 // Calculate player stats for expanded view (client-side)
+// Note: These calculations should be done on-demand when a card is expanded
 function calculatePlayerStats(playerId: string, allGames: GameResult[]) {
-  const playerGames = allGames.filter(g => 
+  const playerGames = allGames.filter(g =>
     g.players.some(p => p.id === playerId)
   );
-  
+
   const placements = playerGames.map(g => {
     const player = g.players.find(p => p.id === playerId);
     return player.placement;
   });
-  
+
   return {
     averagePlacement: placements.reduce((a, b) => a + b, 0) / placements.length,
     winRate: (placements.filter(p => p === 1).length / placements.length) * 100,
-    lastPlayed: playerGames[0]?.date
+    lastPlayed: playerGames[0]?.date,
   };
 }
 
@@ -305,7 +310,7 @@ const { data: playerGameResults } = await supabase
 
 1. **No Games Played**: Show "0 games played" message
 2. **Single Player**: Still show leaderboard format
-3. **Tied Ratings**: Sort by games played, then alphabetically
+3. **Tied Ratings**: Sort by rating (descending), then games played (descending), then name (alphabetically)
 4. **Very Long Names**: Truncate with ellipsis on mobile
 5. **Stale Data**: Show warning if data > 24 hours old
 6. **Query Failures**: Show stale data if available, otherwise error message

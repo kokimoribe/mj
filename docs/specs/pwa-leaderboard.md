@@ -50,6 +50,8 @@ The PWA Leaderboard is the primary landing page of the Riichi Mahjong League app
 └─────────────────────────────────────────┘
 ```
 
+**Note**: "Updated 2h ago" is calculated from the `materialized_at` timestamp in the cached data.
+
 ### Component Hierarchy
 
 - `AppLayout` - Main app wrapper with header and navigation
@@ -66,6 +68,8 @@ The PWA Leaderboard is the primary landing page of the Riichi Mahjong League app
    - Drag down from top to refresh data
    - Show loading spinner during refresh
    - Haptic feedback on refresh trigger
+   - Invalidates all React Query caches
+   - Shows dismissible error toast on failure
 
 2. **Expandable Cards**
    - Tap player row to expand
@@ -88,11 +92,13 @@ The PWA Leaderboard is the primary landing page of the Riichi Mahjong League app
 │ Win Rate: 30%                           │
 │ Last Played: 3 days ago                 │
 │                                         │
-│ Rating Trend: ▁▂▄█▆▇█ (mini sparkline) │
+│ Rating Trend: ▁▂▄█▆▇█ (last 10 games)  │
 │                                         │
 │ [View Full Profile →]                   │
 └─────────────────────────────────────────┘
 ```
+
+**Note**: The sparkline shows the last 10 rating values from the `rating_history` array. If fewer than 10 games, show all available data points.
 
 ## Technical Requirements
 
@@ -105,28 +111,39 @@ interface Player {
   rating: number;
   ratingChange: number;
   gamesPlayed: number;
-  rank: number;
-  averagePlacement?: number;
-  winRate?: number;
-  lastPlayed?: string;
+  rank: number; // Calculated client-side based on rating order
+  ratingHistory?: number[]; // Array of last 10 ratings for sparkline
+  averagePlacement?: number; // Calculated on-demand
+  winRate?: number; // Calculated on-demand
+  lastPlayed?: string; // From last_game_date or calculated
 }
 
 interface LeaderboardData {
   season: {
     id: string;
     name: string;
-    totalGames: number;
-    activePlayers: number;
-    lastUpdated: string;
+    totalGames: number; // Derived from max games_played
+    activePlayers: number; // Count of players array
+    lastUpdated: string; // From materialized_at timestamp
   };
   players: Player[];
 }
 ```
 
+### Configuration
+
+```typescript
+// Default season config hash (manually updated per season)
+const DEFAULT_SEASON_CONFIG_HASH = "season_3_2024"; // Update this value for new seasons
+
+// Get current season configuration
+const currentSeasonConfigHash = process.env.NEXT_PUBLIC_SEASON_CONFIG_HASH || DEFAULT_SEASON_CONFIG_HASH;
+```
+
 ### Supabase Queries
 
 ```typescript
-// Get current season leaderboard
+// Get current season leaderboard with materialization timestamp
 const { data: leaderboard } = await supabase
   .from("cached_player_ratings")
   .select(
@@ -141,26 +158,52 @@ const { data: leaderboard } = await supabase
     sigma,
     games_played,
     last_game_date,
-    rating_change
+    rating_change,
+    rating_history,
+    materialized_at
   `
   )
   .eq("config_hash", currentSeasonConfigHash)
   .order("rating", { ascending: false });
 
-// Get player summary for expanded view (on-demand)
-const { data: playerStats } = await supabase
-  .from("cached_player_stats")
+// Calculate season metadata client-side
+const seasonData = {
+  totalGames: Math.max(...leaderboard.map(p => p.games_played)),
+  activePlayers: leaderboard.length,
+  lastUpdated: leaderboard[0]?.materialized_at || new Date().toISOString()
+};
+
+// Calculate player stats for expanded view (client-side)
+function calculatePlayerStats(playerId: string, allGames: GameResult[]) {
+  const playerGames = allGames.filter(g => 
+    g.players.some(p => p.id === playerId)
+  );
+  
+  const placements = playerGames.map(g => {
+    const player = g.players.find(p => p.id === playerId);
+    return player.placement;
+  });
+  
+  return {
+    averagePlacement: placements.reduce((a, b) => a + b, 0) / placements.length,
+    winRate: (placements.filter(p => p === 1).length / placements.length) * 100,
+    lastPlayed: playerGames[0]?.date
+  };
+}
+
+// Alternative: If stats need to be materialized, query from cached results
+const { data: playerGameResults } = await supabase
+  .from("cached_game_player_results")
   .select(
     `
-    player_id,
-    average_placement,
-    win_rate,
-    last_played
+    placement,
+    games!inner(finished_at)
   `
   )
   .eq("player_id", playerId)
   .eq("config_hash", currentSeasonConfigHash)
-  .single();
+  .order("games.finished_at", { ascending: false })
+  .limit(10); // For sparkline data
 ```
 
 **Query Performance Requirements:**
@@ -189,8 +232,8 @@ const { data: playerStats } = await supabase
 2. **Service Worker**
    - Cache-first strategy for app shell
    - Network-first for API data with fallback
-   - Background sync for data updates
-   - Offline page for complete network failure
+   - Cache duration: 2 days for offline data
+   - Simple offline indicator when no connection
 
 3. **iOS Specific**
    - Apple touch icons
@@ -260,11 +303,13 @@ const { data: playerStats } = await supabase
 
 ## Edge Cases
 
-1. **No Games Played**: Show empty state with message
+1. **No Games Played**: Show "0 games played" message
 2. **Single Player**: Still show leaderboard format
 3. **Tied Ratings**: Sort by games played, then alphabetically
 4. **Very Long Names**: Truncate with ellipsis on mobile
 5. **Stale Data**: Show warning if data > 24 hours old
+6. **Query Failures**: Show stale data if available, otherwise error message
+7. **Offline Mode**: Basic functionality maintained, no pull-to-refresh
 
 ## Accessibility Requirements
 

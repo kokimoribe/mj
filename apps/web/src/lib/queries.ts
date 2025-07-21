@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { hash } from 'ohash'
 import type { RatingConfiguration } from '@/stores/configStore'
+import { fetchLeaderboardData, fetchPlayerProfile } from './supabase/queries'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://mj-skill-rating.vercel.app'
-const USE_LOCAL_API = false // Use Python API for now
+const USE_SUPABASE = process.env.NEXT_PUBLIC_USE_SUPABASE === 'true' // Feature flag for Supabase
 
 export interface Player {
   id: string
@@ -18,6 +19,7 @@ export interface Player {
   bestGame: number
   worstGame: number
   ratingChange?: number // Rating change since last game
+  ratingHistory?: number[] // Array of historical ratings for sparkline
 }
 
 export interface LeaderboardData {
@@ -44,6 +46,9 @@ export function useLeaderboard() {
   return useQuery({
     queryKey: ['leaderboard'],
     queryFn: async (): Promise<LeaderboardData> => {
+      if (USE_SUPABASE) {
+        return fetchLeaderboardData()
+      }
       const response = await fetch(`${API_BASE_URL}/leaderboard`)
       if (!response.ok) {
         throw new Error('Failed to fetch leaderboard')
@@ -62,8 +67,10 @@ export function usePlayerProfile(playerId: string) {
   return useQuery({
     queryKey: ['player', playerId],
     queryFn: async (): Promise<Player> => {
-      const url = USE_LOCAL_API ? `/api/players/${playerId}` : `${API_BASE_URL}/players/${playerId}`
-      const response = await fetch(url)
+      if (USE_SUPABASE) {
+        return fetchPlayerProfile(playerId)
+      }
+      const response = await fetch(`${API_BASE_URL}/players/${playerId}`)
       if (!response.ok) {
         throw new Error('Failed to fetch player profile')
       }
@@ -80,9 +87,7 @@ export function usePlayerGames(playerId: string, limit: number = 5) {
   return useQuery({
     queryKey: ['player-games', playerId, limit],
     queryFn: async () => {
-      const url = USE_LOCAL_API 
-        ? `/api/players/${playerId}/games?limit=${limit}`
-        : `${API_BASE_URL}/players/${playerId}/games?limit=${limit}`
+      const url = `${API_BASE_URL}/players/${playerId}/games?limit=${limit}`
       const response = await fetch(url)
       if (!response.ok) {
         throw new Error('Failed to fetch player games')

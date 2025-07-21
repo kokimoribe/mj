@@ -49,6 +49,7 @@ export function LeaderboardHeader({
             onClick={onRefresh}
             disabled={isRefreshing}
             data-testid={TEST_IDS.REFRESH_BUTTON}
+            aria-label="Refresh leaderboard"
           >
             <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
           </Button>

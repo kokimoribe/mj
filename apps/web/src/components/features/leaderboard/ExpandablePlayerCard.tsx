@@ -2,9 +2,8 @@
 
 import React from 'react'
 import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ChevronUp, ChevronDown, TrendingUp, TrendingDown, Trophy } from 'lucide-react'
+import { ChevronUp, ChevronDown, TrendingUp, TrendingDown } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { cn } from "@/lib/utils"
 import type { Player } from "@/lib/queries"
@@ -32,8 +31,6 @@ function ExpandablePlayerCardComponent({ player, isExpanded, onToggle, 'data-tes
   // Mock data for expanded view (would come from API)
   const winRate = 40 // percentage
   const avgPlacement = 2.1
-  const recentPlacements = [1, 2, 3, 1, 2] // last 5 games
-  const totalPoints = player.averagePlusMinus * player.games
 
   return (
     <Card 
@@ -82,14 +79,14 @@ function ExpandablePlayerCardComponent({ player, isExpanded, onToggle, 'data-tes
                     <>
                       <TrendingUp className="w-3 h-3 mr-1" aria-label="Rating increased" />
                       <span aria-label={`Rating increased by ${ratingChange.toFixed(1)} points`}>
-                        +{ratingChange.toFixed(1)}
+                        ↑ {ratingChange.toFixed(1)}
                       </span>
                     </>
                   ) : (
                     <>
                       <TrendingDown className="w-3 h-3 mr-1" aria-label="Rating decreased" />
                       <span aria-label={`Rating decreased by ${Math.abs(ratingChange).toFixed(1)} points`}>
-                        {ratingChange.toFixed(1)}
+                        ↓ {Math.abs(ratingChange).toFixed(1)}
                       </span>
                     </>
                   )}
@@ -113,42 +110,43 @@ function ExpandablePlayerCardComponent({ player, isExpanded, onToggle, 'data-tes
             {/* Quick Stats */}
             <div className="grid grid-cols-3 gap-3 text-center">
               <div>
-                <div className="text-sm text-muted-foreground">Win Rate</div>
+                <div className="text-sm text-muted-foreground">Win Rate:</div>
                 <div className="font-semibold">{winRate}%</div>
               </div>
               <div>
-                <div className="text-sm text-muted-foreground">Avg Place</div>
+                <div className="text-sm text-muted-foreground">Avg Placement:</div>
                 <div className="font-semibold">{avgPlacement}</div>
               </div>
               <div>
-                <div className="text-sm text-muted-foreground">Season Total</div>
-                <div className={cn(
-                  "font-semibold",
-                  totalPoints >= 0 ? "text-green-600" : "text-red-600"
-                )}>
-                  {totalPoints >= 0 ? '+' : ''}{totalPoints.toFixed(0)} pts
+                <div className="text-sm text-muted-foreground">Last Played:</div>
+                <div className="font-semibold">
+                  {player.lastGameDate ? new Date(player.lastGameDate).toLocaleDateString() : 'N/A'}
                 </div>
               </div>
             </div>
 
-            {/* Recent Placements */}
-            <div>
-              <div className="text-sm text-muted-foreground mb-2">Recent Games</div>
-              <div className="flex gap-2">
-                {recentPlacements.map((place, i) => (
-                  <Badge 
-                    key={i}
-                    variant={place === 1 ? "default" : "secondary"}
-                    className={cn(
-                      "w-8 h-8 p-0 flex items-center justify-center",
-                      place === 1 && "bg-yellow-500 hover:bg-yellow-600"
-                    )}
-                  >
-                    {place === 1 ? <Trophy className="w-4 h-4" /> : place}
-                  </Badge>
-                ))}
+            {/* Rating Trend Sparkline */}
+            {player.ratingHistory && player.ratingHistory.length > 0 && (
+              <div>
+                <div className="text-sm text-muted-foreground mb-2">Rating Trend (Last 10 Games)</div>
+                <div className="h-12 flex items-end gap-1">
+                  {player.ratingHistory!.slice(-10).map((rating, i) => {
+                    const minRating = Math.min(...player.ratingHistory!.slice(-10));
+                    const maxRating = Math.max(...player.ratingHistory!.slice(-10));
+                    const height = maxRating === minRating ? 50 : 
+                      ((rating - minRating) / (maxRating - minRating)) * 100;
+                    return (
+                      <div
+                        key={i}
+                        className="flex-1 bg-primary/20 rounded-t"
+                        style={{ height: `${Math.max(height, 10)}%` }}
+                        title={`Rating: ${rating.toFixed(1)}`}
+                      />
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Action Button */}
             <Button 
@@ -156,7 +154,7 @@ function ExpandablePlayerCardComponent({ player, isExpanded, onToggle, 'data-tes
               className="w-full"
               onClick={handleProfileClick}
             >
-              View Full Profile →
+              View Full Profile
             </Button>
           </div>
         )}

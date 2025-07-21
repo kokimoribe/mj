@@ -1,10 +1,10 @@
 {
   "apps/web/**/*.{ts,tsx}": [
-    "eslint --fix",
+    "cd apps/web && npx eslint --fix",
     "prettier --write"
   ],
   "apps/web/**/*.{js,jsx}": [
-    "eslint --fix",
+    "cd apps/web && npx eslint --fix",
     "prettier --write"
   ],
   "**/*.{md,json}": [

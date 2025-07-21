@@ -32,7 +32,7 @@ function LeaderboardViewComponent() {
     return <LeaderboardSkeleton />
   }
 
-  if (error) {
+  if (error && !data) {
     return (
       <div className="space-y-4">
         <Alert variant="destructive">
@@ -60,6 +60,15 @@ function LeaderboardViewComponent() {
 
   return (
     <div className="space-y-6" data-testid={TEST_IDS.LEADERBOARD_VIEW}>
+      {error && data && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Failed to load leaderboard
+          </AlertDescription>
+        </Alert>
+      )}
+      
       <LeaderboardHeader
         seasonName={data.seasonName}
         totalGames={data.totalGames}

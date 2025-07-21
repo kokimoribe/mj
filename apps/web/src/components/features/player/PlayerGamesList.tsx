@@ -93,7 +93,7 @@ export const PlayerGamesList = memo(function PlayerGamesList({
   return (
     <div className="space-y-3">
       {visibleGames.map(game => (
-        <Card key={game.id} data-testid={`player-game-${game.id}`}>
+        <Card key={game.id} data-testid={`game-entry-${game.id}`}>
           <CardContent className="p-4">
             <div className="space-y-2">
               {/* Date and Placement */}
@@ -193,7 +193,7 @@ export const PlayerGamesList = memo(function PlayerGamesList({
             onClick={loadMore}
             disabled={isLoadingMore}
           >
-            {isLoadingMore ? "Loading..." : "Load More Games"}
+            {isLoadingMore ? "Loading..." : "Show More Games"}
           </Button>
         )}
         {displayedGames > 5 && (

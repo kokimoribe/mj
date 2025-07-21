@@ -37,8 +37,11 @@ export function RatingChart({ data }: RatingChartProps) {
 
   if (data.length < 2) {
     return (
-      <div className="bg-muted text-muted-foreground flex h-48 items-center justify-center rounded">
-        Not enough data to show rating progression
+      <div
+        className="bg-muted text-muted-foreground flex h-48 items-center justify-center rounded"
+        data-testid="rating-chart"
+      >
+        Need more games for chart
       </div>
     );
   }
@@ -103,7 +106,7 @@ export function RatingChart({ data }: RatingChartProps) {
   };
 
   return (
-    <div className="h-48 w-full">
+    <div className="h-48 w-full" data-testid="rating-chart">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
           data={chartData}

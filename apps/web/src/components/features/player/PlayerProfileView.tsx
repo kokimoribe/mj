@@ -6,26 +6,13 @@ import {
   usePlayerGames,
   useLeaderboard,
 } from "@/lib/queries";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-  ArrowLeft,
-  TrendingUp,
-  TrendingDown,
-  Trophy,
-  ChartLine,
-} from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
-import { cn } from "@/lib/utils";
 import { RatingChart } from "./RatingChart";
 import { PlayerGamesList } from "./PlayerGamesList";
 
@@ -54,7 +41,10 @@ export const PlayerProfileView = memo(function PlayerProfileView({
 }: PlayerProfileViewProps) {
   const router = useRouter();
   const { data: player, isLoading, error } = usePlayerProfile(playerId);
-  const { data: gamesData, isLoading: gamesLoading } = usePlayerGames(playerId);
+  const { data: gamesData, isLoading: gamesLoading } = usePlayerGames(
+    playerId,
+    100
+  ); // Get all games for chart
   const { data: leaderboardData } = useLeaderboard();
 
   // Calculate player rank from leaderboard position
@@ -119,28 +109,25 @@ export const PlayerProfileView = memo(function PlayerProfileView({
   }, [gamesData]);
 
   const recentTrend = useMemo(() => {
-    if (!gamesData || gamesData.length === 0) return 0;
-    if (!player) return 0;
+    if (!gamesData || gamesData.length === 0) return null;
+    if (!player) return null;
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
     const recentGames = gamesData.filter(
       (g: PlayerGame) => new Date(g.date) > thirtyDaysAgo
     );
-    if (recentGames.length === 0) return player.ratingChange || 0;
 
-    return recentGames.reduce(
-      (sum: number, g: PlayerGame) => sum + (g.ratingChange || 0),
-      0
-    );
-  }, [gamesData, player]);
+    // Find the oldest game within 30 days window to calculate change
+    if (recentGames.length === 0) {
+      // No games in last 30 days
+      return null;
+    }
 
-  const seasonChange = useMemo(() => {
-    if (!gamesData || gamesData.length === 0) return 0;
-    if (!player) return 0;
-    // Assuming season starts at 1500 rating (25 mu, 8.33 sigma => ~25-16.66 = 8.34)
-    const seasonStartRating = 8.34;
-    return player.rating - seasonStartRating;
+    // Calculate change from 30 days ago to now
+    const oldestRecentGame = recentGames[recentGames.length - 1];
+    const ratingThirtyDaysAgo = oldestRecentGame.ratingBefore;
+    return player.rating - ratingThirtyDaysAgo;
   }, [gamesData, player]);
 
   if (isLoading) {
@@ -169,29 +156,21 @@ export const PlayerProfileView = memo(function PlayerProfileView({
         Back
       </Button>
 
-      {/* Player Header - Simplified */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <div>
-              <CardTitle className="text-2xl">{player.name}</CardTitle>
-              <CardDescription>
-                {playerRank
-                  ? `Rank #${playerRank}`
-                  : `Rating: ${player.rating.toFixed(1)}`}{" "}
-                • {player.games} games
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-      </Card>
+      {/* Player Header */}
+      <div className="space-y-1">
+        <h1 className="text-2xl font-bold">{player.name}</h1>
+        <h2 className="text-muted-foreground text-base">
+          Rank #{playerRank || "—"} • Rating: {player.rating.toFixed(1)} •{" "}
+          {player.games} games
+        </h2>
+      </div>
 
-      {/* Rating Trend */}
+      {/* Rating Progression */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <ChartLine className="h-5 w-5" />
-            Rating Trend
+            <span className="text-xl">📈</span>
+            Rating Progression
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -204,38 +183,18 @@ export const PlayerProfileView = memo(function PlayerProfileView({
             )}
 
             {/* Trend stats */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="flex justify-between text-sm">
+              <div>Current: {player.rating.toFixed(1)}</div>
               <div>
-                <p className="text-muted-foreground text-sm">30-day change</p>
-                <p
-                  className={cn(
-                    "flex items-center gap-1 text-lg font-semibold",
-                    recentTrend >= 0 ? "text-green-600" : "text-red-600"
-                  )}
-                >
-                  {recentTrend >= 0 ? (
-                    <TrendingUp className="h-4 w-4" />
-                  ) : (
-                    <TrendingDown className="h-4 w-4" />
-                  )}
-                  {Math.abs(recentTrend).toFixed(1)}
-                </p>
-              </div>
-              <div>
-                <p className="text-muted-foreground text-sm">Season total</p>
-                <p
-                  className={cn(
-                    "flex items-center gap-1 text-lg font-semibold",
-                    seasonChange >= 0 ? "text-green-600" : "text-red-600"
-                  )}
-                >
-                  {seasonChange >= 0 ? (
-                    <TrendingUp className="h-4 w-4" />
-                  ) : (
-                    <TrendingDown className="h-4 w-4" />
-                  )}
-                  {Math.abs(seasonChange).toFixed(1)}
-                </p>
+                30-day:{" "}
+                {recentTrend !== null ? (
+                  <>
+                    {recentTrend >= 0 ? "↑" : "↓"}
+                    {Math.abs(recentTrend).toFixed(1)}
+                  </>
+                ) : (
+                  "N/A"
+                )}
               </div>
             </div>
           </div>
@@ -246,21 +205,21 @@ export const PlayerProfileView = memo(function PlayerProfileView({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Trophy className="h-5 w-5" />
+            <span className="text-xl">🎯</span>
             Performance Stats
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <p className="text-muted-foreground text-sm">Average Placement</p>
-              <p className="font-semibold">
+          <div className="space-y-3" data-testid="performance-stats">
+            <div>
+              <p className="text-sm">
+                Average Placement:{" "}
                 {avgPlacement !== null ? avgPlacement.toFixed(1) : "—"}
               </p>
             </div>
-            <div className="flex items-center justify-between">
-              <p className="text-muted-foreground text-sm">Last Played</p>
-              <p className="font-medium">
+            <div>
+              <p className="text-sm">
+                Last Played:{" "}
                 {formatDistanceToNow(new Date(player.lastGameDate), {
                   addSuffix: true,
                 })}
@@ -273,18 +232,29 @@ export const PlayerProfileView = memo(function PlayerProfileView({
       {/* Recent Games */}
       <Card>
         <CardHeader>
-          <CardTitle>Recent Games</CardTitle>
+          <CardTitle>
+            <span className="text-xl">🎮</span> Recent Games •{" "}
+            <span className="text-muted-foreground text-sm font-normal">
+              Showing{" "}
+              {gamesData && gamesData.length > 0
+                ? Math.min(5, gamesData.length)
+                : 0}{" "}
+              of {gamesData?.length || 0}
+            </span>
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          {gamesLoading ? (
-            <Skeleton className="h-48 w-full" />
-          ) : gamesData && gamesData.length > 0 ? (
-            <PlayerGamesList playerId={playerId} initialGames={gamesData} />
-          ) : (
-            <div className="text-muted-foreground py-4 text-center text-sm">
-              No games played yet
-            </div>
-          )}
+          <div data-testid="games-list">
+            {gamesLoading ? (
+              <Skeleton className="h-48 w-full" />
+            ) : gamesData && gamesData.length > 0 ? (
+              <PlayerGamesList playerId={playerId} initialGames={gamesData} />
+            ) : (
+              <div className="text-muted-foreground py-4 text-center text-sm">
+                No games played yet
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>

@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { testIds } from "@/lib/test-ids";
+import { mockAPIResponses } from "../../utils/test-helpers";
 
 // Test IDs for Game History components
 const gameHistoryIds = {
@@ -17,6 +18,9 @@ const gameHistoryIds = {
 
 test.describe("Game History", () => {
   test.beforeEach(async ({ page }) => {
+    // Set up API mocks
+    await mockAPIResponses(page);
+
     // Navigate to the Games tab
     await page.goto("/games");
     await page.waitForLoadState("networkidle");

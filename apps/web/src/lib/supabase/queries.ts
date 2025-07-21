@@ -113,3 +113,200 @@ export async function fetchPlayerProfile(playerId: string): Promise<Player> {
     ratingHistory: data.rating_history || [],
   };
 }
+
+// Game History Types
+export interface GameResult {
+  playerId: string;
+  playerName: string;
+  placement: number; // 1-4
+  rawScore: number; // Final table score
+  scoreAdjustment: number; // Plus/minus with uma/oka
+  ratingBefore: number;
+  ratingAfter: number;
+  ratingChange: number;
+}
+
+export interface Game {
+  id: string;
+  date: string; // ISO 8601 format
+  seasonId: string;
+  results: GameResult[]; // Always 4 players
+}
+
+export interface GameHistoryData {
+  games: Game[];
+  totalGames: number;
+  hasMore: boolean;
+  showingAll: boolean;
+}
+
+export interface FilterOptions {
+  playerId?: string; // undefined = all games
+  offset?: number;
+  limit?: number;
+}
+
+// Fetch all players for filter dropdown
+export async function fetchAllPlayers() {
+  const supabase = createClient();
+
+  const { data: players, error } = await supabase
+    .from("players")
+    .select("id, name")
+    .order("name", { ascending: true });
+
+  if (error) {
+    throw new Error(`Failed to fetch players: ${error.message}`);
+  }
+
+  return players || [];
+}
+
+// Fetch game history with optional player filter
+export async function fetchGameHistory(
+  options: FilterOptions = {}
+): Promise<GameHistoryData> {
+  const supabase = createClient();
+  const currentSeasonConfigHash =
+    process.env.NEXT_PUBLIC_CURRENT_SEASON_CONFIG_HASH ||
+    DEFAULT_SEASON_CONFIG_HASH;
+  const { playerId, offset = 0, limit = 10 } = options;
+
+  let query = supabase
+    .from("games")
+    .select(
+      `
+      id,
+      finished_at,
+      game_seats!inner(
+        seat,
+        player_id,
+        final_score,
+        players!inner(
+          id,
+          name
+        )
+      ),
+      cached_game_results!inner(
+        player_id,
+        placement,
+        raw_score,
+        score_delta,
+        rating_before,
+        rating_after,
+        rating_change
+      )
+    `,
+      { count: "exact" }
+    )
+    .eq("status", "finished")
+    .eq("cached_game_results.config_hash", currentSeasonConfigHash)
+    .order("finished_at", { ascending: false });
+
+  // Apply player filter if specified
+  if (playerId) {
+    // First get game IDs for the player
+    const { data: playerGames, error: playerError } = await supabase
+      .from("game_seats")
+      .select(
+        `
+        game_id,
+        games!inner(
+          id,
+          finished_at,
+          status
+        )
+      `
+      )
+      .eq("player_id", playerId)
+      .eq("games.status", "finished")
+      .order("games.finished_at", { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (playerError) {
+      throw new Error(`Failed to fetch player games: ${playerError.message}`);
+    }
+
+    const gameIds = playerGames?.map(g => g.game_id) || [];
+
+    if (gameIds.length === 0) {
+      return {
+        games: [],
+        totalGames: 0,
+        hasMore: false,
+        showingAll: false,
+      };
+    }
+
+    query = query.in("id", gameIds);
+  } else {
+    query = query.range(offset, offset + limit - 1);
+  }
+
+  const { data: games, error, count } = await query;
+
+  if (error) {
+    throw new Error(`Failed to fetch game history: ${error.message}`);
+  }
+
+  // Transform the data to match our interface
+  const transformedGames: Game[] = (games || []).map(game => {
+    // Group results by game
+    const gameResults: GameResult[] = game.cached_game_results
+      .filter((result: any) => result.config_hash === currentSeasonConfigHash)
+      .map((result: any) => {
+        const seat = game.game_seats.find(
+          (seat: any) => seat.player_id === result.player_id
+        );
+        return {
+          playerId: result.player_id,
+          playerName: seat?.players?.name || "Unknown",
+          placement: result.placement,
+          rawScore: result.raw_score,
+          scoreAdjustment: result.score_delta,
+          ratingBefore: result.rating_before,
+          ratingAfter: result.rating_after,
+          ratingChange: result.rating_change,
+        };
+      })
+      .sort((a: GameResult, b: GameResult) => a.placement - b.placement);
+
+    return {
+      id: game.id,
+      date: game.finished_at,
+      seasonId: currentSeasonConfigHash,
+      results: gameResults,
+    };
+  });
+
+  return {
+    games: transformedGames,
+    totalGames: count || 0,
+    hasMore: (count || 0) > offset + limit,
+    showingAll: false,
+  };
+}
+
+// Get game count for each player (for filter dropdown)
+export async function fetchPlayerGameCounts() {
+  const supabase = createClient();
+  const currentSeasonConfigHash =
+    process.env.NEXT_PUBLIC_CURRENT_SEASON_CONFIG_HASH ||
+    DEFAULT_SEASON_CONFIG_HASH;
+
+  const { data, error } = await supabase
+    .from("cached_player_ratings")
+    .select("player_id, games_played")
+    .eq("config_hash", currentSeasonConfigHash);
+
+  if (error) {
+    throw new Error(`Failed to fetch player game counts: ${error.message}`);
+  }
+
+  const gameCounts: Record<string, number> = {};
+  data?.forEach(item => {
+    gameCounts[item.player_id] = item.games_played;
+  });
+
+  return gameCounts;
+}

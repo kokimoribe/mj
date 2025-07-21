@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronUp, ChevronDown, TrendingUp, TrendingDown } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { formatDistanceToNow } from "date-fns";
 import type { Player } from "@/lib/queries";
 
 interface ExpandablePlayerCardProps {
@@ -33,9 +34,12 @@ function ExpandablePlayerCardComponent({
   const ratingChange = player.ratingChange || 0;
   const isPositiveChange = ratingChange >= 0;
 
-  // Mock data for expanded view (would come from API)
-  const winRate = 40; // percentage
-  const avgPlacement = 2.1;
+  // Calculate stats from available data
+  // Note: Without full game history in the leaderboard view, we can't calculate
+  // win rate and average placement. These would need to be added to the Player
+  // interface or fetched on-demand when the card is expanded.
+  const winRate: number | null = null; // Not available without game history
+  const avgPlacement: number | null = null; // Not available without game history
 
   return (
     <Card
@@ -130,13 +134,17 @@ function ExpandablePlayerCardComponent({
             <div className="grid grid-cols-3 gap-3 text-center">
               <div>
                 <div className="text-muted-foreground text-sm">Win Rate:</div>
-                <div className="font-semibold">{winRate}%</div>
+                <div className="font-semibold">
+                  {winRate !== null ? `${winRate}%` : "—"}
+                </div>
               </div>
               <div>
                 <div className="text-muted-foreground text-sm">
                   Avg Placement:
                 </div>
-                <div className="font-semibold">{avgPlacement}</div>
+                <div className="font-semibold">
+                  {avgPlacement !== null ? avgPlacement!.toFixed(1) : "—"}
+                </div>
               </div>
               <div>
                 <div className="text-muted-foreground text-sm">
@@ -144,7 +152,9 @@ function ExpandablePlayerCardComponent({
                 </div>
                 <div className="font-semibold">
                   {player.lastGameDate
-                    ? new Date(player.lastGameDate).toLocaleDateString()
+                    ? formatDistanceToNow(new Date(player.lastGameDate), {
+                        addSuffix: true,
+                      })
                     : "N/A"}
                 </div>
               </div>

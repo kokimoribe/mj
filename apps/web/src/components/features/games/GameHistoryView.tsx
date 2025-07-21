@@ -1,170 +1,249 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useGameHistory } from '@/lib/queries'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { format, formatDistanceToNow } from 'date-fns'
-import { History, Calendar, Users, Plus } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-import { cn } from '@/lib/utils'
+import { useState, useMemo } from "react";
+import {
+  useGameHistory,
+  useAllPlayers,
+  usePlayerGameCounts,
+} from "@/lib/queries";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { format } from "date-fns";
+import { Calendar } from "lucide-react";
+import { testIds } from "@/lib/test-ids";
 
 export function GameHistoryView() {
-  const router = useRouter()
-  const [limit, setLimit] = useState(20)
-  const { data, isLoading, error } = useGameHistory(limit)
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | undefined>(
+    undefined
+  );
+  const [showingAll, setShowingAll] = useState(false);
 
-  if (isLoading) {
-    return <GameHistorySkeleton />
+  // Fetch data
+  const {
+    data: gameData,
+    isLoading: gamesLoading,
+    error: gamesError,
+  } = useGameHistory(selectedPlayerId);
+  const { data: players, isLoading: playersLoading } = useAllPlayers();
+  const { data: gameCounts } = usePlayerGameCounts();
+
+  // Calculate visible games based on showingAll state
+  const visibleGames = useMemo(() => {
+    if (!gameData?.games) return [];
+    return showingAll ? gameData.games : gameData.games.slice(0, 10);
+  }, [gameData?.games, showingAll]);
+
+  // Calculate total games (max of all player game counts)
+  const totalGames = useMemo(() => {
+    if (selectedPlayerId && gameCounts) {
+      return gameCounts[selectedPlayerId] || 0;
+    }
+    return gameData?.totalGames || 0;
+  }, [gameData?.totalGames, selectedPlayerId, gameCounts]);
+
+  if (gamesLoading || playersLoading) {
+    return <GameHistorySkeleton />;
   }
 
-  if (error) {
+  if (gamesError) {
     return (
       <Alert variant="destructive">
-        <AlertDescription>
-          Failed to load game history
-        </AlertDescription>
+        <AlertDescription>Failed to load game history</AlertDescription>
       </Alert>
-    )
+    );
   }
 
-  const games = data?.games || []
-
-  if (games.length === 0) {
-    return (
-      <Card>
-        <CardContent className="text-center py-8">
-          <History className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-          <p className="text-muted-foreground">No games recorded yet</p>
-        </CardContent>
-      </Card>
-    )
-  }
+  const games = gameData?.games || [];
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Game History</h1>
-        <p className="text-muted-foreground">
-          Browse recent games and results
+    <div className="space-y-4" data-testid={testIds.gameHistory.container}>
+      {/* Header */}
+      <div data-testid={testIds.gameHistory.header}>
+        <h1 className="text-2xl font-bold">🎮 Game History</h1>
+        <p className="text-muted-foreground text-sm">
+          Season 3 •{" "}
+          <span data-testid={testIds.gameHistory.gameCount}>
+            {totalGames} games
+          </span>
         </p>
       </div>
 
-      <div className="space-y-4">
-        {/* Header */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <History className="h-5 w-5" />
-                Recent Games
-              </CardTitle>
-              <Button 
-                onClick={() => router.push('/games/new')}
-                size="sm"
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                New Game
-              </Button>
-            </div>
-          </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
-              Showing {games.length} most recent games
-            </p>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => setLimit(limit + 20)}
-              disabled={games.length < limit}
-            >
-              Load More
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-        {/* Game List */}
-        <div className="space-y-3">
-          {games.map((game) => (
-            <GameCard key={game.id} game={game} />
-          ))}
-        </div>
+      {/* Filter Controls */}
+      <div className="flex gap-2">
+        <Select
+          value={selectedPlayerId || "all"}
+          onValueChange={value => {
+            setSelectedPlayerId(value === "all" ? undefined : value);
+            setShowingAll(false); // Reset pagination when filter changes
+          }}
+        >
+          <SelectTrigger
+            className="w-[200px]"
+            data-testid={testIds.gameHistory.filterDropdown}
+            aria-label="Filter games by player"
+          >
+            <SelectValue placeholder="Filter by player" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Games</SelectItem>
+            {players?.map(player => {
+              const count = gameCounts?.[player.id] || 0;
+              return (
+                <SelectItem key={player.id} value={player.id}>
+                  {player.name} ({count} games)
+                </SelectItem>
+              );
+            })}
+          </SelectContent>
+        </Select>
       </div>
+
+      {/* Games List */}
+      {games.length === 0 ? (
+        <Card data-testid={testIds.gameHistory.emptyState}>
+          <CardContent className="py-8 text-center">
+            <p className="text-muted-foreground">
+              {selectedPlayerId ? "No games found" : "No games played yet"}
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          <div
+            className="space-y-3"
+            data-testid={testIds.gameHistory.gamesList}
+          >
+            {visibleGames.map(game => (
+              <GameCard key={game.id} game={game} />
+            ))}
+          </div>
+
+          {/* Load More / Show Less Button */}
+          {games.length > 10 && (
+            <div className="flex justify-center">
+              {!showingAll ? (
+                <Button
+                  variant="outline"
+                  onClick={() => setShowingAll(true)}
+                  data-testid={testIds.gameHistory.loadMoreButton}
+                >
+                  Load More Games
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  onClick={() => setShowingAll(false)}
+                  data-testid={testIds.gameHistory.showLessButton}
+                >
+                  Show Less Games
+                </Button>
+              )}
+            </div>
+          )}
+        </>
+      )}
     </div>
-  )
+  );
 }
 
 interface GameCardProps {
   game: {
-    id: string
-    date: string
-    players: Array<{
-      name: string
-      placement: number
-      score: number
-      plusMinus: number
-      ratingDelta: number
-    }>
-  }
+    id: string;
+    date: string;
+    results: Array<{
+      playerId: string;
+      playerName: string;
+      placement: number;
+      rawScore: number;
+      scoreAdjustment: number;
+      ratingChange: number;
+    }>;
+  };
 }
 
 function GameCard({ game }: GameCardProps) {
-  const getPlacementBadge = (placement: number) => {
+  const getPlacementMedal = (placement: number) => {
     switch (placement) {
-      case 1: return { text: '1st', color: 'bg-yellow-500 text-white' }
-      case 2: return { text: '2nd', color: 'bg-gray-400 text-white' }
-      case 3: return { text: '3rd', color: 'bg-orange-600 text-white' }
-      case 4: return { text: '4th', color: 'bg-red-600 text-white' }
-      default: return { text: placement.toString(), color: 'bg-muted text-muted-foreground' }
+      case 1:
+        return "🥇";
+      case 2:
+        return "🥈";
+      case 3:
+        return "🥉";
+      case 4:
+        return "4️⃣";
+      default:
+        return placement.toString();
     }
-  }
+  };
 
+  const formatRatingChange = (change: number) => {
+    if (change === 0) return "—";
+    const arrow = change > 0 ? "↑" : "↓";
+    return `${arrow}${Math.abs(change)}`;
+  };
+
+  const formatScore = (score: number) => {
+    return score.toLocaleString();
+  };
+
+  const formatScoreAdjustment = (adjustment: number) => {
+    const sign = adjustment >= 0 ? "+" : "";
+    return `${sign}${adjustment.toLocaleString()}`;
+  };
 
   return (
-    <Card data-testid={`game-${game.id}`}>
-      <CardContent className="p-4">
-        {/* Game Header */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Calendar className="h-4 w-4" />
-            <span data-testid="game-date" className="game-date">{format(new Date(game.date), 'MM/dd/yyyy')}</span>
-            <span className="text-xs">
-              ({formatDistanceToNow(new Date(game.date), { addSuffix: true })})
-            </span>
-          </div>
-          <Badge variant="outline" className="text-xs">
-            <Users className="h-3 w-3 mr-1" />
-            {game.players.length}P
-          </Badge>
+    <Card
+      data-testid={testIds.gameHistory.gameCard}
+      aria-label={`Game played on ${format(new Date(game.date), "MMM d, yyyy")}`}
+    >
+      <CardHeader className="pb-3">
+        <div className="text-muted-foreground flex items-center gap-2 text-sm">
+          <Calendar className="h-4 w-4" />
+          <span data-testid="game-date">
+            {format(new Date(game.date), "MMM d, yyyy")} •{" "}
+            {format(new Date(game.date), "h:mm a")}
+          </span>
         </div>
-
-        {/* Player Results */}
+      </CardHeader>
+      <CardContent>
         <div className="space-y-2">
-          {game.players.map((player) => (
-            <div 
-              key={`${game.id}-${player.name}`}
+          {game.results.map(result => (
+            <div
+              key={`${game.id}-${result.playerId}`}
               className="flex items-center justify-between text-sm"
+              data-testid="player-result"
             >
               <div className="flex items-center gap-2">
-                <Badge className={cn("text-xs font-bold min-w-[40px] justify-center border-0", getPlacementBadge(player.placement).color)}>
-                  {getPlacementBadge(player.placement).text}
-                </Badge>
-                <span className="font-medium">{player.name}</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-xs text-muted-foreground">
-                  {player.score.toLocaleString()}
+                <span className="text-lg">
+                  {getPlacementMedal(result.placement)}
                 </span>
-                <Badge 
-                  variant={player.plusMinus >= 0 ? "default" : "destructive"}
-                  className="text-xs min-w-[60px] justify-center"
+                <span className="font-medium">{result.playerName}</span>
+              </div>
+              <div className="flex items-center gap-3 text-xs">
+                <span>{formatScore(result.rawScore)}</span>
+                <span>→</span>
+                <span
+                  className={
+                    result.scoreAdjustment >= 0
+                      ? "text-green-600"
+                      : "text-red-600"
+                  }
                 >
-                  {player.plusMinus >= 0 ? '+' : ''}{player.plusMinus.toLocaleString()}
+                  {formatScoreAdjustment(result.scoreAdjustment)}
+                </span>
+                <Badge variant="outline" className="text-xs">
+                  {formatRatingChange(result.ratingChange)}
                 </Badge>
               </div>
             </div>
@@ -172,18 +251,19 @@ function GameCard({ game }: GameCardProps) {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
 
 function GameHistorySkeleton() {
   return (
-    <div className="space-y-4">
-      <Skeleton className="h-32 w-full" />
+    <div className="space-y-4" data-testid={testIds.gameHistory.loadingState}>
+      <Skeleton className="h-20 w-full" />
+      <Skeleton className="h-10 w-[200px]" />
       <div className="space-y-3">
         {Array.from({ length: 5 }).map((_, i) => (
           <Skeleton key={i} className="h-40 w-full" />
         ))}
       </div>
     </div>
-  )
+  );
 }

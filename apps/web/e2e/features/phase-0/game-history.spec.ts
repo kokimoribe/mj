@@ -1,6 +1,5 @@
 import { test, expect } from "@playwright/test";
 import { testIds } from "@/lib/test-ids";
-import { mockAPIResponses } from "../../utils/test-helpers";
 
 // Test IDs for Game History components
 const gameHistoryIds = {

@@ -143,7 +143,9 @@ function ExpandablePlayerCardComponent({
                   Avg Placement:
                 </div>
                 <div className="font-semibold">
-                  {avgPlacement !== null ? avgPlacement!.toFixed(1) : "—"}
+                  {avgPlacement !== null
+                    ? (avgPlacement as number).toFixed(1)
+                    : "—"}
                 </div>
               </div>
               <div>

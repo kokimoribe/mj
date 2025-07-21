@@ -32,7 +32,7 @@ interface PlayerGamesListProps {
 }
 
 export function PlayerGamesList({
-  playerId,
+  playerId: _playerId,
   initialGames,
 }: PlayerGamesListProps) {
   const [displayedGames, setDisplayedGames] = useState(5); // Start by showing 5 games

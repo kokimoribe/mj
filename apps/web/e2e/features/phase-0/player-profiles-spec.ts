@@ -6,7 +6,6 @@ import {
   waitForElement,
   mockAPIResponses,
   checkAccessibility,
-  setupPlayerProfileMocks,
 } from "../../utils/test-helpers";
 
 test.describe("Player Profiles - Specification Tests", () => {
@@ -506,15 +505,11 @@ test.describe("Player Profiles - Specification Tests", () => {
       await page.setViewportSize({ width: 375, height: 812 });
       await navigateTo(page, "/player/joseph");
 
-      // Simulate swipe right
-      await page.touchscreen.tap(50, 400);
-      await page.touchscreen.swipe({
-        startX: 50,
-        startY: 400,
-        endX: 300,
-        endY: 400,
-        steps: 10,
-      });
+      // Simulate swipe right using drag
+      await page.mouse.move(50, 400);
+      await page.mouse.down();
+      await page.mouse.move(300, 400, { steps: 10 });
+      await page.mouse.up();
 
       // Should navigate back (if implemented)
       // Note: This may not work in all browsers/test environments

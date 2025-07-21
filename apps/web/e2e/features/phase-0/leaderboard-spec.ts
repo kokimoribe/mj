@@ -77,7 +77,9 @@ test.describe("PWA Leaderboard - Specification Tests", () => {
         const rating = parseFloat(ratingText || "0");
         const games = parseInt(gamesText?.match(/(\d+) games/)?.[1] || "0");
 
-        players.push({ name, rating, games });
+        if (name) {
+          players.push({ name, rating, games });
+        }
       }
 
       // Verify sorting

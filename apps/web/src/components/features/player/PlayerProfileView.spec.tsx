@@ -1,15 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import {
-  render,
-  screen,
-  fireEvent,
-  waitFor,
-  within,
-} from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { PlayerProfileView } from "./PlayerProfileView";
 import * as queries from "@/lib/queries";
-import { TEST_IDS } from "@/lib/test-ids";
 
 // Mock the queries
 vi.mock("@/lib/queries", () => ({

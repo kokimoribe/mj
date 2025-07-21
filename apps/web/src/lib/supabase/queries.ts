@@ -260,7 +260,7 @@ export async function fetchGameHistory(
         );
         return {
           playerId: result.player_id,
-          playerName: seat?.players?.name || "Unknown",
+          playerName: (seat?.players as any)?.name || "Unknown",
           placement: result.placement,
           rawScore: result.raw_score,
           scoreAdjustment: result.score_delta,

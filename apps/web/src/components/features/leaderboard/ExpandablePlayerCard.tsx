@@ -130,28 +130,28 @@ function ExpandablePlayerCardComponent({
         {isExpanded && (
           <div className="bg-muted/30 space-y-3 border-t px-4 py-4">
             {/* Quick Stats */}
-            <div className="grid grid-cols-2 gap-3 text-center">
-              <div>
-                <div className="text-muted-foreground text-sm">
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground text-sm">
                   Avg Placement:
-                </div>
-                <div className="font-semibold">
+                </span>
+                <span className="font-semibold">
                   {avgPlacement !== null
                     ? (avgPlacement as number).toFixed(1)
                     : "—"}
-                </div>
+                </span>
               </div>
-              <div>
-                <div className="text-muted-foreground text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground text-sm">
                   Last Played:
-                </div>
-                <div className="font-semibold">
+                </span>
+                <span className="font-semibold">
                   {player.lastGameDate
                     ? formatDistanceToNow(new Date(player.lastGameDate), {
                         addSuffix: true,
                       })
                     : "N/A"}
-                </div>
+                </span>
               </div>
             </div>
 

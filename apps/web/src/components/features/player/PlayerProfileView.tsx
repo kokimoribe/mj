@@ -137,7 +137,11 @@ export const PlayerProfileView = memo(function PlayerProfileView({
   if (error || !player) {
     return (
       <div className="space-y-4">
-        <Button variant="ghost" onClick={() => router.back()} className="mb-4">
+        <Button
+          variant="ghost"
+          onClick={() => router.push("/")}
+          className="mb-4"
+        >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back
         </Button>
@@ -151,7 +155,7 @@ export const PlayerProfileView = memo(function PlayerProfileView({
   return (
     <div className="space-y-6">
       {/* Back Button */}
-      <Button variant="ghost" onClick={() => router.back()} size="sm">
+      <Button variant="ghost" onClick={() => router.push("/")} size="sm">
         <ArrowLeft className="mr-2 h-4 w-4" />
         Back
       </Button>

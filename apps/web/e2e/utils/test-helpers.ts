@@ -144,10 +144,11 @@ export async function mockAPIResponses(page: Page) {
   });
 
   // Mock leaderboard data
-  await page.route("**/api/leaderboard", async route => {
+  await page.route("**/leaderboard", async route => {
     const mockData = {
       seasonName: "Test Season",
       totalGames: 100,
+      totalPlayers: 3,
       lastUpdated: new Date().toISOString(),
       players: [
         {

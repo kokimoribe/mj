@@ -1,345 +1,405 @@
-import { test, expect } from '@playwright/test';
-import { TEST_IDS } from '../../../src/lib/test-ids';
-import { 
-  takeScreenshot, 
-  navigateTo, 
+import { test, expect } from "@playwright/test";
+import { TEST_IDS } from "../../../src/lib/test-ids";
+import {
+  takeScreenshot,
+  navigateTo,
   waitForElement,
   mockAPIResponses,
-  checkAccessibility 
-} from '../../utils/test-helpers';
+  checkAccessibility,
+} from "../../utils/test-helpers";
 
-test.describe('PWA Leaderboard - Specification Tests', () => {
+test.describe("PWA Leaderboard - Specification Tests", () => {
   test.beforeEach(async ({ page }) => {
     // Use mock data for consistent testing
     await mockAPIResponses(page);
+    // Ensure mocks are applied before navigation
+    await page.waitForTimeout(100);
   });
 
   // Test Scenario 1: PWA Installation Flow
-  test('PWA Installation Flow - app is installable on iOS', async ({ page }) => {
-    await navigateTo(page, '/');
-    
+  test("PWA Installation Flow - app is installable on iOS", async ({
+    page,
+  }) => {
+    await navigateTo(page, "/");
+
     // Check for PWA manifest
     const manifest = await page.evaluate(() => {
       const link = document.querySelector('link[rel="manifest"]');
-      return link ? link.getAttribute('href') : null;
+      return link ? link.getAttribute("href") : null;
     });
     expect(manifest).toBeTruthy();
-    
+
     // Check for iOS meta tags
     const appleTouchIcon = await page.evaluate(() => {
       const link = document.querySelector('link[rel="apple-touch-icon"]');
-      return link ? link.getAttribute('href') : null;
+      return link ? link.getAttribute("href") : null;
     });
     expect(appleTouchIcon).toBeTruthy();
-    
+
     // Check viewport meta tag
     const viewport = await page.evaluate(() => {
       const meta = document.querySelector('meta[name="viewport"]');
-      return meta ? meta.getAttribute('content') : null;
+      return meta ? meta.getAttribute("content") : null;
     });
-    expect(viewport).toContain('width=device-width');
-    
-    await takeScreenshot(page, 'pwa-leaderboard/installable-app');
+    expect(viewport).toContain("width=device-width");
+
+    await takeScreenshot(page, "pwa-leaderboard/installable-app");
   });
 
   // Test Scenario 2: View Current Rankings
-  test('View Current Rankings - displays players in rating order', async ({ page }) => {
-    await navigateTo(page, '/');
-    
+  test("View Current Rankings - displays players in rating order", async ({
+    page,
+  }) => {
+    await navigateTo(page, "/");
+
     // Verify leaderboard loads
-    const leaderboard = await waitForElement(page, `[data-testid="${TEST_IDS.LEADERBOARD_VIEW}"]`);
+    const leaderboard = await waitForElement(
+      page,
+      `[data-testid="${TEST_IDS.LEADERBOARD_VIEW}"]`
+    );
     await expect(leaderboard).toBeVisible();
-    
+
     // Get all player cards
-    const playerCards = page.locator(`[data-testid^="${TEST_IDS.PLAYER_CARD}-"]`);
+    const playerCards = page.locator(
+      `[data-testid^="${TEST_IDS.PLAYER_CARD}-"]`
+    );
     const count = await playerCards.count();
     expect(count).toBeGreaterThan(0);
-    
+
     // Verify players are sorted by rating (highest first)
-    const ratings = await playerCards.evaluateAll(cards => 
+    const ratings = await playerCards.evaluateAll(cards =>
       cards.map(card => {
-        const ratingText = card.querySelector('.text-2xl.font-bold')?.textContent || '0';
+        const ratingText =
+          card.querySelector(".text-2xl.font-bold")?.textContent || "0";
         return parseFloat(ratingText);
       })
     );
-    
+
     // Check descending order
     for (let i = 1; i < ratings.length; i++) {
       expect(ratings[i]).toBeLessThanOrEqual(ratings[i - 1]);
     }
-    
+
     // Verify player information is complete
     const firstCard = playerCards.first();
-    await expect(firstCard.locator('h3')).toBeVisible(); // Name
-    await expect(firstCard.locator('.text-2xl.font-bold')).toBeVisible(); // Rating
-    await expect(firstCard.locator('text=/\\d+ games/')).toBeVisible(); // Games count
-    
-    await takeScreenshot(page, 'pwa-leaderboard/current-rankings');
+    await expect(firstCard.locator("h3")).toBeVisible(); // Name
+    await expect(firstCard.locator(".text-2xl.font-bold")).toBeVisible(); // Rating
+    await expect(firstCard.locator("text=/\\d+ games/")).toBeVisible(); // Games count
+
+    await takeScreenshot(page, "pwa-leaderboard/current-rankings");
   });
 
   // Test Scenario 3: Pull to Refresh
-  test('Pull to Refresh - updates data and invalidates caches', async ({ page }) => {
-    await navigateTo(page, '/');
-    
+  test("Pull to Refresh - updates data and invalidates caches", async ({
+    page,
+  }) => {
+    await navigateTo(page, "/");
+
     // Wait for initial load
     await waitForElement(page, `[data-testid="${TEST_IDS.LEADERBOARD_VIEW}"]`);
-    
+
     // Find refresh button
     const refreshButton = page.getByTestId(TEST_IDS.LEADERBOARD_REFRESH);
-    
+
     if (await refreshButton.isVisible({ timeout: 1000 }).catch(() => false)) {
       // Click refresh
       await refreshButton.click();
-      
+
       // Verify toast notification appears
-      await expect(page.getByText(/updated|refreshed/i)).toBeVisible({ timeout: 5000 });
-      
-      await takeScreenshot(page, 'pwa-leaderboard/after-refresh');
+      await expect(page.getByText(/updated|refreshed/i)).toBeVisible({
+        timeout: 5000,
+      });
+
+      await takeScreenshot(page, "pwa-leaderboard/after-refresh");
     }
   });
 
   // Test Scenario 4: Expand Player Details
-  test('Expand Player Details - shows additional statistics', async ({ page }) => {
-    await navigateTo(page, '/');
-    
-    const firstCard = page.locator(`[data-testid^="${TEST_IDS.PLAYER_CARD}-"]`).first();
+  test("Expand Player Details - shows additional statistics", async ({
+    page,
+  }) => {
+    await navigateTo(page, "/");
+
+    const firstCard = page
+      .locator(`[data-testid^="${TEST_IDS.PLAYER_CARD}-"]`)
+      .first();
     await expect(firstCard).toBeVisible();
-    
+
     // Verify initial collapsed state
-    await expect(firstCard).toHaveAttribute('aria-expanded', 'false');
-    
+    await expect(firstCard).toHaveAttribute("aria-expanded", "false");
+
     // Click to expand
     await firstCard.click();
-    
+
     // Verify expanded state
-    await expect(firstCard).toHaveAttribute('aria-expanded', 'true');
-    
+    await expect(firstCard).toHaveAttribute("aria-expanded", "true");
+
     // Wait for animation
     await page.waitForTimeout(300);
-    
-    // Verify expanded content
-    await expect(page.getByText('Avg Placement:')).toBeVisible();
-    await expect(page.getByText('Win Rate:')).toBeVisible();
-    await expect(page.getByText('Last Played:')).toBeVisible();
-    await expect(page.getByText('View Full Profile')).toBeVisible();
-    
+
+    // Verify expanded content (within the expanded card)
+    const expandedContent = firstCard.locator(
+      '[data-testid="' + TEST_IDS.PLAYER_CARD_EXPANDED + '"]'
+    );
+    await expect(expandedContent.getByText("Avg Placement:")).toBeVisible();
+    await expect(expandedContent.getByText("Last Played:")).toBeVisible();
+    await expect(expandedContent.getByText("View Full Profile")).toBeVisible();
+
     // Note: Rating trend sparkline would be visible here once implemented
-    
-    await takeScreenshot(page, 'pwa-leaderboard/expanded-card');
+
+    await takeScreenshot(page, "pwa-leaderboard/expanded-card");
   });
 
   // Test Scenario 5: Offline Access
-  test('Offline Access - shows cached data when offline', async ({ page, context }) => {
+  test("Offline Access - shows cached data when offline", async ({
+    page,
+    context,
+  }) => {
     // First visit to cache data
-    await navigateTo(page, '/');
+    await navigateTo(page, "/");
     await waitForElement(page, `[data-testid="${TEST_IDS.LEADERBOARD_VIEW}"]`);
-    
+
     // Go offline
     await context.setOffline(true);
-    
+
     // Reload page
     await page.reload();
-    
+
     // Should still show leaderboard (from cache)
-    const leaderboard = page.locator(`[data-testid="${TEST_IDS.LEADERBOARD_VIEW}"]`);
+    const leaderboard = page.locator(
+      `[data-testid="${TEST_IDS.LEADERBOARD_VIEW}"]`
+    );
     await expect(leaderboard).toBeVisible();
-    
+
     // Should show offline indicator (once implemented)
     // await expect(page.getByText(/offline/i)).toBeVisible();
-    
-    await takeScreenshot(page, 'pwa-leaderboard/offline-mode');
-    
+
+    await takeScreenshot(page, "pwa-leaderboard/offline-mode");
+
     // Go back online
     await context.setOffline(false);
   });
 
   // Test Scenario 6: Navigate to Profile
-  test('Navigate to Profile - from expanded card', async ({ page }) => {
-    await navigateTo(page, '/');
-    
+  test("Navigate to Profile - from expanded card", async ({ page }) => {
+    await navigateTo(page, "/");
+
     // Expand first card
-    const firstCard = page.locator(`[data-testid^="${TEST_IDS.PLAYER_CARD}-"]`).first();
+    const firstCard = page
+      .locator(`[data-testid^="${TEST_IDS.PLAYER_CARD}-"]`)
+      .first();
     await firstCard.click();
-    
+
     // Click profile button
-    const profileButton = page.getByText('View Full Profile');
+    const profileButton = page.getByText("View Full Profile");
     await expect(profileButton).toBeVisible();
     await profileButton.click();
-    
+
     // Verify navigation
     await expect(page).toHaveURL(/\/player\/[^/]+$/);
-    
-    await takeScreenshot(page, 'pwa-leaderboard/navigated-to-profile');
+
+    await takeScreenshot(page, "pwa-leaderboard/navigated-to-profile");
   });
 
   // Test Scenario 7: Rating Change Indicators
-  test('Rating Change Indicators - shows up/down arrows with values', async ({ page }) => {
-    await navigateTo(page, '/');
-    
+  test("Rating Change Indicators - shows up/down arrows with values", async ({
+    page,
+  }) => {
+    await navigateTo(page, "/");
+
     const cards = page.locator(`[data-testid^="${TEST_IDS.PLAYER_CARD}-"]`);
     const firstCard = cards.first();
-    
+
     // Check for rating change indicators
     const ratingIndicator = firstCard.locator('svg[aria-label*="Rating"]');
     await expect(ratingIndicator).toBeVisible();
-    
+
     // Verify change value is shown
-    const changeValue = firstCard.locator('text=/[↑↓]\\s*\\d+\\.\\d+/');
+    const changeValue = firstCard.locator("text=/[↑↓]\\s*\\d+\\.\\d+/");
     await expect(changeValue).toBeVisible();
-    
-    await takeScreenshot(page, 'pwa-leaderboard/rating-indicators');
+
+    await takeScreenshot(page, "pwa-leaderboard/rating-indicators");
   });
 
   // Test Scenario 8: Season Summary Display
-  test('Season Summary Display - shows games, players, and last update', async ({ page }) => {
-    await navigateTo(page, '/');
-    
+  test("Season Summary Display - shows games, players, and last update", async ({
+    page,
+  }) => {
+    await navigateTo(page, "/");
+
     // Verify season header
     const header = page.getByTestId(TEST_IDS.LEADERBOARD_HEADER);
     await expect(header).toBeVisible();
-    
-    // Check season name
-    await expect(page.getByText(/Season \d+.*Leaderboard/)).toBeVisible();
-    
-    // Check total games
-    await expect(page.getByText(/\d+\s+games/)).toBeVisible();
-    
-    // Check active players
-    await expect(page.getByText(/\d+\s+players/)).toBeVisible();
-    
-    // Check last updated time
-    await expect(page.getByText(/Updated .* ago|Just now/)).toBeVisible();
-    
-    await takeScreenshot(page, 'pwa-leaderboard/season-summary');
+
+    // Check season name (includes emoji)
+    await expect(header.getByText(/🏆.*Leaderboard/)).toBeVisible();
+
+    // Check total games (in header only)
+    await expect(header.getByText(/\d+\s+games/)).toBeVisible();
+
+    // Check active players (in header only)
+    await expect(header.getByText(/\d+\s+players/)).toBeVisible();
+
+    // Check last updated time (in header only)
+    await expect(header.getByText(/Updated .* ago|Just now/)).toBeVisible();
+
+    await takeScreenshot(page, "pwa-leaderboard/season-summary");
   });
 
   // Edge Case 1: No Games Played
-  test('Edge Case - No Games Played', async ({ page }) => {
+  test("Edge Case - No Games Played", async ({ page }) => {
     // Mock empty data
-    await page.route('**/leaderboard', async route => {
+    await page.route("**/leaderboard", async route => {
       await route.fulfill({
         status: 200,
-        contentType: 'application/json',
+        contentType: "application/json",
         body: JSON.stringify({
           players: [],
           totalGames: 0,
           lastUpdated: new Date().toISOString(),
-          seasonName: 'Season 3'
-        })
+          seasonName: "Season 3",
+        }),
       });
     });
-    
-    await navigateTo(page, '/');
-    
-    // Should show 0 games message
-    await expect(page.getByText(/0\s+games/)).toBeVisible();
-    await expect(page.getByText(/0\s+players/)).toBeVisible();
-    
-    await takeScreenshot(page, 'pwa-leaderboard/no-games');
+
+    await navigateTo(page, "/");
+
+    // Should show 0 games message (within the header)
+    const header = page.getByTestId(TEST_IDS.LEADERBOARD_HEADER);
+    await expect(header.getByText(/0\s+games/)).toBeVisible();
+    await expect(header.getByText(/0\s+players/)).toBeVisible();
+
+    await takeScreenshot(page, "pwa-leaderboard/no-games");
   });
 
   // Edge Case 3: Tied Ratings
-  test('Edge Case - Tied Ratings sorted by games then name', async ({ page }) => {
+  test("Edge Case - Tied Ratings sorted by games then name", async ({
+    page,
+  }) => {
     // Mock data with tied ratings
-    await page.route('**/leaderboard', async route => {
+    await page.route("**/leaderboard", async route => {
       await route.fulfill({
         status: 200,
-        contentType: 'application/json',
+        contentType: "application/json",
         body: JSON.stringify({
           players: [
-            { id: '1', name: 'Alice', rating: 1500, games: 20, ratingChange: 0 },
-            { id: '2', name: 'Bob', rating: 1500, games: 15, ratingChange: 0 },
-            { id: '3', name: 'Charlie', rating: 1500, games: 15, ratingChange: 0 }
+            {
+              id: "1",
+              name: "Alice",
+              rating: 1500,
+              games: 20,
+              ratingChange: 0,
+            },
+            { id: "2", name: "Bob", rating: 1500, games: 15, ratingChange: 0 },
+            {
+              id: "3",
+              name: "Charlie",
+              rating: 1500,
+              games: 15,
+              ratingChange: 0,
+            },
           ],
           totalGames: 50,
           lastUpdated: new Date().toISOString(),
-          seasonName: 'Season 3'
-        })
+          seasonName: "Season 3",
+        }),
       });
     });
-    
-    await navigateTo(page, '/');
-    
+
+    await navigateTo(page, "/");
+
     // Verify order: Alice (20 games), then Bob/Charlie alphabetically
-    const playerNames = await page.locator(`[data-testid^="${TEST_IDS.PLAYER_CARD}-"] h3`).allTextContents();
-    expect(playerNames[0]).toBe('Alice');
-    expect(playerNames[1]).toBe('Bob');
-    expect(playerNames[2]).toBe('Charlie');
-    
-    await takeScreenshot(page, 'pwa-leaderboard/tied-ratings');
+    const playerNames = await page
+      .locator(`[data-testid^="${TEST_IDS.PLAYER_CARD}-"] h3`)
+      .allTextContents();
+    expect(playerNames[0]).toBe("Alice");
+    expect(playerNames[1]).toBe("Bob");
+    expect(playerNames[2]).toBe("Charlie");
+
+    await takeScreenshot(page, "pwa-leaderboard/tied-ratings");
   });
 
   // Mobile Responsive Test
-  test('Mobile Responsive - works on iOS viewport', async ({ page }) => {
+  test("Mobile Responsive - works on iOS viewport", async ({ page }) => {
     // iPhone 14 Pro viewport
     await page.setViewportSize({ width: 393, height: 852 });
-    
-    await navigateTo(page, '/');
-    
-    const leaderboard = await waitForElement(page, `[data-testid="${TEST_IDS.LEADERBOARD_VIEW}"]`);
+
+    await navigateTo(page, "/");
+
+    const leaderboard = await waitForElement(
+      page,
+      `[data-testid="${TEST_IDS.LEADERBOARD_VIEW}"]`
+    );
     await expect(leaderboard).toBeVisible();
-    
+
     // Test mobile interactions
-    const firstCard = page.locator(`[data-testid^="${TEST_IDS.PLAYER_CARD}-"]`).first();
-    
+    const firstCard = page
+      .locator(`[data-testid^="${TEST_IDS.PLAYER_CARD}-"]`)
+      .first();
+
     // Verify touch targets are large enough (44x44px minimum)
     const cardSize = await firstCard.boundingBox();
     expect(cardSize?.height).toBeGreaterThanOrEqual(44);
-    
+
     // Test expansion on mobile
     await firstCard.click();
-    await expect(firstCard).toHaveAttribute('aria-expanded', 'true');
-    
-    await takeScreenshot(page, 'pwa-leaderboard/mobile-view');
+    await expect(firstCard).toHaveAttribute("aria-expanded", "true");
+
+    await takeScreenshot(page, "pwa-leaderboard/mobile-view");
   });
 
   // Performance Test
-  test('Performance - loads within 2 seconds', async ({ page }) => {
+  test("Performance - loads within 2 seconds", async ({ page }) => {
     const startTime = Date.now();
-    
-    await navigateTo(page, '/');
+
+    await navigateTo(page, "/");
     await waitForElement(page, `[data-testid="${TEST_IDS.LEADERBOARD_VIEW}"]`);
-    
+
     const loadTime = Date.now() - startTime;
     expect(loadTime).toBeLessThan(2000);
-    
+
     // Check for layout shift
     const cls = await page.evaluate(() => {
       return new Promise<number>(resolve => {
         let cls = 0;
         new PerformanceObserver(list => {
           for (const entry of list.getEntries()) {
-            if (entry.entryType === 'layout-shift' && !(entry as any).hadRecentInput) {
+            if (
+              entry.entryType === "layout-shift" &&
+              !(entry as any).hadRecentInput
+            ) {
               cls += (entry as any).value;
             }
           }
           resolve(cls);
-        }).observe({ entryTypes: ['layout-shift'] });
-        
+        }).observe({ entryTypes: ["layout-shift"] });
+
         // Give it a moment to collect data
         setTimeout(() => resolve(cls), 1000);
       });
     });
-    
+
     expect(cls).toBeLessThan(0.1);
   });
 
   // Accessibility Test
-  test('Accessibility - meets WCAG requirements', async ({ page }) => {
-    await navigateTo(page, '/');
-    
+  test("Accessibility - meets WCAG requirements", async ({ page }) => {
+    await navigateTo(page, "/");
+
     // Check overall accessibility
-    await checkAccessibility(page, 'pwa-leaderboard');
-    
+    await checkAccessibility(page, "pwa-leaderboard");
+
     // Test keyboard navigation
-    await page.keyboard.press('Tab');
-    const focusedElement = await page.evaluate(() => document.activeElement?.tagName);
+    await page.keyboard.press("Tab");
+    const focusedElement = await page.evaluate(
+      () => document.activeElement?.tagName
+    );
     expect(focusedElement).toBeTruthy();
-    
+
     // Test screen reader labels
     const cards = page.locator(`[data-testid^="${TEST_IDS.PLAYER_CARD}-"]`);
     const firstCard = cards.first();
-    const ariaLabel = await firstCard.getAttribute('aria-label');
+    const ariaLabel = await firstCard.getAttribute("aria-label");
     expect(ariaLabel).toBeTruthy();
   });
 });

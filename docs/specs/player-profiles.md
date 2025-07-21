@@ -88,7 +88,8 @@ The Player Profile page provides comprehensive information about an individual p
 
 2. **Game History**
    - Initial load shows 5 most recent games
-   - "Load More" fetches 5 additional games
+   - "Load More" lists 5 additional games
+   - App can load all historical player games, load into memory instead of making two separate db queries for first 5 recent games + all games.
    - Each game shows essential information
    - Tap game for expanded view (Phase 1)
 
@@ -359,10 +360,9 @@ const { data: opponents } = await supabase
 2. **No Games**: Show empty state with encouraging message
 3. **Very High/Low Ratings**: Chart scales appropriately
 4. **Long Name**: Truncate with ellipsis in header
-5. **Many Opponents Same Game**: Handle display gracefully
-6. **Missing Data**: Show placeholders for unavailable stats
-7. **Rating Decrease Only**: Chart still displays properly
-8. **Timezone Handling**: Show dates in user's timezone
+5. **Missing Data**: Show placeholders for unavailable stats
+6. **Rating Decrease Only**: Chart still displays properly
+7. **Timezone Handling**: Show dates in user's timezone
 
 ## Mobile Optimizations
 
@@ -372,22 +372,3 @@ const { data: opponents } = await supabase
 4. **Scroll Performance**: Use CSS transforms for smooth scrolling
 5. **Load More**: Large button easy to tap
 6. **Font Sizes**: Minimum 14px for readability
-
-## Accessibility Requirements
-
-- **Screen Reader**:
-  - Chart has text alternative describing trend
-  - Game results read as complete sentences
-  - Rank announced with context
-- **Keyboard Navigation**:
-  - Tab through all interactive elements
-  - Enter/Space activate buttons
-  - Arrow keys navigate chart points
-- **Color Usage**:
-  - Don't rely solely on color for information
-  - Sufficient contrast for all text
-  - Patterns or icons supplement color coding
-- **Focus Management**:
-  - Clear focus indicators
-  - Focus moves logically through page
-  - Focus returns properly after interactions

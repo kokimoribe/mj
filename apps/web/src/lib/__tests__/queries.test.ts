@@ -1,13 +1,21 @@
 import { describe, test, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { usePlayerProfile } from "../queries";
+import { usePlayerProfile, useLeaderboard, useGameHistory } from "../queries";
 import * as React from "react";
 
-// Mock fetch
-global.fetch = vi.fn();
+// Mock the Supabase queries module
+vi.mock("../supabase/queries", () => ({
+  fetchPlayerProfile: vi.fn(),
+  fetchLeaderboardData: vi.fn(),
+  fetchGameHistory: vi.fn(),
+  fetchAllPlayers: vi.fn(),
+  fetchPlayerGameCounts: vi.fn(),
+}));
 
-describe("usePlayerProfile", () => {
+import * as supabaseQueries from "../supabase/queries";
+
+describe("queries", () => {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
@@ -21,77 +29,140 @@ describe("usePlayerProfile", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    queryClient.clear();
   });
 
-  test("transforms API response fields correctly", async () => {
-    const mockApiResponse = {
-      id: "joseph",
-      name: "Joseph",
-      rating: 46.26,
-      mu: 25.0,
-      sigma: 8.33,
-      games: 20, // API returns 'games' instead of 'gamesPlayed'
-      lastGameDate: "2025-07-06T18:34:24+00:00", // API returns 'lastGameDate' instead of 'lastPlayed'
-    };
+  describe("usePlayerProfile", () => {
+    test("fetches player data from Supabase", async () => {
+      const mockPlayerData = {
+        id: "joseph",
+        name: "Joseph",
+        rating: 46.26,
+        mu: 25.0,
+        sigma: 8.33,
+        gamesPlayed: 20,
+        lastPlayed: "2025-07-06T18:34:24+00:00",
+        rating7DayDelta: null,
+        ratingHistory: [45.0, 45.5, 46.0, 46.26],
+        recentGames: [],
+      };
 
-    (global.fetch as any).mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockApiResponse,
+      vi.mocked(supabaseQueries.fetchPlayerProfile).mockResolvedValue(
+        mockPlayerData
+      );
+
+      const { result } = renderHook(() => usePlayerProfile("joseph"), {
+        wrapper,
+      });
+
+      await waitFor(() => {
+        expect(result.current.isSuccess).toBe(true);
+      });
+
+      expect(result.current.data).toEqual(mockPlayerData);
+      expect(supabaseQueries.fetchPlayerProfile).toHaveBeenCalledWith("joseph");
     });
 
-    const { result } = renderHook(() => usePlayerProfile("joseph"), {
-      wrapper,
-    });
+    test("handles player profile fetch errors", async () => {
+      const error = new Error("Failed to fetch player profile");
+      vi.mocked(supabaseQueries.fetchPlayerProfile).mockRejectedValue(error);
 
-    await waitFor(() => {
-      expect(result.current.isSuccess).toBe(true);
-    });
+      const { result } = renderHook(() => usePlayerProfile("joseph"), {
+        wrapper,
+      });
 
-    // Verify the transformation worked correctly
-    expect(result.current.data).toMatchObject({
-      id: "joseph",
-      name: "Joseph",
-      rating: 46.26,
-      gamesPlayed: 20, // Should be transformed from 'games'
-      lastPlayed: "2025-07-06T18:34:24+00:00", // Should be transformed from 'lastGameDate'
-    });
+      await waitFor(() => {
+        expect(result.current.isError).toBe(true);
+      });
 
-    // Verify duplicate fields are undefined/removed
-    expect((result.current.data as any)?.games).toBeUndefined();
-    expect((result.current.data as any)?.lastGameDate).toBeUndefined();
-    expect((result.current.data as any)?.ratingChange).toBeUndefined();
+      expect(result.current.error).toBe(error);
+    });
   });
 
-  test("handles missing fields gracefully", async () => {
-    const mockApiResponse = {
-      id: "newplayer",
-      name: "New Player",
-      rating: 25.0,
-      mu: 25.0,
-      sigma: 8.33,
-      // Missing 'games' and 'lastGameDate' fields
-    };
+  describe("useLeaderboard", () => {
+    test("fetches leaderboard data from Supabase", async () => {
+      const mockLeaderboardData = {
+        players: [
+          {
+            id: "player1",
+            name: "Player 1",
+            rating: 50.0,
+            mu: 25.0,
+            sigma: 8.33,
+            gamesPlayed: 10,
+            lastPlayed: "2025-07-06T18:34:24+00:00",
+            rating7DayDelta: 2.5,
+            ratingHistory: [],
+            recentGames: [],
+          },
+        ],
+        totalGames: 40,
+        lastUpdated: "2025-07-06T18:34:24+00:00",
+        seasonName: "Season 3",
+      };
 
-    (global.fetch as any).mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockApiResponse,
+      vi.mocked(supabaseQueries.fetchLeaderboardData).mockResolvedValue(
+        mockLeaderboardData
+      );
+
+      const { result } = renderHook(() => useLeaderboard(), {
+        wrapper,
+      });
+
+      await waitFor(() => {
+        expect(result.current.isSuccess).toBe(true);
+      });
+
+      expect(result.current.data).toEqual(mockLeaderboardData);
+      expect(supabaseQueries.fetchLeaderboardData).toHaveBeenCalled();
     });
+  });
 
-    const { result } = renderHook(() => usePlayerProfile("newplayer"), {
-      wrapper,
-    });
+  describe("useGameHistory", () => {
+    test("fetches game history with pagination", async () => {
+      const mockGameData = {
+        games: [
+          {
+            id: "game1",
+            date: "2025-07-06T18:34:24+00:00",
+            seasonId: "season_3_2024",
+            results: [
+              {
+                playerId: "player1",
+                playerName: "Player 1",
+                placement: 1,
+                rawScore: 30000,
+                scoreAdjustment: 10000,
+                ratingBefore: 45.0,
+                ratingAfter: 47.5,
+                ratingChange: 2.5,
+              },
+            ],
+          },
+        ],
+        totalGames: 100,
+        hasMore: true,
+        showingAll: false,
+      };
 
-    await waitFor(() => {
-      expect(result.current.isSuccess).toBe(true);
-    });
+      vi.mocked(supabaseQueries.fetchGameHistory).mockResolvedValue(
+        mockGameData
+      );
 
-    // Verify defaults are applied
-    expect(result.current.data).toMatchObject({
-      id: "newplayer",
-      name: "New Player",
-      rating: 25.0,
-      gamesPlayed: 0, // Should default to 0
-      lastPlayed: expect.any(String), // Should default to current date ISO string
+      const { result } = renderHook(() => useGameHistory("player1", 0, 10), {
+        wrapper,
+      });
+
+      await waitFor(() => {
+        expect(result.current.isSuccess).toBe(true);
+      });
+
+      expect(result.current.data).toEqual(mockGameData);
+      expect(supabaseQueries.fetchGameHistory).toHaveBeenCalledWith({
+        playerId: "player1",
+        offset: 0,
+        limit: 10,
+      });
     });
   });
 });

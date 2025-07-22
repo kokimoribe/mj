@@ -24,7 +24,7 @@ const mockSeasonStats = {
   },
   mostActivePlayer: {
     name: "Josh",
-    games: 42,
+    gamesPlayed: 42,
   },
 };
 

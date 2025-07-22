@@ -1,12 +1,38 @@
 import { createClient } from "./client";
 import type { QueryData } from "@supabase/supabase-js";
-import type { Player, LeaderboardData } from "../queries";
 import type {
   CachedGameResult,
   GameSeat,
   GameWithResults,
   CachedPlayerRating,
 } from "./types";
+
+// Core types for the application
+export interface Player {
+  id: string;
+  name: string;
+  rating: number;
+  mu: number;
+  sigma: number;
+  gamesPlayed: number;
+  lastPlayed: string;
+  rating7DayDelta?: number | null;
+  ratingHistory?: number[];
+  rank?: number;
+  averagePlacement?: number;
+  recentGames?: Array<{
+    gameId: string;
+    date: string;
+    rating: number;
+  }>;
+}
+
+export interface LeaderboardData {
+  players: Player[];
+  totalGames: number;
+  lastUpdated: string;
+  seasonName: string;
+}
 
 // Default season configuration hash (hardcoded for Season 3)
 const DEFAULT_SEASON_CONFIG_HASH = "season_3_2024";
@@ -114,10 +140,9 @@ export async function fetchLeaderboardData(): Promise<LeaderboardData> {
     if (recentGamesByPlayer[game.player_id].length < 10) {
       recentGamesByPlayer[game.player_id].push({
         gameId: game.game_id,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase returns array for joins in some cases
         date: Array.isArray(game.games)
           ? game.games[0].finished_at
-          : (game.games as any).finished_at,
+          : (game.games as any).finished_at, // eslint-disable-line @typescript-eslint/no-explicit-any -- Supabase returns array for joins in some cases
         rating: game.rating_after,
       });
     }
@@ -221,10 +246,9 @@ export async function fetchPlayerProfile(playerId: string): Promise<Player> {
     recentGames
       ?.map(game => ({
         gameId: game.game_id,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase returns array for joins in some cases
         date: Array.isArray(game.games)
           ? game.games[0].finished_at
-          : (game.games as any).finished_at,
+          : (game.games as any).finished_at, // eslint-disable-line @typescript-eslint/no-explicit-any -- Supabase returns array for joins in some cases
         rating: game.rating_after,
       }))
       .reverse() || [];

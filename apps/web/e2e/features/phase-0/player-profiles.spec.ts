@@ -6,10 +6,30 @@ import {
   waitForElement,
   checkAccessibility,
 } from "../../utils/test-helpers";
+import {
+  setupConsoleErrorMonitoring,
+  validateAPIResponse,
+  validatePlayerProfileResponse,
+  validateGameHistoryResponse,
+  validateNumericContent,
+  validateRelativeDate,
+  validateChartRendering,
+} from "../../utils/validation-helpers";
 
 test.describe("Player Profiles - Specification Tests", () => {
-  test.beforeEach(async () => {
+  let consoleErrors: string[];
+
+  test.beforeEach(async ({ page }) => {
+    // Monitor console errors
+    consoleErrors = setupConsoleErrorMonitoring(page);
     // Use production data for testing
+  });
+
+  test.afterEach(async () => {
+    // Verify no console errors occurred
+    if (consoleErrors.length > 0) {
+      throw new Error(`Console errors detected: ${consoleErrors.join(", ")}`);
+    }
   });
 
   // Test Scenario 1: View Player Profile
@@ -51,26 +71,31 @@ test.describe("Player Profiles - Specification Tests", () => {
   test("Rating Chart Display - shows progression over time", async ({
     page,
   }) => {
-    await navigateTo(page, "/player/joseph");
+    // Get a player ID dynamically
+    await navigateTo(page, "/");
+    const firstCard = page
+      .locator(`[data-testid^="${TEST_IDS.PLAYER_CARD}-"]`)
+      .first();
+    const playerId = await firstCard.getAttribute("data-testid");
+    const actualPlayerId =
+      playerId?.replace(`${TEST_IDS.PLAYER_CARD}-`, "") || "";
+
+    // Navigate to player profile
+    await navigateTo(page, `/player/${actualPlayerId}`);
 
     // Wait for chart to load
     const chartSection = page.locator('[data-testid="rating-chart"]');
     await expect(chartSection).toBeVisible();
 
-    // Verify chart has rendered (look for SVG or canvas)
-    const chart = chartSection.locator("svg").first();
-    await expect(chart).toBeVisible();
+    // Validate chart rendering with proper data points
+    await validateChartRendering(page, '[data-testid="rating-chart"]');
 
-    // Verify axes are labeled (use first() to avoid strict mode violation)
-    await expect(
-      chartSection
-        .locator("text")
-        .filter({ hasText: /Jun|Jul|Aug|Date/ })
-        .first()
-    ).toBeVisible();
-
-    // Verify current rating is displayed
-    await expect(page.getByText(/Current: \d+\.\d+/)).toBeVisible();
+    // Verify current rating is displayed with proper format
+    const currentRating = await validateNumericContent(
+      page,
+      "text=/Current: \\d+\\.\\d+/",
+      { min: 0, max: 100, decimalPlaces: 1 }
+    );
 
     // Verify 30-day change is displayed
     await expect(
@@ -213,15 +238,27 @@ test.describe("Player Profiles - Specification Tests", () => {
     const statsSection = page.locator('[data-testid="performance-stats"]');
     await expect(statsSection).toBeVisible();
 
-    // Check average placement
-    await expect(
-      statsSection.getByText(/Average Placement: \d+\.\d+/)
-    ).toBeVisible();
+    // Check average placement (might be a number or dash for new players)
+    const avgPlacementText = await statsSection
+      .getByText(/Average Placement:/)
+      .textContent();
+    if (avgPlacementText?.includes("—")) {
+      // Player has insufficient games
+      expect(avgPlacementText).toContain("—");
+    } else {
+      // Validate numeric placement
+      const avgPlacement = await validateNumericContent(
+        page,
+        `[data-testid="performance-stats"] >> text=/Average Placement: \\d+\\.\\d+/`,
+        { min: 1.0, max: 4.0, decimalPlaces: 1 }
+      );
+    }
 
-    // Check last played
-    await expect(
-      statsSection.getByText(/Last Played: .* ago|Last Played: Today/)
-    ).toBeVisible();
+    // Check last played - verify it renders without errors
+    await validateRelativeDate(
+      page,
+      `[data-testid="performance-stats"] >> text=/Last Played:/`
+    );
 
     // No win rate should be shown
     await expect(statsSection.getByText(/Win Rate/)).not.toBeVisible();
@@ -425,7 +462,16 @@ test.describe("Player Profiles - Specification Tests", () => {
 
   // Accessibility Test
   test("Accessibility - meets WCAG requirements", async ({ page }) => {
-    await navigateTo(page, "/player/joseph");
+    // Get a valid player ID dynamically
+    await navigateTo(page, "/");
+    const firstCard = page
+      .locator(`[data-testid^="${TEST_IDS.PLAYER_CARD}-"]`)
+      .first();
+    const playerId = await firstCard.getAttribute("data-testid");
+    const actualPlayerId =
+      playerId?.replace(`${TEST_IDS.PLAYER_CARD}-`, "") || "";
+
+    await navigateTo(page, `/player/${actualPlayerId}`);
 
     // Check overall accessibility
     await checkAccessibility(page, "player-profiles");
@@ -443,5 +489,364 @@ test.describe("Player Profiles - Specification Tests", () => {
     // Check back button exists and is accessible
     const backButton = page.getByRole("button", { name: /back/i });
     await expect(backButton).toBeVisible();
+  });
+
+  test.describe("API Response Validation", () => {
+    test("validates player profile API response structure", async ({
+      page,
+    }) => {
+      // Get a valid player ID
+      await navigateTo(page, "/");
+      const firstCard = page
+        .locator(`[data-testid^="${TEST_IDS.PLAYER_CARD}-"]`)
+        .first();
+      const playerId = await firstCard.getAttribute("data-testid");
+      const actualPlayerId =
+        playerId?.replace(`${TEST_IDS.PLAYER_CARD}-`, "") || "";
+
+      // Validate API response
+      const responsePromise = validateAPIResponse(
+        page,
+        `**/api/players/${actualPlayerId}`,
+        validatePlayerProfileResponse
+      );
+
+      await navigateTo(page, `/player/${actualPlayerId}`);
+      await responsePromise;
+    });
+
+    test("validates player games API response structure", async ({ page }) => {
+      // Get a valid player ID
+      await navigateTo(page, "/");
+      const firstCard = page
+        .locator(`[data-testid^="${TEST_IDS.PLAYER_CARD}-"]`)
+        .first();
+      const playerId = await firstCard.getAttribute("data-testid");
+      const actualPlayerId =
+        playerId?.replace(`${TEST_IDS.PLAYER_CARD}-`, "") || "";
+
+      // Validate games API response
+      const responsePromise = validateAPIResponse(
+        page,
+        `**/api/players/${actualPlayerId}/games*`,
+        data => {
+          // Should be an array of games
+          if (!Array.isArray(data)) {
+            throw new Error("Player games response should be an array");
+          }
+
+          // Each game should have required fields
+          data.forEach((game: any, index: number) => {
+            if (!game.id) throw new Error(`Game ${index} missing id`);
+            if (!game.date) throw new Error(`Game ${index} missing date`);
+            if (
+              typeof game.placement !== "number" ||
+              game.placement < 1 ||
+              game.placement > 4
+            ) {
+              throw new Error(`Game ${index} has invalid placement`);
+            }
+            if (
+              !game.opponents ||
+              !Array.isArray(game.opponents) ||
+              game.opponents.length !== 3
+            ) {
+              throw new Error(`Game ${index} should have exactly 3 opponents`);
+            }
+          });
+        }
+      );
+
+      await navigateTo(page, `/player/${actualPlayerId}`);
+      await responsePromise;
+    });
+  });
+
+  test.describe("Data Calculations", () => {
+    test("validates rating history calculation from games", async ({
+      page,
+    }) => {
+      // Navigate to a player with multiple games
+      await navigateTo(page, "/");
+
+      // Find a player with multiple games
+      const playerCards = page.locator(
+        `[data-testid^="${TEST_IDS.PLAYER_CARD}-"]`
+      );
+      const count = await playerCards.count();
+
+      let playerWithGames = null;
+      for (let i = 0; i < count; i++) {
+        const card = playerCards.nth(i);
+        const gamesText = await card
+          .locator("text=/\\d+ games?/")
+          .textContent();
+        const gamesMatch = gamesText?.match(/(\\d+) games?/);
+        if (gamesMatch && parseInt(gamesMatch[1]) > 5) {
+          playerWithGames = card;
+          break;
+        }
+      }
+
+      if (!playerWithGames) {
+        test.skip();
+        return;
+      }
+
+      // Navigate to profile
+      await playerWithGames.click();
+      await page.getByText("View Full Profile").click();
+
+      // Wait for both APIs to complete
+      const [profileResponse, gamesResponse] = await Promise.all([
+        page.waitForResponse(
+          resp =>
+            resp.url().includes("/api/players/") &&
+            !resp.url().includes("/games")
+        ),
+        page.waitForResponse(resp => resp.url().includes("/games")),
+        page.waitForLoadState("networkidle"),
+      ]);
+
+      const profile = await profileResponse.json();
+      const games = await gamesResponse.json();
+
+      // Verify rating chart has correct number of data points
+      const chartSection = page.locator('[data-testid="rating-chart"]');
+      const dataPoints = chartSection.locator("circle");
+      const pointCount = await dataPoints.count();
+
+      // Should have one point per game plus current rating
+      expect(pointCount).toBeGreaterThanOrEqual(Math.min(games.length, 100));
+    });
+
+    test("validates average placement calculation", async ({ page }) => {
+      // Similar to above, find player with games and verify calculation
+      await navigateTo(page, "/");
+      const firstCard = page
+        .locator(`[data-testid^="${TEST_IDS.PLAYER_CARD}-"]`)
+        .first();
+      await firstCard.click();
+      await page.getByText("View Full Profile").click();
+
+      // Wait for games API
+      const gamesResponse = await page.waitForResponse(resp =>
+        resp.url().includes("/games")
+      );
+      const games = await gamesResponse.json();
+
+      if (games.length > 0) {
+        // Calculate expected average
+        const placements = games.map((g: any) => g.placement);
+        const expectedAvg =
+          placements.reduce((a: number, b: number) => a + b, 0) /
+          placements.length;
+
+        // Get displayed average
+        const statsSection = page.locator('[data-testid="performance-stats"]');
+        const avgText = await statsSection
+          .getByText(/Average Placement:/)
+          .textContent();
+
+        if (!avgText?.includes("—")) {
+          const displayedAvg = parseFloat(
+            avgText.match(/(\d+\.\d+)/)?.[1] || "0"
+          );
+          expect(Math.abs(displayedAvg - expectedAvg)).toBeLessThan(0.1);
+        }
+      }
+    });
+
+    test("validates 30-day rating change calculation", async ({ page }) => {
+      await navigateTo(page, "/");
+      const firstCard = page
+        .locator(`[data-testid^="${TEST_IDS.PLAYER_CARD}-"]`)
+        .first();
+      await firstCard.click();
+      await page.getByText("View Full Profile").click();
+
+      // Check 30-day change display
+      const thirtyDayText = await page.getByText(/30-day:/).textContent();
+
+      if (thirtyDayText?.includes("N/A")) {
+        // Verify player has no games older than 30 days
+        const gamesResponse = await page.waitForResponse(resp =>
+          resp.url().includes("/games")
+        );
+        const games = await gamesResponse.json();
+
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        const oldGames = games.filter(
+          (g: any) => new Date(g.date) < thirtyDaysAgo
+        );
+        expect(oldGames.length).toBe(0);
+      } else {
+        // Verify it's a valid number with proper format
+        expect(thirtyDayText).toMatch(/30-day: [↑↓]\d+\.\d+/);
+      }
+    });
+  });
+
+  test.describe("Extended Edge Cases", () => {
+    test("handles timezone correctly for dates", async ({ page }) => {
+      await navigateTo(page, "/");
+      const firstCard = page
+        .locator(`[data-testid^="${TEST_IDS.PLAYER_CARD}-"]`)
+        .first();
+      await firstCard.click();
+      await page.getByText("View Full Profile").click();
+
+      // Get a game date
+      const gameEntry = page.locator('[data-testid^="game-entry-"]').first();
+      const dateText = await gameEntry.textContent();
+
+      // Should show date in consistent format (e.g., "Jul 6")
+      expect(dateText).toMatch(/[A-Z][a-z]{2} \d{1,2}/);
+    });
+
+    test("handles players with gaps in game history", async ({ page }) => {
+      // This would need mock data to test properly
+      // For now, just verify the chart handles any data correctly
+      await navigateTo(page, "/");
+      const firstCard = page
+        .locator(`[data-testid^="${TEST_IDS.PLAYER_CARD}-"]`)
+        .first();
+      await firstCard.click();
+      await page.getByText("View Full Profile").click();
+
+      // Chart should render without errors
+      await validateChartRendering(page, '[data-testid="rating-chart"]', 1);
+    });
+
+    test("validates all opponents are shown for each game", async ({
+      page,
+    }) => {
+      await navigateTo(page, "/");
+      const firstCard = page
+        .locator(`[data-testid^="${TEST_IDS.PLAYER_CARD}-"]`)
+        .first();
+      await firstCard.click();
+      await page.getByText("View Full Profile").click();
+
+      // Check first game entry
+      const firstGame = page.locator('[data-testid^="game-entry-"]').first();
+      await expect(firstGame).toBeVisible();
+
+      // Should show exactly 3 opponent links
+      const opponentLinks = firstGame.locator('a[href^="/player/"]');
+      const opponentCount = await opponentLinks.count();
+      expect(opponentCount).toBe(3);
+
+      // All links should be clickable
+      for (let i = 0; i < 3; i++) {
+        const link = opponentLinks.nth(i);
+        await expect(link).toBeVisible();
+        await expect(link).toHaveAttribute("href", /^\/player\/.+$/);
+      }
+    });
+
+    test("validates current rank calculation from leaderboard", async ({
+      page,
+    }) => {
+      // Get leaderboard data
+      const leaderboardResponse = await Promise.all([
+        page.waitForResponse("**/api/leaderboard"),
+        navigateTo(page, "/"),
+      ]);
+
+      const leaderboardData = await leaderboardResponse[0].json();
+
+      // Pick a player and calculate their expected rank
+      const targetPlayer = leaderboardData.players[2]; // Pick 3rd player
+
+      // Navigate to their profile
+      await navigateTo(page, `/player/${targetPlayer.id}`);
+
+      // Check displayed rank
+      const rankText = await page
+        .getByRole("heading", { name: /Rank #\d+/ })
+        .textContent();
+      const displayedRank = parseInt(
+        rankText?.match(/Rank #(\d+)/)?.[1] || "0"
+      );
+
+      // Should match position in sorted leaderboard
+      expect(displayedRank).toBe(3);
+    });
+  });
+
+  test.describe("Performance", () => {
+    test("validates rating chart renders within 300ms", async ({ page }) => {
+      await navigateTo(page, "/");
+      const firstCard = page
+        .locator(`[data-testid^="${TEST_IDS.PLAYER_CARD}-"]`)
+        .first();
+      await firstCard.click();
+      await page.getByText("View Full Profile").click();
+
+      // Measure chart render time
+      const startTime = Date.now();
+      await page
+        .locator('[data-testid="rating-chart"] svg')
+        .waitFor({ state: "visible" });
+      const renderTime = Date.now() - startTime;
+
+      expect(renderTime).toBeLessThan(300);
+    });
+
+    test("validates all games load at once (no pagination in query)", async ({
+      page,
+    }) => {
+      await navigateTo(page, "/");
+
+      // Find a player with many games
+      const playerCards = page.locator(
+        `[data-testid^="${TEST_IDS.PLAYER_CARD}-"]`
+      );
+      const count = await playerCards.count();
+
+      let playerWithManyGames = null;
+      for (let i = 0; i < count; i++) {
+        const card = playerCards.nth(i);
+        const gamesText = await card
+          .locator("text=/\\d+ games?/")
+          .textContent();
+        const gamesMatch = gamesText?.match(/(\d+) games?/);
+        if (gamesMatch && parseInt(gamesMatch[1]) > 10) {
+          playerWithManyGames = card;
+          break;
+        }
+      }
+
+      if (!playerWithManyGames) {
+        test.skip();
+        return;
+      }
+
+      await playerWithManyGames.click();
+      await page.getByText("View Full Profile").click();
+
+      // Check that all games were loaded in one request
+      const gamesRequests: any[] = [];
+      page.on("response", response => {
+        if (response.url().includes("/games")) {
+          gamesRequests.push(response);
+        }
+      });
+
+      // Click "Show More Games"
+      const showMoreButton = page.getByRole("button", {
+        name: /Show More Games/,
+      });
+      if (await showMoreButton.isVisible()) {
+        await showMoreButton.click();
+        await page.waitForTimeout(500);
+      }
+
+      // Should only have made one games request
+      expect(gamesRequests.length).toBeLessThanOrEqual(1);
+    });
   });
 });

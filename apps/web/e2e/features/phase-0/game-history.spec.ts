@@ -1,5 +1,12 @@
 import { test, expect } from "@playwright/test";
 import { testIds } from "@/lib/test-ids";
+import {
+  setupConsoleErrorMonitoring,
+  validateAPIResponse,
+  validateGameHistoryResponse,
+  validateNumericContent,
+  validateRelativeDate,
+} from "../../utils/validation-helpers";
 
 // Test IDs for Game History components
 const gameHistoryIds = {
@@ -16,7 +23,11 @@ const gameHistoryIds = {
 };
 
 test.describe("Game History", () => {
+  let consoleErrors: string[];
+
   test.beforeEach(async ({ page }) => {
+    // Monitor console errors
+    consoleErrors = setupConsoleErrorMonitoring(page);
     // Navigate to the Games tab (using production data)
     await page.goto("/games");
     await page.waitForLoadState("networkidle");
@@ -423,5 +434,362 @@ test.describe("Game History - Accessibility", () => {
     if (ariaLabel) {
       expect(ariaLabel).toMatch(/game.*played/i);
     }
+  });
+
+  test.afterEach(async () => {
+    // Verify no console errors occurred
+    if (consoleErrors.length > 0) {
+      throw new Error(`Console errors detected: ${consoleErrors.join(", ")}`);
+    }
+  });
+
+  test.describe("API Response Validation", () => {
+    test("validates game history API response structure", async ({ page }) => {
+      // Validate API response during page load
+      const responsePromise = validateAPIResponse(
+        page,
+        "**/api/games*",
+        validateGameHistoryResponse
+      );
+
+      await page.goto("/games");
+      await responsePromise;
+    });
+
+    test("validates all games have exactly 4 players", async ({ page }) => {
+      const response = await Promise.all([
+        page.waitForResponse("**/api/games*"),
+        page.goto("/games"),
+      ]);
+
+      const data = await response[0].json();
+
+      // Each game should have exactly 4 players
+      data.games.forEach((game: any, index: number) => {
+        expect(game.results.length).toBe(4);
+
+        // Verify placements are 1-4
+        const placements = game.results.map((r: any) => r.placement).sort();
+        expect(placements).toEqual([1, 2, 3, 4]);
+      });
+    });
+  });
+
+  test.describe("Data Validation", () => {
+    test("validates score display format", async ({ page }) => {
+      await page.goto("/games");
+      await page.waitForLoadState("networkidle");
+
+      // Get all score elements
+      const scoreElements = page.locator('[data-testid^="score-"]');
+      const count = await scoreElements.count();
+
+      for (let i = 0; i < count; i++) {
+        const scoreText = await scoreElements.nth(i).textContent();
+
+        // Should match format like "35,200" or "-5,100"
+        expect(scoreText).toMatch(/^[+-]?\d{1,3}(,\d{3})*$/);
+
+        // Parse and validate numeric value
+        const numericValue = parseInt(scoreText!.replace(/,/g, ""));
+        expect(numericValue).toBeGreaterThanOrEqual(-100000);
+        expect(numericValue).toBeLessThanOrEqual(100000);
+      }
+    });
+
+    test("validates rating change display", async ({ page }) => {
+      await page.goto("/games");
+      await page.waitForLoadState("networkidle");
+
+      // Get all rating change elements
+      const ratingElements = page.locator('[data-testid^="rating-change-"]');
+      const count = await ratingElements.count();
+
+      for (let i = 0; i < count; i++) {
+        const text = await ratingElements.nth(i).textContent();
+
+        // Should match format like "↑0.8" or "↓0.2"
+        expect(text).toMatch(/^[↑↓]\d+\.\d+$/);
+
+        // Validate numeric value
+        const numericValue = parseFloat(text!.substring(1));
+        expect(numericValue).toBeGreaterThan(0);
+        expect(numericValue).toBeLessThan(10); // Reasonable rating change limit
+      }
+    });
+
+    test("validates date formatting", async ({ page }) => {
+      await page.goto("/games");
+      await page.waitForLoadState("networkidle");
+
+      // Get all date elements
+      const dateElements = page.locator('[data-testid^="game-date-"]');
+      const count = await dateElements.count();
+
+      for (let i = 0; i < count; i++) {
+        const dateText = await dateElements.nth(i).textContent();
+
+        // Should match format like "Jul 6"
+        expect(dateText).toMatch(/^[A-Z][a-z]{2} \d{1,2}$/);
+      }
+    });
+  });
+
+  test.describe("Filtering Functionality", () => {
+    test("validates filter actually filters games", async ({ page }) => {
+      await page.goto("/games");
+      await page.waitForLoadState("networkidle");
+
+      // Get initial game count
+      const initialGames = await page
+        .getByTestId(gameHistoryIds.gameCard)
+        .count();
+
+      // Open filter dropdown
+      const filterDropdown = page.getByTestId(gameHistoryIds.filterDropdown);
+      await filterDropdown.click();
+
+      // Select a specific player
+      const options = page.locator('[role="option"]');
+      const optionCount = await options.count();
+
+      if (optionCount > 1) {
+        // Click second option (first is "All Players")
+        await options.nth(1).click();
+
+        // Wait for filtering
+        await page.waitForTimeout(500);
+
+        // Verify games were filtered
+        const filteredGames = await page
+          .getByTestId(gameHistoryIds.gameCard)
+          .count();
+        expect(filteredGames).toBeLessThanOrEqual(initialGames);
+
+        // Verify all displayed games contain the selected player
+        const selectedPlayerName = await options.nth(1).textContent();
+        const gameCards = page.getByTestId(gameHistoryIds.gameCard);
+        const gameCount = await gameCards.count();
+
+        for (let i = 0; i < gameCount; i++) {
+          const gameText = await gameCards.nth(i).textContent();
+          expect(gameText).toContain(selectedPlayerName);
+        }
+      }
+    });
+
+    test("validates URL state persistence", async ({ page }) => {
+      await page.goto("/games");
+      await page.waitForLoadState("networkidle");
+
+      // Select a filter
+      const filterDropdown = page.getByTestId(gameHistoryIds.filterDropdown);
+      await filterDropdown.click();
+
+      const options = page.locator('[role="option"]');
+      if (await options.nth(1).isVisible()) {
+        const playerName = await options.nth(1).textContent();
+        await options.nth(1).click();
+
+        // Wait for URL update
+        await page.waitForTimeout(500);
+
+        // Check URL contains player filter
+        const url = page.url();
+        expect(url).toContain("player=");
+
+        // Reload page
+        await page.reload();
+
+        // Verify filter is still applied
+        await expect(filterDropdown).toContainText(playerName!);
+      }
+    });
+  });
+
+  test.describe("Pagination Validation", () => {
+    test("validates correct pagination behavior", async ({ page }) => {
+      await page.goto("/games");
+      await page.waitForLoadState("networkidle");
+
+      // Check if there are more than 10 games
+      const gameCount = await page
+        .getByTestId(gameHistoryIds.gameCount)
+        .textContent();
+      const totalGames = parseInt(gameCount?.match(/(\d+) games/)?.[1] || "0");
+
+      if (totalGames > 10) {
+        // Initially should show 10 games
+        const initialGames = await page
+          .getByTestId(gameHistoryIds.gameCard)
+          .count();
+        expect(initialGames).toBe(10);
+
+        // Load more
+        const loadMoreButton = page.getByTestId(gameHistoryIds.loadMoreButton);
+        await loadMoreButton.click();
+        await page.waitForTimeout(500);
+
+        // Should show 20 games
+        const afterFirstLoad = await page
+          .getByTestId(gameHistoryIds.gameCard)
+          .count();
+        expect(afterFirstLoad).toBe(Math.min(20, totalGames));
+
+        // If more than 20 games, load more again
+        if (totalGames > 20) {
+          await loadMoreButton.click();
+          await page.waitForTimeout(500);
+
+          const afterSecondLoad = await page
+            .getByTestId(gameHistoryIds.gameCard)
+            .count();
+          expect(afterSecondLoad).toBe(Math.min(30, totalGames));
+        }
+
+        // Show less button should appear
+        const showLessButton = page.getByTestId(gameHistoryIds.showLessButton);
+        await expect(showLessButton).toBeVisible();
+
+        // Click show less
+        await showLessButton.click();
+        await page.waitForTimeout(500);
+
+        // Should be back to 10 games
+        const afterShowLess = await page
+          .getByTestId(gameHistoryIds.gameCard)
+          .count();
+        expect(afterShowLess).toBe(10);
+      }
+    });
+  });
+
+  test.describe("Score Calculations", () => {
+    test("validates score adjustments (Uma/Oka)", async ({ page }) => {
+      const response = await Promise.all([
+        page.waitForResponse("**/api/games*"),
+        page.goto("/games"),
+      ]);
+
+      const data = await response[0].json();
+
+      // For each game, verify score adjustments
+      data.games.forEach((game: any) => {
+        const results = game.results;
+
+        // Sum of all score adjustments should be 0
+        const totalAdjustments = results.reduce(
+          (sum: number, r: any) => sum + r.scoreAdjustment,
+          0
+        );
+        expect(Math.abs(totalAdjustments)).toBeLessThan(1); // Allow for floating point errors
+
+        // Verify Uma bonuses are applied correctly
+        // 1st: +15k, 2nd: +5k, 3rd: -5k, 4th: -15k (typical)
+        const sortedByPlacement = [...results].sort(
+          (a, b) => a.placement - b.placement
+        );
+
+        // First place should have positive adjustment
+        expect(sortedByPlacement[0].scoreAdjustment).toBeGreaterThan(0);
+
+        // Last place should have negative adjustment
+        expect(sortedByPlacement[3].scoreAdjustment).toBeLessThan(0);
+      });
+    });
+
+    test("validates final scores are reasonable", async ({ page }) => {
+      await page.goto("/games");
+      await page.waitForLoadState("networkidle");
+
+      // Check all displayed scores
+      const scoreElements = page.locator('[data-testid^="score-"]');
+      const count = await scoreElements.count();
+
+      for (let i = 0; i < count; i++) {
+        const scoreText = await scoreElements.nth(i).textContent();
+        const score = parseInt(scoreText!.replace(/,/g, ""));
+
+        // Typical mahjong scores range
+        expect(score).toBeGreaterThanOrEqual(-50000);
+        expect(score).toBeLessThanOrEqual(100000);
+      }
+    });
+  });
+
+  test.describe("Edge Cases", () => {
+    test("handles games with tied scores", async ({ page }) => {
+      // This would need specific test data, but we can verify the UI handles it
+      await page.goto("/games");
+      await page.waitForLoadState("networkidle");
+
+      // Verify all games render without errors
+      const gameCards = page.getByTestId(gameHistoryIds.gameCard);
+      const count = await gameCards.count();
+      expect(count).toBeGreaterThan(0);
+    });
+
+    test("handles empty game history", async ({ page }) => {
+      // Filter by a player with no games
+      await page.goto("/games");
+      await page.waitForLoadState("networkidle");
+
+      // Try to find a player with 0 games in dropdown
+      const filterDropdown = page.getByTestId(gameHistoryIds.filterDropdown);
+      await filterDropdown.click();
+
+      // This would show empty state if such a player exists
+      // For now, just verify empty state component exists in DOM
+      const emptyState = page.getByTestId(gameHistoryIds.emptyState);
+
+      // If visible, verify message
+      if (await emptyState.isVisible()) {
+        await expect(emptyState).toContainText(/no games.*found/i);
+      }
+    });
+  });
+
+  test.describe("Performance", () => {
+    test("validates initial load performance", async ({ page }) => {
+      const startTime = Date.now();
+
+      await page.goto("/games");
+      await page.waitForLoadState("networkidle");
+
+      // Wait for games to be visible
+      await page
+        .getByTestId(gameHistoryIds.gameCard)
+        .first()
+        .waitFor({ state: "visible" });
+
+      const loadTime = Date.now() - startTime;
+
+      // Spec requires < 1.5 seconds
+      expect(loadTime).toBeLessThan(1500);
+    });
+
+    test("validates pagination performance", async ({ page }) => {
+      await page.goto("/games");
+      await page.waitForLoadState("networkidle");
+
+      const loadMoreButton = page.getByTestId(gameHistoryIds.loadMoreButton);
+
+      if (await loadMoreButton.isVisible()) {
+        const startTime = Date.now();
+
+        await loadMoreButton.click();
+
+        // Wait for new games to appear
+        await page.waitForFunction(
+          selector => document.querySelectorAll(selector).length > 10,
+          `[data-testid="${gameHistoryIds.gameCard}"]`
+        );
+
+        const loadTime = Date.now() - startTime;
+
+        // Pagination should be fast (< 500ms)
+        expect(loadTime).toBeLessThan(500);
+      }
+    });
   });
 });

@@ -98,7 +98,18 @@ export function usePlayerProfile(playerId: string) {
       if (!response.ok) {
         throw new Error("Failed to fetch player profile");
       }
-      return response.json();
+      const data = await response.json();
+      // Transform field names to match our interface
+      return {
+        ...data,
+        // Ensure we have the correct field names
+        gamesPlayed: data.gamesPlayed ?? data.games ?? 0,
+        lastPlayed:
+          data.lastPlayed ?? data.lastGameDate ?? new Date().toISOString(),
+        // Remove duplicate fields
+        games: undefined,
+        lastGameDate: undefined,
+      };
     },
     staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,

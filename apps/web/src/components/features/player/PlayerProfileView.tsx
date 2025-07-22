@@ -229,9 +229,11 @@ export const PlayerProfileView = memo(function PlayerProfileView({
             <div>
               <p className="text-sm">
                 Last Played:{" "}
-                {formatDistanceToNow(new Date(player.lastPlayed), {
-                  addSuffix: true,
-                })}
+                {player.lastPlayed && !isNaN(Date.parse(player.lastPlayed))
+                  ? formatDistanceToNow(new Date(player.lastPlayed), {
+                      addSuffix: true,
+                    })
+                  : "N/A"}
               </p>
             </div>
           </div>

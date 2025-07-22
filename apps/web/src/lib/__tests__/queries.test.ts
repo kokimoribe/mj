@@ -32,10 +32,6 @@ describe("usePlayerProfile", () => {
       sigma: 8.33,
       games: 20, // API returns 'games' instead of 'gamesPlayed'
       lastGameDate: "2025-07-06T18:34:24+00:00", // API returns 'lastGameDate' instead of 'lastPlayed'
-      totalPlusMinus: 179300,
-      averagePlusMinus: 8965.0,
-      bestGame: 0,
-      worstGame: 0,
     };
 
     (global.fetch as any).mockResolvedValueOnce({

@@ -20,16 +20,14 @@ export interface Player {
   rating: number;
   mu: number;
   sigma: number;
-  gamesPlayed: number; // Single source of truth
-  lastPlayed: string; // Single source of truth
-  totalPlusMinus: number;
-  averagePlusMinus: number;
-  bestGame: number;
-  worstGame: number;
+  gamesPlayed: number;
+  lastPlayed: string;
   ratingChange?: number; // Rating change since last game
   ratingHistory?: number[]; // Array of historical ratings for sparkline
   rank?: number; // Calculated client-side from leaderboard position
   averagePlacement?: number; // Calculated on-demand
+  // Removed unused fields for hobby project simplicity:
+  // totalPlusMinus, averagePlusMinus, bestGame, worstGame
 }
 
 export interface LeaderboardData {

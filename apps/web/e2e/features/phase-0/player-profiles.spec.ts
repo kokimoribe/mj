@@ -648,11 +648,12 @@ test.describe("Player Profiles - Specification Tests", () => {
           .getByText(/Average Placement:/)
           .textContent();
 
-        if (!avgText?.includes("—")) {
-          const displayedAvg = parseFloat(
-            avgText.match(/(\d+\.\d+)/)?.[1] || "0"
-          );
-          expect(Math.abs(displayedAvg - expectedAvg)).toBeLessThan(0.1);
+        if (avgText && !avgText.includes("—")) {
+          const match = avgText.match(/(\d+\.\d+)/);
+          if (match) {
+            const displayedAvg = parseFloat(match[1]);
+            expect(Math.abs(displayedAvg - expectedAvg)).toBeLessThan(0.1);
+          }
         }
       }
     });

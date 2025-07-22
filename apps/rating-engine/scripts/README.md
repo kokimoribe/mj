@@ -33,7 +33,7 @@ uv run python scripts/migrate_legacy_data.py
 2. **Environment**: `SUPABASE_URL` and `SUPABASE_SECRET_KEY` in `.env` file
 3. **CSV File**: `legacy_logs.csv` in project root with expected format:
    ```
-   Timestamp,date,East player,East points,South player,South points,West player,West points,North player,North points
+   Timestamp,played_at,East player,East points,South player,South points,West player,West points,North player,North points
    ```
 
 ### Expected Results

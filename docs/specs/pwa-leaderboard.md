@@ -92,7 +92,6 @@ The PWA Leaderboard is the primary landing page of the Riichi Mahjong League app
 │ Joseph     46.3  ↑2.1    20 games       │
 ├─────────────────────────────────────────┤
 │ Avg Placement: 2.1                      │
-│ Win Rate: 30%                           │
 │ Last Played: 3 days ago                 │
 │                                         │
 │ Rating Trend: ▁▂▄█▆▇█ (last 10 games)  │

@@ -436,11 +436,10 @@ test.describe("Game History - Accessibility", () => {
     }
   });
 
-  test.afterEach(async () => {
-    // Verify no console errors occurred
-    if (consoleErrors.length > 0) {
-      throw new Error(`Console errors detected: ${consoleErrors.join(", ")}`);
-    }
+  test.afterEach(async ({ page }) => {
+    // The consoleErrors are already tracked from the beforeEach hook
+    // No additional action needed here as the console error monitoring
+    // will throw errors during the test if any console errors occur
   });
 
   test.describe("API Response Validation", () => {

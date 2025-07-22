@@ -42,58 +42,10 @@ export async function fetchLeaderboardData(): Promise<LeaderboardData> {
     throw new Error(`Failed to fetch leaderboard: ${error.message}`);
   }
 
-  // Fetch game statistics for all players
-  const playerIds =
-    (players as CachedPlayerRating[])?.map(p => p.player_id) || [];
-  const playerStats: Record<
-    string,
-    {
-      totalPlusMinus: number;
-      gameCount: number;
-      bestGame: number;
-      worstGame: number;
-    }
-  > = {};
-
-  if (playerIds.length > 0) {
-    const { data: gameResults } = await supabase
-      .from("cached_game_results")
-      .select("player_id, score_delta")
-      .eq("config_hash", currentSeasonConfigHash)
-      .in("player_id", playerIds);
-
-    if (gameResults) {
-      // Calculate statistics for each player
-      gameResults.forEach(result => {
-        if (!playerStats[result.player_id]) {
-          playerStats[result.player_id] = {
-            totalPlusMinus: 0,
-            gameCount: 0,
-            bestGame: -Infinity,
-            worstGame: Infinity,
-          };
-        }
-
-        const stats = playerStats[result.player_id];
-        stats.totalPlusMinus += result.score_delta;
-        stats.gameCount++;
-        stats.bestGame = Math.max(stats.bestGame, result.score_delta);
-        stats.worstGame = Math.min(stats.worstGame, result.score_delta);
-      });
-    }
-  }
-
   // Transform data to match interface
   const transformedPlayers: Player[] = (
     (players as CachedPlayerRating[]) || []
   ).map(p => {
-    const stats = playerStats[p.player_id] || {
-      totalPlusMinus: 0,
-      gameCount: 0,
-      bestGame: 0,
-      worstGame: 0,
-    };
-
     return {
       id: p.player_id,
       name: p.players[0].name,
@@ -102,11 +54,6 @@ export async function fetchLeaderboardData(): Promise<LeaderboardData> {
       sigma: p.sigma,
       gamesPlayed: p.games_played,
       lastPlayed: p.last_game_date || "",
-      totalPlusMinus: stats.totalPlusMinus,
-      averagePlusMinus:
-        stats.gameCount > 0 ? stats.totalPlusMinus / stats.gameCount : 0,
-      bestGame: stats.bestGame === -Infinity ? 0 : stats.bestGame,
-      worstGame: stats.worstGame === Infinity ? 0 : stats.worstGame,
       ratingChange: p.rating_change || 0,
       ratingHistory: p.rating_history || [],
     };
@@ -159,26 +106,6 @@ export async function fetchPlayerProfile(playerId: string): Promise<Player> {
     throw new Error(`Failed to fetch player profile: ${error.message}`);
   }
 
-  // Fetch game statistics for the player
-  const { data: gameResults } = await supabase
-    .from("cached_game_results")
-    .select("score_delta")
-    .eq("config_hash", currentSeasonConfigHash)
-    .eq("player_id", playerId);
-
-  let totalPlusMinus = 0;
-  let bestGame = 0;
-  let worstGame = 0;
-
-  if (gameResults && gameResults.length > 0) {
-    totalPlusMinus = gameResults.reduce(
-      (sum, result) => sum + result.score_delta,
-      0
-    );
-    bestGame = Math.max(...gameResults.map(r => r.score_delta));
-    worstGame = Math.min(...gameResults.map(r => r.score_delta));
-  }
-
   return {
     id: data.player_id,
     name: data.players[0].name,
@@ -187,11 +114,6 @@ export async function fetchPlayerProfile(playerId: string): Promise<Player> {
     sigma: data.sigma,
     gamesPlayed: data.games_played,
     lastPlayed: data.last_game_date || "",
-    totalPlusMinus,
-    averagePlusMinus:
-      data.games_played > 0 ? totalPlusMinus / data.games_played : 0,
-    bestGame,
-    worstGame,
     ratingChange: data.rating_change || 0,
     ratingHistory: data.rating_history || [],
   };

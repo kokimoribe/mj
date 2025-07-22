@@ -11,10 +11,6 @@ describe("ExpandablePlayerCard", () => {
     sigma: 5.2,
     gamesPlayed: 42,
     lastPlayed: "2024-01-15",
-    totalPlusMinus: 15000,
-    averagePlusMinus: 357,
-    bestGame: 48000,
-    worstGame: -25000,
     ratingChange: 25,
   };
 
@@ -100,7 +96,6 @@ describe("ExpandablePlayerCard", () => {
     );
 
     // Check for expanded stats
-    expect(screen.getByText("Avg Placement:")).toBeInTheDocument();
     expect(screen.getByText("Last Played:")).toBeInTheDocument();
 
     // Check for action button

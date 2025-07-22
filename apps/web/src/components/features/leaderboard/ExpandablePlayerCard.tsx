@@ -30,15 +30,9 @@ function ExpandablePlayerCardComponent({
     router.push(`/player/${player.id}`);
   };
 
-  // Calculate rating change (this would come from the API in real implementation)
+  // Calculate rating change
   const ratingChange = player.ratingChange || 0;
   const isPositiveChange = ratingChange >= 0;
-
-  // Calculate stats from available data
-  // Note: Without full game history in the leaderboard view, we can't calculate
-  // average placement. This would need to be added to the Player
-  // interface or fetched on-demand when the card is expanded.
-  const avgPlacement: number | null = null; // Not available without game history
 
   return (
     <Card
@@ -134,16 +128,6 @@ function ExpandablePlayerCardComponent({
           <div className="bg-muted/30 space-y-3 border-t px-4 py-4">
             {/* Quick Stats */}
             <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground text-sm">
-                  Avg Placement:
-                </span>
-                <span className="font-semibold">
-                  {avgPlacement !== null
-                    ? (avgPlacement as number).toFixed(1)
-                    : "—"}
-                </span>
-              </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground text-sm">
                   Last Played:

@@ -41,51 +41,78 @@ export async function fetchLeaderboardData(): Promise<LeaderboardData> {
   const currentSeasonConfigHash = config.season.hash;
 
   // Fetch player ratings from cached table
-  const { data: players, error } = await supabase
+  const { data: ratingsData, error: ratingsError } = await supabase
     .from("cached_player_ratings")
-    .select(
-      `
-      player_id,
-      players!inner(id, name),
-      rating,
-      mu,
-      sigma,
-      games_played,
-      last_game_date,
-      rating_change,
-      rating_history,
-      materialized_at
-    `
-    )
+    .select("*")
     .eq("config_hash", currentSeasonConfigHash)
-    .order("rating", { ascending: false });
+    .order("display_rating", { ascending: false });
 
-  if (error) {
-    throw new Error(`Failed to fetch leaderboard: ${error.message}`);
+  if (ratingsError) {
+    throw new Error(`Failed to fetch leaderboard: ${ratingsError.message}`);
   }
+
+  // Get player names separately
+  const playerIds = ratingsData?.map(r => r.player_id) || [];
+  const { data: playersData, error: playersError } = await supabase
+    .from("players")
+    .select("id, display_name")
+    .in("id", playerIds);
+
+  if (playersError) {
+    throw new Error(`Failed to fetch player names: ${playersError.message}`);
+  }
+
+  // Create a map for quick lookup
+  const playerMap = new Map(
+    playersData?.map(p => [p.id, p.display_name]) || []
+  );
+
+  const players = ratingsData;
 
   // Get recent game history for 7-day delta calculation
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-  const recentGameHistoryQuery = supabase
-    .from("cached_game_player_results")
-    .select(
-      `
-      player_id,
-      game_id,
-      games!inner(finished_at),
-      rating_after,
-      rating_before
-    `
-    )
-    .eq("config_hash", currentSeasonConfigHash)
-    .gte("games.finished_at", sevenDaysAgo.toISOString())
-    .order("games.finished_at", { ascending: true });
+  // First get games from the last 7 days
+  const { data: recentGames, error: recentGamesError } = await supabase
+    .from("games")
+    .select("id, finished_at")
+    .eq("status", "finished")
+    .gte("finished_at", sevenDaysAgo.toISOString())
+    .order("finished_at", { ascending: true });
 
-  const { data: recentGameHistory } = (await recentGameHistoryQuery) as {
-    data: QueryData<typeof recentGameHistoryQuery> | null;
-  };
+  if (recentGamesError) {
+    console.error("Failed to fetch recent games:", recentGamesError);
+  }
+
+  // Then get cached results for these games
+  const recentGameIds = recentGames?.map(g => g.id) || [];
+  let recentGameHistory: any[] = [];
+
+  if (recentGameIds.length > 0) {
+    const { data: cachedResults, error: cachedError } = await supabase
+      .from("cached_game_results")
+      .select("*")
+      .eq("config_hash", currentSeasonConfigHash)
+      .in("game_id", recentGameIds);
+
+    if (!cachedError && cachedResults) {
+      // Add finished_at from games to each result
+      recentGameHistory = cachedResults
+        .map(result => {
+          const game = recentGames?.find(g => g.id === result.game_id);
+          return {
+            ...result,
+            games: { finished_at: game?.finished_at || "" },
+          };
+        })
+        .sort(
+          (a, b) =>
+            new Date(a.games.finished_at).getTime() -
+            new Date(b.games.finished_at).getTime()
+        );
+    }
+  }
 
   // Calculate 7-day deltas
   const playerDeltas: Record<
@@ -95,32 +122,53 @@ export async function fetchLeaderboardData(): Promise<LeaderboardData> {
   recentGameHistory?.forEach(game => {
     // Store the oldest game's rating_before as the baseline
     if (!playerDeltas[game.player_id]) {
+      // Calculate display rating from mu and sigma
+      const oldestRating = game.mu_before - 3 * game.sigma_before;
       playerDeltas[game.player_id] = {
-        oldestRating: game.rating_before,
+        oldestRating,
         hasGamesInPeriod: true,
       };
     }
   });
 
   // Get last 10 games per player for mini charts
-  const playerIds = players?.map(p => p.player_id) || [];
-  const playerRecentGamesQuery = supabase
-    .from("cached_game_player_results")
-    .select(
-      `
-      player_id,
-      game_id,
-      games!inner(finished_at),
-      rating_after
-    `
-    )
-    .eq("config_hash", currentSeasonConfigHash)
-    .in("player_id", playerIds)
-    .order("games.finished_at", { ascending: false });
+  // First get all games for these players
+  const { data: playerGameSeats } = await supabase
+    .from("game_seats")
+    .select("game_id, player_id")
+    .in("player_id", playerIds);
 
-  const { data: playerRecentGames } = (await playerRecentGamesQuery) as {
-    data: QueryData<typeof playerRecentGamesQuery> | null;
-  };
+  const playerGameIds = [
+    ...new Set(playerGameSeats?.map(s => s.game_id) || []),
+  ];
+
+  // Get the games to get their dates
+  const { data: playerGames } = await supabase
+    .from("games")
+    .select("id, finished_at")
+    .in("id", playerGameIds)
+    .order("finished_at", { ascending: false });
+
+  // Get cached results for these games
+  let playerRecentGames: any[] = [];
+  if (playerGameIds.length > 0) {
+    const { data: cachedResults } = await supabase
+      .from("cached_game_results")
+      .select("*")
+      .eq("config_hash", currentSeasonConfigHash)
+      .in("game_id", playerGameIds)
+      .in("player_id", playerIds);
+
+    if (cachedResults) {
+      playerRecentGames = cachedResults.map(result => {
+        const game = playerGames?.find(g => g.id === result.game_id);
+        return {
+          ...result,
+          games: { finished_at: game?.finished_at || "" },
+        };
+      });
+    }
+  }
 
   // Group recent games by player
   const recentGamesByPlayer: Record<
@@ -135,10 +183,8 @@ export async function fetchLeaderboardData(): Promise<LeaderboardData> {
     if (recentGamesByPlayer[game.player_id].length < 10) {
       recentGamesByPlayer[game.player_id].push({
         gameId: game.game_id,
-        date: Array.isArray(game.games)
-          ? game.games[0].finished_at
-          : (game.games as any).finished_at, // eslint-disable-line @typescript-eslint/no-explicit-any -- Supabase returns array for joins in some cases
-        rating: game.rating_after,
+        date: game.games?.finished_at || "",
+        rating: game.mu_after - 3 * game.sigma_after,
       });
     }
   });
@@ -147,7 +193,7 @@ export async function fetchLeaderboardData(): Promise<LeaderboardData> {
   const transformedPlayers: Player[] = (
     (players as CachedPlayerRating[]) || []
   ).map(p => {
-    const currentRating = p.rating;
+    const currentRating = p.display_rating;
     const delta = playerDeltas[p.player_id];
 
     // Calculate 7-day delta
@@ -158,14 +204,14 @@ export async function fetchLeaderboardData(): Promise<LeaderboardData> {
 
     return {
       id: p.player_id,
-      name: p.players[0].name,
-      rating: p.rating,
+      name: playerMap.get(p.player_id) || "Unknown",
+      rating: p.display_rating,
       mu: p.mu,
       sigma: p.sigma,
       gamesPlayed: p.games_played,
       lastPlayed: p.last_game_date || "",
       rating7DayDelta,
-      ratingHistory: p.rating_history || [],
+      ratingHistory: [], // Column doesn't exist in current schema
       recentGames: recentGamesByPlayer[p.player_id]?.reverse() || [], // Reverse to get chronological order
       averagePlacement: undefined, // Will be calculated on-demand in the component
     };
@@ -194,19 +240,7 @@ export async function fetchPlayerProfile(playerId: string): Promise<Player> {
 
   const { data, error } = await supabase
     .from("cached_player_ratings")
-    .select(
-      `
-      player_id,
-      players!inner(id, name),
-      rating,
-      mu,
-      sigma,
-      games_played,
-      last_game_date,
-      rating_change,
-      rating_history
-    `
-    )
+    .select("*")
     .eq("player_id", playerId)
     .eq("config_hash", currentSeasonConfigHash)
     .single();
@@ -215,40 +249,72 @@ export async function fetchPlayerProfile(playerId: string): Promise<Player> {
     throw new Error(`Failed to fetch player profile: ${error.message}`);
   }
 
+  // Get player name
+  const { data: playerData } = await supabase
+    .from("players")
+    .select("display_name")
+    .eq("id", playerId)
+    .single();
+
   // Get last 10 games for mini chart
-  const recentGamesQuery = supabase
-    .from("cached_game_player_results")
-    .select(
-      `
-      game_id,
-      games!inner(finished_at),
-      rating_after
-    `
-    )
+  // First get the player's game IDs
+  const { data: playerGameSeats } = await supabase
+    .from("game_seats")
+    .select("game_id")
     .eq("player_id", playerId)
-    .eq("config_hash", currentSeasonConfigHash)
-    .order("games.finished_at", { ascending: false })
     .limit(10);
 
-  const { data: recentGames } = (await recentGamesQuery) as {
-    data: QueryData<typeof recentGamesQuery> | null;
-  };
+  const gameIds = playerGameSeats?.map(s => s.game_id) || [];
+
+  // Get game dates
+  const { data: games } = await supabase
+    .from("games")
+    .select("id, finished_at")
+    .in("id", gameIds)
+    .order("finished_at", { ascending: false })
+    .limit(10);
+
+  // Get cached results
+  let recentGames: any[] = [];
+  if (gameIds.length > 0) {
+    const { data: cachedResults } = await supabase
+      .from("cached_game_results")
+      .select("*")
+      .eq("config_hash", currentSeasonConfigHash)
+      .eq("player_id", playerId)
+      .in("game_id", gameIds);
+
+    if (cachedResults && games) {
+      recentGames = cachedResults
+        .map(result => {
+          const game = games.find(g => g.id === result.game_id);
+          return {
+            ...result,
+            games: { finished_at: game?.finished_at || "" },
+          };
+        })
+        .sort(
+          (a, b) =>
+            new Date(b.games.finished_at).getTime() -
+            new Date(a.games.finished_at).getTime()
+        )
+        .slice(0, 10);
+    }
+  }
 
   const formattedRecentGames =
     recentGames
       ?.map(game => ({
         gameId: game.game_id,
-        date: Array.isArray(game.games)
-          ? game.games[0].finished_at
-          : (game.games as any).finished_at, // eslint-disable-line @typescript-eslint/no-explicit-any -- Supabase returns array for joins in some cases
-        rating: game.rating_after,
+        date: game.games?.finished_at || "",
+        rating: game.mu_after - 3 * game.sigma_after,
       }))
       .reverse() || [];
 
   return {
     id: data.player_id,
-    name: data.players[0].name,
-    rating: data.rating,
+    name: playerData?.display_name || "Unknown",
+    rating: data.display_rating,
     mu: data.mu,
     sigma: data.sigma,
     gamesPlayed: data.games_played,
@@ -329,21 +395,11 @@ export async function fetchGameHistory(
           id,
           name
         )
-      ),
-      cached_game_results!inner(
-        player_id,
-        placement,
-        raw_score,
-        score_delta,
-        rating_before,
-        rating_after,
-        rating_change
       )
     `,
       { count: "exact" }
     )
     .eq("status", "finished")
-    .eq("cached_game_results.config_hash", currentSeasonConfigHash)
     .order("finished_at", { ascending: false });
 
   // Apply player filter if specified
@@ -392,43 +448,72 @@ export async function fetchGameHistory(
     throw new Error(`Failed to fetch game history: ${error.message}`);
   }
 
-  // Transform the data to match our interface
-  const transformedGames: Game[] = ((games as GameWithResults[]) || []).map(
-    game => {
-      // Group results by game
-      const gameResults: GameResult[] = game.cached_game_results
-        .filter(
-          (result: CachedGameResult) =>
-            result.config_hash === currentSeasonConfigHash
-        )
-        .map((result: CachedGameResult) => {
-          const seat = game.game_seats.find(
-            (seat: GameSeat) => seat.player_id === result.player_id
-          );
-          return {
-            playerId: result.player_id,
-            playerName:
-              (Array.isArray(seat?.players)
-                ? seat?.players[0]?.name
-                : seat?.players?.name) || "Unknown",
-            placement: result.placement,
-            rawScore: result.raw_score,
-            scoreAdjustment: result.score_delta,
-            ratingBefore: result.rating_before,
-            ratingAfter: result.rating_after,
-            ratingChange: result.rating_change,
-          };
-        })
-        .sort((a: GameResult, b: GameResult) => a.placement - b.placement);
+  if (!games || games.length === 0) {
+    return {
+      games: [],
+      totalGames: 0,
+      hasMore: false,
+      showingAll: false,
+    };
+  }
 
-      return {
-        id: game.id,
-        date: game.finished_at,
-        seasonId: currentSeasonConfigHash,
-        results: gameResults,
-      };
+  // Get cached game results for these games
+  const gameIds = games.map(g => g.id);
+  const { data: cachedResults, error: resultsError } = await supabase
+    .from("cached_game_results")
+    .select("*")
+    .eq("config_hash", currentSeasonConfigHash)
+    .in("game_id", gameIds);
+
+  if (resultsError) {
+    throw new Error(`Failed to fetch game results: ${resultsError.message}`);
+  }
+
+  // Create a map of game results by game_id
+  const resultsByGame: Record<string, any[]> = {};
+  cachedResults?.forEach(result => {
+    if (!resultsByGame[result.game_id]) {
+      resultsByGame[result.game_id] = [];
     }
-  );
+    resultsByGame[result.game_id].push(result);
+  });
+
+  // Transform the data to match our interface
+  const transformedGames: Game[] = (games || []).map(game => {
+    const gameResults = resultsByGame[game.id] || [];
+
+    // Map results to our format
+    const formattedResults: GameResult[] = gameResults
+      .map((result: any) => {
+        const seat = game.game_seats.find(
+          (seat: GameSeat) => seat.player_id === result.player_id
+        );
+        return {
+          playerId: result.player_id,
+          playerName:
+            (Array.isArray(seat?.players)
+              ? seat?.players[0]?.display_name
+              : seat?.players?.display_name) || "Unknown",
+          placement: result.placement,
+          rawScore: seat?.final_score || 0,
+          scoreAdjustment: result.plus_minus || 0,
+          ratingBefore: result.mu_before - 3 * result.sigma_before,
+          ratingAfter: result.mu_after - 3 * result.sigma_after,
+          ratingChange:
+            result.mu_after -
+            3 * result.sigma_after -
+            (result.mu_before - 3 * result.sigma_before),
+        };
+      })
+      .sort((a: GameResult, b: GameResult) => a.placement - b.placement);
+
+    return {
+      id: game.id,
+      date: game.finished_at,
+      seasonId: currentSeasonConfigHash,
+      results: formattedResults,
+    };
+  });
 
   return {
     games: transformedGames,

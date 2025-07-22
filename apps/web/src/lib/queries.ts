@@ -36,6 +36,27 @@ export interface Player {
   // totalPlusMinus, averagePlusMinus, bestGame, worstGame
 }
 
+// Type for the raw API response - may have legacy field names
+interface APIPlayerResponse {
+  id: string;
+  name: string;
+  rating: number;
+  mu: number;
+  sigma: number;
+  gamesPlayed?: number;
+  games?: number; // Legacy field name
+  lastPlayed?: string;
+  lastGameDate?: string; // Legacy field name
+  rating7DayDelta?: number | null;
+  ratingChange?: number | null; // Legacy field name
+  ratingHistory?: number[];
+  recentGames?: Array<{
+    gameId: string;
+    date: string;
+    rating: number;
+  }>;
+}
+
 export interface LeaderboardData {
   players: Player[];
   totalGames: number;
@@ -55,6 +76,27 @@ export interface GameResult {
   }>;
 }
 
+// Type for the raw game history API response
+interface APIGameHistoryResponse {
+  games: Array<{
+    id: string;
+    date: string;
+    players: Array<{
+      id?: string;
+      name: string;
+      placement: number;
+      score: number;
+      plusMinus: number;
+      ratingDelta?: number;
+      ratingBefore?: number;
+      ratingAfter?: number;
+    }>;
+  }>;
+  totalGames: number;
+  lastUpdated: string;
+  seasonName: string;
+}
+
 // Leaderboard queries
 export function useLeaderboard() {
   return useQuery({
@@ -67,23 +109,27 @@ export function useLeaderboard() {
       if (!response.ok) {
         throw new Error("Failed to fetch leaderboard");
       }
-      const data = await response.json();
+      const data: {
+        players: APIPlayerResponse[];
+        totalGames: number;
+        lastUpdated: string;
+        seasonName: string;
+      } = await response.json();
       // Transform field names to match our interface
       return {
         ...data,
-        players: data.players.map((p: any) => ({
-          ...p,
-          // Ensure we have the correct field names
-          gamesPlayed: p.gamesPlayed ?? p.games ?? 0,
-          lastPlayed:
-            p.lastPlayed ?? p.lastGameDate ?? new Date().toISOString(),
-          // Map old ratingChange to rating7DayDelta for backward compatibility
-          rating7DayDelta: p.rating7DayDelta ?? p.ratingChange ?? null,
-          // Remove duplicate fields
-          games: undefined,
-          lastGameDate: undefined,
-          ratingChange: undefined,
-        })),
+        players: data.players.map(
+          (p: APIPlayerResponse): Player => ({
+            ...p,
+            // Ensure we have the correct field names
+            gamesPlayed: p.gamesPlayed ?? p.games ?? 0,
+            lastPlayed:
+              p.lastPlayed ?? p.lastGameDate ?? new Date().toISOString(),
+            // Map old ratingChange to rating7DayDelta for backward compatibility
+            rating7DayDelta: p.rating7DayDelta ?? p.ratingChange ?? null,
+            // Remove duplicate fields - these don't exist on the Player type
+          })
+        ),
       };
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -113,9 +159,7 @@ export function usePlayerProfile(playerId: string) {
         gamesPlayed: data.gamesPlayed ?? data.games ?? 0,
         lastPlayed:
           data.lastPlayed ?? data.lastGameDate ?? new Date().toISOString(),
-        // Remove duplicate fields
-        games: undefined,
-        lastGameDate: undefined,
+        // Fields are already mapped above
       };
     },
     staleTime: 5 * 60 * 1000,
@@ -164,26 +208,29 @@ export function useGameHistory(playerId?: string, offset = 0, limit = 10) {
       if (!response.ok) {
         throw new Error("Failed to fetch game history");
       }
-      const data = await response.json();
+      const data: APIGameHistoryResponse = await response.json();
 
       // Transform API data to match component expectations
-      let transformedGames = (data.games || []).map((game: any) => ({
+      let transformedGames = (data.games || []).map(game => ({
         id: game.id,
         date: game.date,
-        results: game.players.map((player: any) => ({
+        seasonId: data.seasonName || "Season 3", // Use season name from API response
+        results: game.players.map(player => ({
           playerId: player.id || player.name.toLowerCase().replace(/\s+/g, "-"),
           playerName: player.name,
           placement: player.placement,
           rawScore: player.score,
           scoreAdjustment: player.plusMinus * 1000, // Convert to score adjustment
           ratingChange: player.ratingDelta || 0,
+          ratingBefore: player.ratingBefore || 0,
+          ratingAfter: player.ratingAfter || 0,
         })),
       }));
 
       // Client-side filtering if playerId is provided and API doesn't support it
       if (playerId && !USE_SUPABASE) {
-        transformedGames = transformedGames.filter((game: any) =>
-          game.results.some((result: any) => result.playerId === playerId)
+        transformedGames = transformedGames.filter(game =>
+          game.results.some(result => result.playerId === playerId)
         );
       }
 
@@ -213,8 +260,13 @@ export function useAllPlayers() {
       if (!response.ok) {
         throw new Error("Failed to fetch leaderboard");
       }
-      const data = await response.json();
-      return data.players.map((p: any) => {
+      const data: {
+        players: APIPlayerResponse[];
+        totalGames: number;
+        lastUpdated: string;
+        seasonName: string;
+      } = await response.json();
+      return data.players.map(p => {
         return {
           id: p.id || p.name.toLowerCase().replace(/\s+/g, "-"),
           name: p.name,
@@ -240,11 +292,16 @@ export function usePlayerGameCounts() {
       if (!response.ok) {
         throw new Error("Failed to fetch leaderboard");
       }
-      const data = await response.json();
+      const data: {
+        players: APIPlayerResponse[];
+        totalGames: number;
+        lastUpdated: string;
+        seasonName: string;
+      } = await response.json();
       const counts: Record<string, number> = {};
-      data.players.forEach((p: any) => {
+      data.players.forEach(p => {
         const playerId = p.id || p.name.toLowerCase().replace(/\s+/g, "-");
-        counts[playerId] = p.games || 0;
+        counts[playerId] = p.gamesPlayed || p.games || 0;
       });
       return counts;
     },

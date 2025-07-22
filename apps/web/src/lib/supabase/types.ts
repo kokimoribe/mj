@@ -49,6 +49,17 @@ export interface CachedPlayerRating {
   materialized_at: string;
 }
 
+// Type for joined game data in cached_game_player_results queries
+export interface CachedGamePlayerResultWithGame {
+  player_id: string;
+  game_id: string;
+  games: {
+    finished_at: string;
+  };
+  rating_after: number;
+  rating_before?: number;
+}
+
 export interface PlayerWithRatings {
   id: string;
   name: string;

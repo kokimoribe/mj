@@ -1,4 +1,5 @@
 import { createClient } from "./client";
+import type { QueryData } from "@supabase/supabase-js";
 import type { Player, LeaderboardData } from "../queries";
 import type {
   CachedGameResult,
@@ -46,7 +47,7 @@ export async function fetchLeaderboardData(): Promise<LeaderboardData> {
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-  const { data: recentGameHistory } = await supabase
+  const recentGameHistoryQuery = supabase
     .from("cached_game_player_results")
     .select(
       `
@@ -60,6 +61,10 @@ export async function fetchLeaderboardData(): Promise<LeaderboardData> {
     .eq("config_hash", currentSeasonConfigHash)
     .gte("games.finished_at", sevenDaysAgo.toISOString())
     .order("games.finished_at", { ascending: true });
+
+  const { data: recentGameHistory } = (await recentGameHistoryQuery) as {
+    data: QueryData<typeof recentGameHistoryQuery> | null;
+  };
 
   // Calculate 7-day deltas
   const playerDeltas: Record<
@@ -78,7 +83,7 @@ export async function fetchLeaderboardData(): Promise<LeaderboardData> {
 
   // Get last 10 games per player for mini charts
   const playerIds = players?.map(p => p.player_id) || [];
-  const { data: playerRecentGames } = await supabase
+  const playerRecentGamesQuery = supabase
     .from("cached_game_player_results")
     .select(
       `
@@ -91,6 +96,10 @@ export async function fetchLeaderboardData(): Promise<LeaderboardData> {
     .eq("config_hash", currentSeasonConfigHash)
     .in("player_id", playerIds)
     .order("games.finished_at", { ascending: false });
+
+  const { data: playerRecentGames } = (await playerRecentGamesQuery) as {
+    data: QueryData<typeof playerRecentGamesQuery> | null;
+  };
 
   // Group recent games by player
   const recentGamesByPlayer: Record<
@@ -105,7 +114,10 @@ export async function fetchLeaderboardData(): Promise<LeaderboardData> {
     if (recentGamesByPlayer[game.player_id].length < 10) {
       recentGamesByPlayer[game.player_id].push({
         gameId: game.game_id,
-        date: (game.games as any).finished_at,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase returns array for joins in some cases
+        date: Array.isArray(game.games)
+          ? game.games[0].finished_at
+          : (game.games as any).finished_at,
         rating: game.rating_after,
       });
     }
@@ -187,7 +199,7 @@ export async function fetchPlayerProfile(playerId: string): Promise<Player> {
   }
 
   // Get last 10 games for mini chart
-  const { data: recentGames } = await supabase
+  const recentGamesQuery = supabase
     .from("cached_game_player_results")
     .select(
       `
@@ -201,11 +213,18 @@ export async function fetchPlayerProfile(playerId: string): Promise<Player> {
     .order("games.finished_at", { ascending: false })
     .limit(10);
 
+  const { data: recentGames } = (await recentGamesQuery) as {
+    data: QueryData<typeof recentGamesQuery> | null;
+  };
+
   const formattedRecentGames =
     recentGames
       ?.map(game => ({
         gameId: game.game_id,
-        date: (game.games as any).finished_at,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase returns array for joins in some cases
+        date: Array.isArray(game.games)
+          ? game.games[0].finished_at
+          : (game.games as any).finished_at,
         rating: game.rating_after,
       }))
       .reverse() || [];

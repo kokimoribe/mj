@@ -128,15 +128,20 @@ export const PlayerProfileView = memo(function PlayerProfileView({
       );
 
       // Calculate delta for the period
-      const oldestInPeriod = filteredHistory[0];
-      if (oldestInPeriod && oldestInPeriod.gameId !== "current") {
-        delta = player.rating - oldestInPeriod.rating;
+      // Find the oldest game in the period to get the baseline rating
+      const oldestGameInPeriod = gamesData.find(
+        (game: PlayerGame) => new Date(game.date) >= cutoffDate
+      );
+      if (oldestGameInPeriod) {
+        // Use rating_before of the oldest game as baseline
+        delta = player.rating - oldestGameInPeriod.ratingBefore;
       }
     } else {
       // For "all", calculate delta from first game
-      const firstGame = chartPoints[0];
-      if (firstGame && firstGame.gameId !== "current") {
-        delta = player.rating - firstGame.rating;
+      const firstGame = gamesData[0];
+      if (firstGame) {
+        // Use rating_before of the first game as baseline
+        delta = player.rating - firstGame.ratingBefore;
       }
     }
 

@@ -156,8 +156,10 @@ test.describe("Game History", () => {
     await loadMoreButton.click();
 
     // No loading needed - games are already in memory
-    // Button should immediately change to "Show Less Games"
-    await expect(loadMoreButton).toHaveText("Show Less Games");
+    // Should now see the "Show Less Games" button
+    const showLessButton = page.getByTestId(gameHistoryIds.showLessButton);
+    await expect(showLessButton).toBeVisible();
+    await expect(showLessButton).toHaveText("Show Less Games");
 
     // Should now show more games (up to 20)
     const expandedGames = await page
@@ -166,8 +168,8 @@ test.describe("Game History", () => {
     expect(expandedGames).toBeGreaterThan(10);
     expect(expandedGames).toBeLessThanOrEqual(20);
 
-    // Click Show Less (same button, different text)
-    await loadMoreButton.click();
+    // Click Show Less
+    await showLessButton.click();
 
     // Should instantly hide additional games (no loading)
     const collapsedGames = await page
@@ -175,7 +177,8 @@ test.describe("Game History", () => {
       .count();
     expect(collapsedGames).toBe(10);
 
-    // Button should be back to "Load More Games"
+    // Show Less button should be hidden, Load More button should be visible
+    await expect(showLessButton).not.toBeVisible();
     await expect(loadMoreButton).toBeVisible();
     await expect(loadMoreButton).toHaveText("Load More Games");
   });

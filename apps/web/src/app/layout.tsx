@@ -30,6 +30,43 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: "black-translucent",
     title: config.pwa.shortName,
+    startupImage: [
+      {
+        url: "/apple-touch-icon.png",
+        media:
+          "(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)", // iPhone SE
+      },
+      {
+        url: "/apple-touch-icon.png",
+        media:
+          "(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)", // iPhone 8
+      },
+      {
+        url: "/apple-touch-icon.png",
+        media:
+          "(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)", // iPhone X/XS/11 Pro
+      },
+      {
+        url: "/apple-touch-icon.png",
+        media:
+          "(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2)", // iPhone XR/11
+      },
+      {
+        url: "/apple-touch-icon.png",
+        media:
+          "(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3)", // iPhone XS Max/11 Pro Max
+      },
+      {
+        url: "/apple-touch-icon.png",
+        media:
+          "(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)", // iPhone 12/13/14
+      },
+      {
+        url: "/apple-touch-icon.png",
+        media:
+          "(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3)", // iPhone 12/13/14 Pro Max
+      },
+    ],
   },
 };
 

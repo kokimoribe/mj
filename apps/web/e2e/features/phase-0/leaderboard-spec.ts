@@ -144,7 +144,7 @@ test.describe("PWA Leaderboard - Specification Tests", () => {
 
       // Verify expanded content
       await expect(page.getByText("Avg Placement")).toBeVisible();
-      await expect(page.getByText("Win Rate")).toBeVisible();
+      // Win Rate removed per spec - no longer displayed
       await expect(page.getByText("Last Played")).toBeVisible();
       await expect(page.getByText("View Full Profile")).toBeVisible();
     });
@@ -178,7 +178,7 @@ test.describe("PWA Leaderboard - Specification Tests", () => {
 
       // Verify stats are displayed (values should be calculated, not hardcoded)
       await expect(page.getByText(/Avg Placement: \d+\.\d+/)).toBeVisible();
-      await expect(page.getByText(/Win Rate: \d+%/)).toBeVisible();
+      // Win Rate removed per spec - no longer displayed
       await expect(page.getByText(/Last Played: .*/)).toBeVisible();
     });
   });

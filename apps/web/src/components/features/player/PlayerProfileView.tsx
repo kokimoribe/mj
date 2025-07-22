@@ -70,56 +70,60 @@ export const PlayerProfileView = memo(function PlayerProfileView({
     return rankIndex >= 0 ? rankIndex + 1 : null;
   }, [leaderboardData, player]);
 
-  // Calculate rating history from games with time period filtering
+  // Use materialized rating history from database or build efficiently from games
   const { ratingHistory, periodDelta } = useMemo(() => {
     if (!gamesData || gamesData.length === 0 || !player) {
       return { ratingHistory: [], periodDelta: null };
     }
 
-    // Build rating history from games (newest to oldest)
-    const fullHistory = [];
-    let currentRating = player.rating;
+    // Check if we have materialized rating history from database
+    if (player.ratingHistory && player.ratingHistory.length > 0) {
+      // Use materialized history - convert to chart format
+      const points = player.ratingHistory.map((rating, index) => ({
+        date: gamesData[index]?.date || new Date().toISOString(),
+        rating,
+        gameId: gamesData[index]?.id || `game-${index}`,
+        change: index > 0 ? rating - player.ratingHistory![index - 1] : 0,
+      }));
+
+      // Add current rating point
+      points.push({
+        date: new Date().toISOString(),
+        rating: player.rating,
+        gameId: "current",
+        change: 0,
+      });
+
+      return { ratingHistory: points, periodDelta: null }; // TODO: Calculate period delta from materialized data
+    }
+
+    // Fallback: build from games efficiently
+    const chartPoints = gamesData.map((game: PlayerGame) => ({
+      date: game.date,
+      rating: game.ratingAfter,
+      gameId: game.id,
+      change: game.ratingChange || 0,
+    }));
 
     // Add current rating as the latest point
-    fullHistory.push({
+    chartPoints.push({
       date: new Date().toISOString(),
-      rating: currentRating,
+      rating: player.rating,
       gameId: "current",
       change: 0,
     });
 
-    // Work backwards through games to build history
-    gamesData.forEach((game: PlayerGame) => {
-      const previousRating = currentRating - (game.ratingChange || 0);
-      fullHistory.unshift({
-        date: game.date,
-        rating: previousRating,
-        gameId: game.id,
-        change: game.ratingChange || 0,
-      });
-      currentRating = previousRating;
-    });
-
-    // Filter based on selected period
-    let filteredHistory = fullHistory;
+    // Filter based on selected period and calculate delta
+    let filteredHistory = chartPoints;
     let delta = null;
 
     if (selectedPeriod !== "all") {
       const cutoffDate = new Date();
+      const days =
+        selectedPeriod === "7d" ? 7 : selectedPeriod === "14d" ? 14 : 30;
+      cutoffDate.setDate(cutoffDate.getDate() - days);
 
-      switch (selectedPeriod) {
-        case "7d":
-          cutoffDate.setDate(cutoffDate.getDate() - 7);
-          break;
-        case "14d":
-          cutoffDate.setDate(cutoffDate.getDate() - 14);
-          break;
-        case "30d":
-          cutoffDate.setDate(cutoffDate.getDate() - 30);
-          break;
-      }
-
-      filteredHistory = fullHistory.filter(
+      filteredHistory = chartPoints.filter(
         point => new Date(point.date) >= cutoffDate
       );
 
@@ -130,7 +134,7 @@ export const PlayerProfileView = memo(function PlayerProfileView({
       }
     } else {
       // For "all", calculate delta from first game
-      const firstGame = fullHistory[0];
+      const firstGame = chartPoints[0];
       if (firstGame && firstGame.gameId !== "current") {
         delta = player.rating - firstGame.rating;
       }

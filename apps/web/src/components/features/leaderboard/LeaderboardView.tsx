@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { AlertCircle } from "lucide-react";
+import { PullToRefresh } from "@/components/ui/pull-to-refresh";
 import { LeaderboardHeader } from "./LeaderboardHeader";
 import { ExpandablePlayerCard } from "./ExpandablePlayerCard";
 import { toast } from "sonner";
@@ -71,37 +72,43 @@ function LeaderboardViewComponent() {
   });
 
   return (
-    <div className="space-y-6" data-testid={TEST_IDS.LEADERBOARD_VIEW}>
-      {error && data && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>Failed to load leaderboard</AlertDescription>
-        </Alert>
-      )}
+    <PullToRefresh
+      onRefresh={handleRefresh}
+      isRefreshing={isRefetching}
+      className="min-h-screen"
+    >
+      <div className="space-y-6" data-testid={TEST_IDS.LEADERBOARD_VIEW}>
+        {error && data && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>Failed to load leaderboard</AlertDescription>
+          </Alert>
+        )}
 
-      <LeaderboardHeader
-        seasonName={data.seasonName}
-        totalGames={data.totalGames}
-        totalPlayers={data.players.length}
-        lastUpdated={data.lastUpdated}
-        onRefresh={handleRefresh}
-        isRefreshing={isRefetching}
-        data-testid={TEST_IDS.LEADERBOARD_HEADER}
-      />
+        <LeaderboardHeader
+          seasonName={data.seasonName}
+          totalGames={data.totalGames}
+          totalPlayers={data.players.length}
+          lastUpdated={data.lastUpdated}
+          onRefresh={handleRefresh}
+          isRefreshing={isRefetching}
+          data-testid={TEST_IDS.LEADERBOARD_HEADER}
+        />
 
-      <div className="space-y-2">
-        {sortedPlayers.map((player, index) => (
-          <ExpandablePlayerCard
-            key={player.id}
-            player={player}
-            rank={index + 1}
-            isExpanded={expandedCard === player.id}
-            onToggle={() => handleCardToggle(player.id)}
-            data-testid={`${TEST_IDS.PLAYER_CARD}-${player.id}`}
-          />
-        ))}
+        <div className="space-y-2">
+          {sortedPlayers.map((player, index) => (
+            <ExpandablePlayerCard
+              key={player.id}
+              player={player}
+              rank={index + 1}
+              isExpanded={expandedCard === player.id}
+              onToggle={() => handleCardToggle(player.id)}
+              data-testid={`${TEST_IDS.PLAYER_CARD}-${player.id}`}
+            />
+          ))}
+        </div>
       </div>
-    </div>
+    </PullToRefresh>
   );
 }
 

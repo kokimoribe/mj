@@ -43,7 +43,7 @@
       "cd apps/web && npx next lint --fix --file"
     ],
     "apps/rating-engine/**/*.py": [
-      "cd apps/rating-engine && ruff check --fix"
+      "cd apps/rating-engine && uv run ruff check --fix"
     ],
     "**/*.{js,jsx,ts,tsx,md,json}": [
       "prettier --write"

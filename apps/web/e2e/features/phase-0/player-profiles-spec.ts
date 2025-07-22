@@ -4,13 +4,14 @@ import {
   takeScreenshot,
   navigateTo,
   waitForElement,
-  mockAPIResponses,
+  // mockAPIResponses, // Removed for production data testing
   checkAccessibility,
 } from "../../utils/test-helpers";
 
 test.describe("Player Profiles - Specification Tests", () => {
   test.beforeEach(async ({ page }) => {
-    await mockAPIResponses(page);
+    // Use production data for testing - more realistic for hobby project
+    // await mockAPIResponses(page);
   });
 
   test.describe("Profile Header", () => {

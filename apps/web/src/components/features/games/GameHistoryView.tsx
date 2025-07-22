@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo, memo } from "react";
+import { useState, useMemo, memo, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   useGameHistory,
   useAllPlayers,
@@ -28,10 +29,37 @@ interface Player {
 }
 
 export const GameHistoryView = memo(function GameHistoryView() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Initialize state from URL params
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | undefined>(
-    undefined
+    searchParams.get("player") || undefined
   );
-  const [showingAll, setShowingAll] = useState(false);
+  const [showingAll, setShowingAll] = useState(
+    searchParams.get("showAll") === "true"
+  );
+
+  // Update URL when filters change
+  useEffect(() => {
+    const params = new URLSearchParams();
+
+    if (selectedPlayerId) {
+      params.set("player", selectedPlayerId);
+    }
+
+    if (showingAll) {
+      params.set("showAll", "true");
+    }
+
+    const paramString = params.toString();
+    const newPath = paramString ? `/games?${paramString}` : "/games";
+
+    // Only update if URL would actually change
+    if (window.location.pathname + window.location.search !== newPath) {
+      router.replace(newPath, { scroll: false });
+    }
+  }, [selectedPlayerId, showingAll, router]);
 
   // Fetch data
   const {
@@ -54,15 +82,7 @@ export const GameHistoryView = memo(function GameHistoryView() {
       // When filtered by player, show that player's game count
       return gameCounts[selectedPlayerId] || 0;
     }
-    // For all games, calculate the actual total number of games
-    // Each game has 4 players, so total unique games = sum of all player games / 4
-    if (gameCounts) {
-      const totalPlayerGames = Object.values(gameCounts).reduce(
-        (sum, count) => sum + count,
-        0
-      );
-      return Math.floor(totalPlayerGames / 4);
-    }
+    // For all games, use the total from the API which gives the actual unique game count
     return gameData?.totalGames || 0;
   }, [gameData?.totalGames, selectedPlayerId, gameCounts]);
 

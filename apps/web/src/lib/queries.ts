@@ -69,8 +69,10 @@ export function useLeaderboard() {
         ...data,
         players: data.players.map((p: any) => ({
           ...p,
-          gamesPlayed: p.games || p.gamesPlayed,
-          lastPlayed: p.lastGameDate || p.lastPlayed,
+          // Ensure we have the correct field names
+          gamesPlayed: p.gamesPlayed ?? p.games ?? 0,
+          lastPlayed:
+            p.lastPlayed ?? p.lastGameDate ?? new Date().toISOString(),
           // Remove duplicate fields
           games: undefined,
           lastGameDate: undefined,

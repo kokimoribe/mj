@@ -45,7 +45,7 @@ function ExpandablePlayerCardComponent({
       role="button"
       tabIndex={0}
       aria-expanded={isExpanded}
-      aria-label={`${player.name} - Rank ${player.rating.toFixed(1)} - Click to ${isExpanded ? "collapse" : "expand"} details`}
+      aria-label={`${player.name || "Unknown"} - Rank ${(player.rating || 0).toFixed(1)} - Click to ${isExpanded ? "collapse" : "expand"} details`}
       data-testid={dataTestId}
       className={cn(
         "cursor-pointer transition-all duration-200",
@@ -68,9 +68,12 @@ function ExpandablePlayerCardComponent({
           <div className="flex items-center justify-between">
             {/* Player Name & Games */}
             <div className="min-w-0 flex-1">
-              <h3 className="truncate font-medium">{player.name}</h3>
+              <h3 className="truncate font-medium">
+                {player.name || "Unknown Player"}
+              </h3>
               <p className="text-muted-foreground text-sm">
-                {player.gamesPlayed} games
+                {player.gamesPlayed || 0} game
+                {player.gamesPlayed !== 1 ? "s" : ""}
               </p>
             </div>
 
@@ -78,7 +81,7 @@ function ExpandablePlayerCardComponent({
             <div className="flex items-center gap-3">
               <div className="text-right">
                 <div className="font-mono text-2xl font-bold tabular-nums">
-                  {player.rating.toFixed(1)}
+                  {(player.rating || 0).toFixed(1)}
                 </div>
                 <div
                   className={cn(

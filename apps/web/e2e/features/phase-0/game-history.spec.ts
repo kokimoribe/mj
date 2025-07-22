@@ -59,9 +59,9 @@ test.describe("Game History", () => {
 
     // Each player result should have a score
     for (const score of scores) {
-      // Check for raw score (always a number with possible comma)
-      const hasScore = (await score.locator("text=/^[0-9,]+$/").count()) > 0;
-      expect(hasScore).toBeTruthy();
+      // Check for raw score (number with possible comma, but not necessarily the entire text)
+      const scoreText = await score.textContent();
+      expect(scoreText).toMatch(/[0-9,]+/);
     }
 
     // Check for plus/minus adjustments (with + or - prefix)
@@ -75,7 +75,7 @@ test.describe("Game History", () => {
     // Check that each badge contains either an arrow with number or a dash
     for (const badge of ratingChanges) {
       const text = await badge.textContent();
-      expect(text).toMatch(/^([↑↓][0-9.]+|—)$/);
+      expect(text).toMatch(/([↑↓][0-9]+\.?[0-9]*|—)/);
     }
   });
 

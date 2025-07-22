@@ -4,6 +4,8 @@ import "./globals.css";
 import { Providers } from "@/lib/providers";
 import { Toaster } from "@/components/ui/sonner";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { OfflineIndicator } from "@/components/OfflineIndicator";
+import { config } from "@/config";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -12,9 +14,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Riichi Mahjong League",
-  description:
-    "Track Riichi Mahjong ratings and games with OpenSkill-based calculations",
+  title: config.pwa.name,
+  description: config.pwa.description,
   manifest: "/manifest.json",
   icons: {
     icon: [
@@ -27,8 +28,8 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
-    title: "MJ League",
+    statusBarStyle: "black-translucent",
+    title: config.pwa.shortName,
   },
 };
 
@@ -37,7 +38,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#020617", // Slate 950
+  themeColor: config.pwa.themeColor,
 };
 
 export default function RootLayout({
@@ -49,6 +50,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} font-sans antialiased`}>
         <Providers>
+          <OfflineIndicator />
           <ErrorBoundary>{children}</ErrorBoundary>
           <Toaster />
         </Providers>

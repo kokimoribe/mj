@@ -6,6 +6,7 @@ import {
   fetchAllPlayers,
   fetchPlayerGameCounts,
 } from "./supabase/queries";
+import { config } from "@/config";
 
 // Re-export types from supabase queries for consistency
 export type {
@@ -21,9 +22,9 @@ export function useLeaderboard() {
   return useQuery({
     queryKey: ["leaderboard"],
     queryFn: fetchLeaderboardData,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 30 * 60 * 1000, // 30 minutes
-    retry: 3,
+    staleTime: config.query.staleTime,
+    gcTime: config.query.gcTime,
+    retry: config.query.retryAttempts,
     networkMode: "offlineFirst",
   });
 }
@@ -54,8 +55,8 @@ export function useAllPlayers() {
   return useQuery({
     queryKey: ["players", "all"],
     queryFn: fetchAllPlayers,
-    staleTime: 10 * 60 * 1000, // 10 minutes
-    gcTime: 30 * 60 * 1000,
+    staleTime: 10 * 60 * 1000, // 10 minutes for less frequently changing data
+    gcTime: config.query.gcTime,
   });
 }
 
@@ -102,35 +103,6 @@ export function usePlayerGames(playerId: string, limit = 10) {
     },
     enabled: !!playerId,
     staleTime: 5 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
-  });
-}
-
-// Placeholder for useSeasonStats - to be implemented based on requirements
-export function useSeasonStats() {
-  return useQuery({
-    queryKey: ["seasonStats"],
-    queryFn: async () => {
-      // TODO: Implement season stats fetching
-      // For now, return mock data to make tests pass
-      return {
-        totalGames: 0,
-        totalPlayers: 0,
-        averageGamesPerPlayer: 0,
-        averageScore: 25000,
-        highestScore: 67300,
-        mostActivePlayer: { name: "", gamesPlayed: 0, games: 0 },
-        biggestWinner: { name: "", plusMinus: 0 },
-        mostWins: { name: "", count: 0 },
-        seatWindBias: {
-          east: { finishes: [0, 0, 0, 0] },
-          south: { finishes: [0, 0, 0, 0] },
-          west: { finishes: [0, 0, 0, 0] },
-          north: { finishes: [0, 0, 0, 0] },
-        },
-      };
-    },
-    staleTime: 10 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
   });
 }

@@ -1,11 +1,11 @@
 {
-  "name": "Riichi Mahjong League",
-  "short_name": "Mahjong",
+  "name": "Riichi Tracker",
+  "short_name": "Riichi",
   "description": "Track Riichi Mahjong ratings and games",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#1f2937",
-  "theme_color": "#1f2937",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
   "orientation": "portrait-primary",
   "icons": [
     {

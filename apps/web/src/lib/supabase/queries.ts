@@ -6,6 +6,7 @@ import type {
   GameWithResults,
   CachedPlayerRating,
 } from "./types";
+import { config } from "@/config";
 
 // Core types for the application
 export interface Player {
@@ -34,16 +35,10 @@ export interface LeaderboardData {
   seasonName: string;
 }
 
-// Default season configuration hash (hardcoded for Season 3)
-const DEFAULT_SEASON_CONFIG_HASH = "season_3_2024";
-
 export async function fetchLeaderboardData(): Promise<LeaderboardData> {
   const supabase = createClient();
 
-  // Get current season config hash from environment or use default
-  const currentSeasonConfigHash =
-    process.env.NEXT_PUBLIC_CURRENT_SEASON_CONFIG_HASH ||
-    DEFAULT_SEASON_CONFIG_HASH;
+  const currentSeasonConfigHash = config.season.hash;
 
   // Fetch player ratings from cached table
   const { data: players, error } = await supabase
@@ -183,8 +178,7 @@ export async function fetchLeaderboardData(): Promise<LeaderboardData> {
   );
   const lastUpdated = players?.[0]?.materialized_at || new Date().toISOString();
 
-  // Get season name from config or default
-  const seasonName = process.env.NEXT_PUBLIC_CURRENT_SEASON_NAME || "Season 3";
+  const seasonName = config.season.name;
 
   return {
     players: transformedPlayers,
@@ -196,9 +190,7 @@ export async function fetchLeaderboardData(): Promise<LeaderboardData> {
 
 export async function fetchPlayerProfile(playerId: string): Promise<Player> {
   const supabase = createClient();
-  const currentSeasonConfigHash =
-    process.env.NEXT_PUBLIC_CURRENT_SEASON_CONFIG_HASH ||
-    DEFAULT_SEASON_CONFIG_HASH;
+  const currentSeasonConfigHash = config.season.hash;
 
   const { data, error } = await supabase
     .from("cached_player_ratings")
@@ -320,9 +312,7 @@ export async function fetchGameHistory(
   options: FilterOptions = {}
 ): Promise<GameHistoryData> {
   const supabase = createClient();
-  const currentSeasonConfigHash =
-    process.env.NEXT_PUBLIC_CURRENT_SEASON_CONFIG_HASH ||
-    DEFAULT_SEASON_CONFIG_HASH;
+  const currentSeasonConfigHash = config.season.hash;
   const { playerId, offset = 0, limit = 10 } = options;
 
   let query = supabase
@@ -451,9 +441,7 @@ export async function fetchGameHistory(
 // Get game count for each player (for filter dropdown)
 export async function fetchPlayerGameCounts() {
   const supabase = createClient();
-  const currentSeasonConfigHash =
-    process.env.NEXT_PUBLIC_CURRENT_SEASON_CONFIG_HASH ||
-    DEFAULT_SEASON_CONFIG_HASH;
+  const currentSeasonConfigHash = config.season.hash;
 
   const { data, error } = await supabase
     .from("cached_player_ratings")

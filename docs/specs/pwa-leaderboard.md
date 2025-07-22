@@ -38,13 +38,13 @@ The PWA Leaderboard is the primary landing page of the Riichi Mahjong League app
 │ 🏆 Season 3 Leaderboard                 │
 │ 24 games • 7 players • Updated 2h ago   │
 ├─────────────────────────────────────────┤
-│ Joseph     46.3  ↑2.1    20 games      │
-│ Josh       39.2  ↓0.8    16 games      │
-│ Mikey      36.0  ↑0.4    23 games      │
-│ Hyun       32.2  ↓1.2    14 games      │
-│ Koki       31.9  ↑0.6    20 games      │
-│ Rayshone   20.5  ↑4.2     2 games      │
-│ Jackie     15.4  ↑9.1     1 game       │
+│ Joseph     46.3  ▲4.2    20 games      │
+│ Josh       39.2  ▼2.1    16 games      │
+│ Mikey      36.0  —       23 games      │
+│ Hyun       32.2  ▼1.2    14 games      │
+│ Koki       31.9  ▲0.6    20 games      │
+│ Rayshone   20.5  ▲4.2     2 games      │
+│ Jackie     15.4  —        1 game       │
 ├─────────────────────────────────────────┤
 │ [Leaderboard] [Players] [Games] [Stats] │
 └─────────────────────────────────────────┘
@@ -89,18 +89,30 @@ The PWA Leaderboard is the primary landing page of the Riichi Mahjong League app
 
 ```
 ┌─────────────────────────────────────────┐
-│ Joseph     46.3  ↑2.1    20 games       │
+│ Joseph     46.3  ▲4.2    20 games       │
 ├─────────────────────────────────────────┤
+│ 7-day change: ▲4.2 (from 42.1)         │
 │ Avg Placement: 2.1                      │
 │ Last Played: 3 days ago                 │
 │                                         │
-│ Rating Trend: ▁▂▄█▆▇█ (last 10 games)  │
+│ Recent Performance (Last 10 games):     │
+│ 48┤            •                       │
+│ 46┤        •  • •                      │
+│ 44┤    •  •      •                     │
+│ 42┤•  •                                │
+│ 40└────────────────────────            │
 │                                         │
 │ [View Full Profile →]                   │
 └─────────────────────────────────────────┘
 ```
 
-**Note**: The sparkline shows the last 10 rating values from the `rating_history` array. If fewer than 10 games, show all available data points. The rating_history array should be materialized by the Python serverless function since it requires OpenSkill calculations.
+**Rating Chart**: Shows discrete points for the last 10 games played. The chart is pre-configured to show recent rating progression at a glance, helping players quickly understand if they're on an upward or downward trend. Uses simple scatter plot visualization with green color (#10b981).
+
+**7-Day Delta Calculation**:
+
+- Shows the rating change compared to the player's rating from their oldest game within the last 7 days
+- Format: ▲ for increase, ▼ for decrease, — for no games played in 7 days
+- Calculated dynamically from game history data
 
 ## Technical Requirements
 
@@ -110,6 +122,7 @@ The PWA Leaderboard is the primary landing page of the Riichi Mahjong League app
 - **Supabase Triggers**: Rating materialization runs automatically when games are inserted/updated
 - **Real-time Updates**: "Updated X ago" shows time since last materialization (near real-time is sufficient)
 - **Data Access**: Direct Supabase queries are acceptable for this hobby project scale
+- **7-Day Delta**: Calculated dynamically from game history - finds player's oldest game within 7 days and compares ratings
 
 ### Data Model
 
@@ -118,13 +131,18 @@ interface Player {
   id: string;
   name: string;
   rating: number;
-  ratingChange: number;
+  rating7DayDelta: number | null; // Calculated from game history, null if no games in 7 days
   gamesPlayed: number;
   rank: number; // Calculated client-side from leaderboard position
-  ratingHistory?: number[]; // Array of last 10 ratings for sparkline
+  recentGames?: GameRating[]; // Last 10 games for mini chart
   averagePlacement?: number; // Calculated on-demand
-  winRate?: number; // Calculated on-demand
   lastPlayed?: string; // From last_game_date or calculated
+}
+
+interface GameRating {
+  gameId: string;
+  date: string;
+  rating: number;
 }
 
 interface LeaderboardData {
@@ -170,13 +188,58 @@ const { data: leaderboard } = await supabase
     sigma,
     games_played,
     last_game_date,
-    rating_change,
-    rating_history,
     materialized_at
   `
   )
   .eq("config_hash", currentSeasonConfigHash)
   .order("rating", { ascending: false });
+
+// Get recent game history for 7-day delta calculation
+// This fetches games from the last 7 days for all players
+const sevenDaysAgo = new Date();
+sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+const { data: recentGameHistory } = await supabase
+  .from("cached_game_player_results")
+  .select(
+    `
+    player_id,
+    game_id,
+    games!inner(finished_at),
+    rating_after,
+    rating_before
+  `
+  )
+  .eq("config_hash", currentSeasonConfigHash)
+  .gte("games.finished_at", sevenDaysAgo.toISOString())
+  .order("games.finished_at", { ascending: true });
+
+// Calculate 7-day deltas client-side
+const playerDeltas = {};
+recentGameHistory?.forEach(game => {
+  // Store the oldest game's rating_before as the baseline
+  if (!playerDeltas[game.player_id]) {
+    playerDeltas[game.player_id] = {
+      oldestRating: game.rating_before,
+      hasGamesInPeriod: true,
+    };
+  }
+});
+
+// Get last 10 games per player for mini charts (expanded view)
+const { data: playerRecentGames } = await supabase
+  .from("cached_game_player_results")
+  .select(
+    `
+    player_id,
+    game_id,
+    games!inner(finished_at),
+    rating_after
+  `
+  )
+  .eq("config_hash", currentSeasonConfigHash)
+  .order("games.finished_at", { ascending: false });
+// Note: We'll need to filter client-side to get last 10 per player
 
 // Calculate season metadata client-side
 // Note: All metadata is derived from the player data to keep queries simple
@@ -233,6 +296,35 @@ const { data: playerGameResults } = await supabase
 - **Refresh Action**: < 500ms with optimistic UI
 - **Card Expansion**: < 100ms animation
 - **Offline Support**: Show cached data when offline (basic support, app may be non-functional without connection)
+
+### Mobile iOS vs Desktop Chrome Strategy
+
+**Approach**: Adaptive components with CSS breakpoints for optimal experience on each platform.
+
+**Mobile (iOS, <768px)**:
+
+- Bottom tab navigation (always visible)
+- Pull-to-refresh gesture
+- Touch targets minimum 44x44px
+- Single column layout
+- Tap to expand player cards
+- Swipe gestures for navigation
+
+**Desktop (Chrome, ≥768px)**:
+
+- Bottom navigation remains (functional parity)
+- Click interactions
+- Hover states for additional info
+- Same single column layout (simplicity)
+- Click to expand player cards
+- Keyboard navigation support
+
+**Benefits**:
+
+- Single codebase with CSS media queries
+- Consistent experience across devices
+- Reduced maintenance overhead
+- Functional parity between platforms
 
 ### PWA Requirements
 

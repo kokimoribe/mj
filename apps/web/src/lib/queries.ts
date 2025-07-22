@@ -22,10 +22,16 @@ export interface Player {
   sigma: number;
   gamesPlayed: number;
   lastPlayed: string;
-  ratingChange?: number; // Rating change since last game
+  rating7DayDelta?: number | null; // Rating change from 7 days ago, null if no games in 7 days
   ratingHistory?: number[]; // Array of historical ratings for sparkline
   rank?: number; // Calculated client-side from leaderboard position
   averagePlacement?: number; // Calculated on-demand
+  recentGames?: Array<{
+    // Last 10 games for mini chart
+    gameId: string;
+    date: string;
+    rating: number;
+  }>;
   // Removed unused fields for hobby project simplicity:
   // totalPlusMinus, averagePlusMinus, bestGame, worstGame
 }
@@ -71,9 +77,12 @@ export function useLeaderboard() {
           gamesPlayed: p.gamesPlayed ?? p.games ?? 0,
           lastPlayed:
             p.lastPlayed ?? p.lastGameDate ?? new Date().toISOString(),
+          // Map old ratingChange to rating7DayDelta for backward compatibility
+          rating7DayDelta: p.rating7DayDelta ?? p.ratingChange ?? null,
           // Remove duplicate fields
           games: undefined,
           lastGameDate: undefined,
+          ratingChange: undefined,
         })),
       };
     },

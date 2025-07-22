@@ -26,6 +26,8 @@ uv run python scripts/migrate_legacy_data.py
 - ✅ Creates Season 3 rating configuration
 - ✅ Comprehensive logging and validation
 - ✅ Proper error handling and cleanup
+- ✅ **Table Truncation** - Cleans existing data before migration
+- ✅ **Correct Timestamps** - Uses `played_at` for game times (not record timestamp)
 
 ### Requirements
 
@@ -38,26 +40,30 @@ uv run python scripts/migrate_legacy_data.py
 
 ### Expected Results
 
-For the current legacy data (24 games, 7 players):
+For the current legacy data (102 games, 11 players):
 
-- **7 player records** (Hyun, Jackie, Joseph, Josh, Koki, Mikey, Rayshone)
-- **24 game records** (all marked as 'finished')
-- **96 game seat records** (4 per game)
+- **11 player records** (Eric, Hyun, Jackie, Joseph, Josh, Justin, Koki, Mikey, Rayshone, Stephan, William)
+- **102 game records** (all marked as 'finished')
+- **408 game seat records** (4 per game)
 - **1 rating configuration** (Season 3: legacy period)
 
 ### Usage
 
 ```bash
-# Simple execution - fully idempotent
+# Simple execution - truncates existing data and re-imports everything
 uv run python scripts/migrate_legacy_data.py
+
+# Keep existing player records (only truncate games/game_seats/player_ratings)
+uv run python scripts/migrate_legacy_data.py --keep-players
 ```
 
 The script will automatically:
 
 1. Connect to Supabase using environment variables
-2. Load the Season 3 configuration
-3. Process the CSV file and create all necessary records
-4. Report success with counts
+2. Truncate existing game data (optionally keeping players)
+3. Load the Season 3 configuration
+4. Process the CSV file and create all necessary records
+5. Report success with counts
 
 ### Idempotency & Safety
 
@@ -68,7 +74,7 @@ The script is **fully idempotent** using Supabase's built-in upsert functionalit
 - **Game Seats**: Uses Supabase conflict resolution
 - **Rating Config**: Uses content hash for uniqueness
 
-**Game ID Format**: Deterministic UUID5 based on game date and player names
+**Game ID Format**: Deterministic UUID5 based on played_at timestamp and sorted player names
 
 ### Configuration Created
 

@@ -67,8 +67,8 @@ test.describe("Player Profiles - Specification Tests", () => {
     await takeScreenshot(page, "player-profiles/view-from-leaderboard");
   });
 
-  // Test Scenario 2: Rating Chart Display
-  test("Rating Chart Display - shows progression over time", async ({
+  // Test Scenario 2: Rating Chart Display with Time Range Selector
+  test("Rating Chart Display - shows progression with time range selector", async ({
     page,
   }) => {
     // Get a player ID dynamically
@@ -87,6 +87,18 @@ test.describe("Player Profiles - Specification Tests", () => {
     const chartSection = page.locator('[data-testid="rating-chart"]');
     await expect(chartSection).toBeVisible();
 
+    // Verify time range selector buttons
+    await expect(page.getByRole("button", { name: "7d" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "14d" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "30d" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "All" })).toBeVisible();
+
+    // Default should be "All"
+    await expect(page.getByRole("button", { name: "All" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
+
     // Validate chart rendering with proper data points
     await validateChartRendering(page, '[data-testid="rating-chart"]');
 
@@ -97,12 +109,65 @@ test.describe("Player Profiles - Specification Tests", () => {
       { min: 0, max: 100, decimalPlaces: 1 }
     );
 
-    // Verify 30-day change is displayed
+    // Verify period delta is displayed (changes based on selected range)
     await expect(
-      page.getByText(/30-day: [↑↓]\d+\.\d+|30-day: N\/A/)
+      page.getByText(/Period Δ: [▲▼]\d+\.\d+|Period Δ: —/)
     ).toBeVisible();
 
-    await takeScreenshot(page, "player-profiles/rating-chart");
+    await takeScreenshot(page, "player-profiles/rating-chart-all-time");
+  });
+
+  // Test Time Range Selector Functionality
+  test("Time Range Selector - updates chart and delta calculation", async ({
+    page,
+  }) => {
+    await navigateTo(page, "/player/joseph");
+
+    const chartSection = page.locator('[data-testid="rating-chart"]');
+    await expect(chartSection).toBeVisible();
+
+    // Test 7-day range
+    const sevenDayButton = page.getByRole("button", { name: "7d" });
+    await sevenDayButton.click();
+    await expect(sevenDayButton).toHaveAttribute("aria-pressed", "true");
+
+    // Wait for chart update
+    await page.waitForTimeout(300);
+
+    // Verify period delta updates
+    const periodDelta = page.getByText(/Period Δ:/);
+    await expect(periodDelta).toBeVisible();
+
+    // Count data points - should be fewer for 7 days
+    const sevenDayPoints = await chartSection.locator("circle").count();
+
+    await takeScreenshot(page, "player-profiles/chart-7-day-range");
+
+    // Test 30-day range
+    const thirtyDayButton = page.getByRole("button", { name: "30d" });
+    await thirtyDayButton.click();
+    await expect(thirtyDayButton).toHaveAttribute("aria-pressed", "true");
+
+    await page.waitForTimeout(300);
+
+    // Count data points - should be more for 30 days
+    const thirtyDayPoints = await chartSection.locator("circle").count();
+    expect(thirtyDayPoints).toBeGreaterThanOrEqual(sevenDayPoints);
+
+    await takeScreenshot(page, "player-profiles/chart-30-day-range");
+
+    // Test All range
+    const allButton = page.getByRole("button", { name: "All" });
+    await allButton.click();
+    await expect(allButton).toHaveAttribute("aria-pressed", "true");
+
+    await page.waitForTimeout(300);
+
+    // Count data points - should be most for all time
+    const allPoints = await chartSection.locator("circle").count();
+    expect(allPoints).toBeGreaterThanOrEqual(thirtyDayPoints);
+
+    await takeScreenshot(page, "player-profiles/chart-all-time-range");
   });
 
   // Test Scenario 3: Chart Interaction
@@ -119,7 +184,7 @@ test.describe("Player Profiles - Specification Tests", () => {
     // Hover over data point
     await dataPoint.hover();
 
-    // Check for tooltip
+    // Check for tooltip with simple value display
     await expect(
       page.locator('[role="tooltip"], .recharts-tooltip')
     ).toBeVisible({ timeout: 5000 });

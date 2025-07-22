@@ -38,14 +38,16 @@ The Player Profile page provides comprehensive information about an individual p
 ├─────────────────────────────────────────┤
 │ 📈 Rating Progression                   │
 │                                         │
+│ [7d] [14d] [30d] [All]                 │
+│                                         │
 │  50 ┤              •                   │
-│  45 ┤          •  •  •___              │
-│  40 ┤      •  •           •            │
-│  35 ┤  •__•                           │
+│  45 ┤          •  •  •                │
+│  40 ┤      •  •        •              │
+│  35 ┤  •  •                           │
 │  30 └─────────────────────────────     │
 │     Jun         Jul         Aug         │
 │                                         │
-│ Current: 46.3 | 30-day: ↑4.2          │
+│ Current: 46.3 | Period Δ: ↑4.2         │
 ├─────────────────────────────────────────┤
 │ 🎯 Performance Stats                    │
 │ Average Placement: 2.1                  │
@@ -105,18 +107,30 @@ The Player Profile page provides comprehensive information about an individual p
 ### Rating Chart Specifications
 
 ```
-Chart Type: Scatter Plot (discrete points only)
+Chart Type: Interactive Scatter Plot with Time Range Selection
 X-axis: Date of games (chronological)
 Y-axis: Rating value (auto-scaled with padding)
 Data Points: One per game played
 Point Style: Filled circles, 6px diameter
-Colors:
-  - All points: Green (#10b981) - single color regardless of trend
-  - Current point: Highlighted with larger size (8px)
+Time Range Selector:
+  - Options: [7d] [14d] [30d] [All]
+  - Default: All games
+  - Updates chart and delta calculation
+
+Interactive Features:
+  - Touch/hover on points: Show tooltip with rating and date
+  - Mobile: Touch points for details
+  - Desktop: Hover for instant feedback
+  - Simple value display (no crosshair)
+
+Visual Design:
+  - All points: Green (#10b981) - single color
+  - Current point: Larger size (8px) with label
   - Background grid: Subtle gray
-Touch Feedback: Show tooltip with exact rating and date
+  - Clean, minimalist appearance
+
 Chart Library: @shadcn/ui charts (based on Recharts)
-Note: Keep visualization simple - no interpolation or trend lines
+Note: Keep visualization simple - no zoom controls or complex interactions
 ```
 
 ### Game Entry Format
@@ -143,8 +157,12 @@ Note: Keep visualization simple - no interpolation or trend lines
 
 - Current rank - Calculated from leaderboard position
 - Average placement - Mean of all game placements
-- 30-day rating change - Delta between rating 30 days ago and now (show N/A if no games)
-- Season rating change - Calculated from first game rating
+- Time-based rating changes:
+  - 7-day: Delta from oldest game within 7 days
+  - 14-day: Delta from oldest game within 14 days
+  - 30-day: Delta from oldest game within 30 days
+  - All-time: Delta from first game in season
+- Dynamic period delta - Updates based on selected time range in chart
 
 **Runtime Queries:**
 
@@ -163,8 +181,8 @@ interface PlayerProfile {
   seasonStats: {
     averagePlacement: number; // Mean of all placements
     lastPlayedDate: string;
-    ratingChange30Days: number; // Delta between rating 30 days ago and now
-    ratingChangeSeason: number; // Delta since season start
+    ratingChangePeriod: number | null; // Delta for selected time period
+    selectedPeriod: "7d" | "14d" | "30d" | "all"; // Current selection
   };
 }
 
@@ -296,17 +314,38 @@ const placements = allGames.map(g => g.placement);
 const averagePlacement =
   placements.reduce((a, b) => a + b, 0) / placements.length;
 
-// Calculate 30-day rating change
-const thirtyDaysAgo = new Date();
-thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-const gamesThirtyDaysAgo = allGames.filter(
-  g => new Date(g.games.finished_at) <= thirtyDaysAgo
-);
-const ratingThirtyDaysAgo =
-  gamesThirtyDaysAgo.length > 0 ? gamesThirtyDaysAgo[0].rating_before : null;
-const ratingChange30Days = ratingThirtyDaysAgo
-  ? playerData.cached_player_ratings.rating - ratingThirtyDaysAgo
-  : null;
+// Calculate rating changes for different time periods
+function calculateRatingDelta(
+  days: number,
+  allGames: GameResult[],
+  currentRating: number
+) {
+  if (days === null) {
+    // "All" period - use first game
+    const firstGame = allGames[allGames.length - 1];
+    return firstGame ? currentRating - firstGame.rating_before : null;
+  }
+
+  const targetDate = new Date();
+  targetDate.setDate(targetDate.getDate() - days);
+
+  // Find oldest game within the time period
+  const gamesInPeriod = allGames.filter(
+    g => new Date(g.games.finished_at) >= targetDate
+  );
+
+  if (gamesInPeriod.length === 0) return null;
+
+  // Get the oldest game's rating_before as baseline
+  const oldestGameInPeriod = gamesInPeriod[gamesInPeriod.length - 1];
+  return currentRating - oldestGameInPeriod.rating_before;
+}
+
+// Usage for different periods
+const rating7Days = calculateRatingDelta(7, allGames, currentRating);
+const rating14Days = calculateRatingDelta(14, allGames, currentRating);
+const rating30Days = calculateRatingDelta(30, allGames, currentRating);
+const ratingAllTime = calculateRatingDelta(null, allGames, currentRating);
 ```
 
 **Query Performance Requirements:**
@@ -427,6 +466,33 @@ const ratingChange30Days = ratingThirtyDaysAgo
 4. **Scroll Performance**: Use CSS transforms for smooth scrolling
 5. **Load More**: Large button easy to tap
 6. **Font Sizes**: Minimum 14px for readability
+
+## Mobile iOS vs Desktop Chrome Strategy
+
+**Approach**: Responsive design with functional parity across platforms.
+
+**Mobile (iOS, <768px)**:
+
+- Touch-optimized chart interactions
+- Swipe gestures for navigation
+- Time range buttons sized for touch
+- Single column layout
+- Bottom navigation remains visible
+
+**Desktop (Chrome, ≥768px)**:
+
+- Hover states on chart points
+- Keyboard navigation support
+- Same time range selector UI
+- Single column layout (consistency)
+- Bottom navigation remains (functional parity)
+
+**Chart Interactions**:
+
+- Mobile: Touch points for tooltips
+- Desktop: Hover for instant feedback
+- Both: Click/tap to lock tooltip
+- Both: Simple, clean visualization
 
 ## Implementation Notes
 

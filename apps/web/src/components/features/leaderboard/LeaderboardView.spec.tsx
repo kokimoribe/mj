@@ -33,15 +33,20 @@ const mockLeaderboardData = {
       rating: 46.3,
       mu: 50.5,
       sigma: 2.1,
-      games: 20,
-      lastGameDate: "2024-01-15",
+      gamesPlayed: 20,
+      lastPlayed: "2024-01-15",
       totalPlusMinus: 15000,
       averagePlusMinus: 750,
       bestGame: 32700,
       worstGame: -25000,
-      ratingChange: 2.1,
+      rating7DayDelta: 2.1,
       ratingHistory: [
         44.2, 44.5, 44.8, 45.1, 45.3, 45.5, 45.8, 46.0, 46.1, 46.3,
+      ],
+      recentGames: [
+        { gameId: "g1", date: "2024-01-15", rating: 46.3 },
+        { gameId: "g2", date: "2024-01-14", rating: 45.8 },
+        { gameId: "g3", date: "2024-01-13", rating: 44.2 },
       ],
     },
     {
@@ -50,14 +55,15 @@ const mockLeaderboardData = {
       rating: 39.2,
       mu: 42.5,
       sigma: 1.65,
-      games: 16,
-      lastGameDate: "2024-01-14",
+      gamesPlayed: 16,
+      lastPlayed: "2024-01-14",
       totalPlusMinus: -5000,
       averagePlusMinus: -312,
       bestGame: 35200,
       worstGame: -30000,
-      ratingChange: -0.8,
+      rating7DayDelta: -0.8,
       ratingHistory: [40.0, 39.8, 39.6, 39.4, 39.2],
+      recentGames: [{ gameId: "g4", date: "2024-01-14", rating: 39.2 }],
     },
     {
       id: "3",
@@ -65,13 +71,14 @@ const mockLeaderboardData = {
       rating: 36.0,
       mu: 38.0,
       sigma: 1.0,
-      games: 23,
-      lastGameDate: "2024-01-14",
+      gamesPlayed: 23,
+      lastPlayed: "2024-01-14",
       totalPlusMinus: 1000,
       averagePlusMinus: 43,
       bestGame: 25000,
       worstGame: -31500,
-      ratingChange: 0.4,
+      rating7DayDelta: 0.4,
+      recentGames: [],
     },
     {
       id: "4",
@@ -176,7 +183,7 @@ describe("PWA Leaderboard Component Tests", () => {
       expect(within(josephCard).getByText("Joseph")).toBeInTheDocument(); // name
       expect(within(josephCard).getByText("46.3")).toBeInTheDocument(); // rating
       expect(within(josephCard).getByText("20 games")).toBeInTheDocument(); // games played
-      expect(within(josephCard).getByText(/↑\s*2\.1/)).toBeInTheDocument(); // rating change
+      expect(within(josephCard).getByText(/▲2\.1/)).toBeInTheDocument(); // rating 7-day delta
     });
 
     it("calculates rank client-side based on rating order", () => {
@@ -344,7 +351,7 @@ describe("PWA Leaderboard Component Tests", () => {
         expect(josephCard).toHaveAttribute("aria-expanded", "true");
         // Check for rating trend text
         expect(
-          screen.getByText("Rating Trend (Last 10 Games)")
+          screen.getByText("Recent Performance (Last 10 games):")
         ).toBeInTheDocument();
       });
     });
@@ -378,19 +385,19 @@ describe("PWA Leaderboard Component Tests", () => {
           {
             ...mockLeaderboardData.players[0],
             rating: 40.0,
-            games: 20,
+            gamesPlayed: 20,
             name: "Charlie",
           },
           {
             ...mockLeaderboardData.players[1],
             rating: 40.0,
-            games: 20,
+            gamesPlayed: 20,
             name: "Alice",
           },
           {
             ...mockLeaderboardData.players[2],
             rating: 40.0,
-            games: 15,
+            gamesPlayed: 15,
             name: "Bob",
           },
         ],

@@ -152,29 +152,24 @@ test.describe("Game History", () => {
       .count();
     expect(initialGames).toBe(10);
 
-    // Click Load More
+    // Click Load More - this reveals already loaded games (client-side)
     await loadMoreButton.click();
 
-    // Wait for additional games to load
-    await page.waitForTimeout(500);
+    // No loading needed - games are already in memory
+    // Button should immediately change to "Show Less Games"
+    await expect(loadMoreButton).toHaveText("Show Less Games");
 
-    // Should now show more games
+    // Should now show more games (up to 20)
     const expandedGames = await page
       .getByTestId(gameHistoryIds.gameCard)
       .count();
     expect(expandedGames).toBeGreaterThan(10);
     expect(expandedGames).toBeLessThanOrEqual(20);
 
-    // Button should now say "Show Less Games"
-    const showLessButton = page.getByTestId(gameHistoryIds.showLessButton);
-    await expect(showLessButton).toBeVisible();
-    await expect(showLessButton).toHaveText("Show Less Games");
+    // Click Show Less (same button, different text)
+    await loadMoreButton.click();
 
-    // Click Show Less
-    await showLessButton.click();
-
-    // Should return to initial 10 games
-    await page.waitForTimeout(500);
+    // Should instantly hide additional games (no loading)
     const collapsedGames = await page
       .getByTestId(gameHistoryIds.gameCard)
       .count();
@@ -183,6 +178,50 @@ test.describe("Game History", () => {
     // Button should be back to "Load More Games"
     await expect(loadMoreButton).toBeVisible();
     await expect(loadMoreButton).toHaveText("Load More Games");
+  });
+
+  test("loads all games initially for client-side pagination", async ({
+    page,
+  }) => {
+    // Intercept the API call to verify all games are loaded at once
+    let apiCallMade = false;
+    let gamesLoaded = 0;
+
+    await page.route("**/api/games*", async route => {
+      apiCallMade = true;
+      const response = await route.fetch();
+      const data = await response.json();
+      gamesLoaded = data.games?.length || 0;
+      await route.fulfill({ response });
+    });
+
+    // Navigate to games page
+    await page.goto("/games");
+
+    // Wait for API call
+    await page.waitForLoadState("networkidle");
+
+    // Verify API was called once
+    expect(apiCallMade).toBe(true);
+
+    // Verify initial display shows only 10 games
+    const visibleGames = await page
+      .getByTestId(gameHistoryIds.gameCard)
+      .count();
+    expect(visibleGames).toBe(10);
+
+    // But all games should be loaded in memory
+    // This is verified by the show/hide toggle working instantly without API calls
+    const loadMoreButton = page.getByTestId(gameHistoryIds.loadMoreButton);
+    if (await loadMoreButton.isVisible()) {
+      await loadMoreButton.click();
+
+      // Should instantly show more games without network activity
+      const expandedCount = await page
+        .getByTestId(gameHistoryIds.gameCard)
+        .count();
+      expect(expandedCount).toBeGreaterThan(10);
+    }
   });
 
   test("displays empty state when no games exist", async ({ page }) => {

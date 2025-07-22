@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, memo } from "react";
+import { useMemo, memo, useState } from "react";
 import {
   usePlayerProfile,
   usePlayerGames,
@@ -40,6 +40,10 @@ export const PlayerProfileView = memo(function PlayerProfileView({
   playerId,
 }: PlayerProfileViewProps) {
   const router = useRouter();
+  const [selectedPeriod, setSelectedPeriod] = useState<
+    "7d" | "14d" | "30d" | "all"
+  >("all");
+
   const { data: player, isLoading, error } = usePlayerProfile(playerId);
   const { data: gamesData, isLoading: gamesLoading } = usePlayerGames(
     playerId,
@@ -66,16 +70,18 @@ export const PlayerProfileView = memo(function PlayerProfileView({
     return rankIndex >= 0 ? rankIndex + 1 : null;
   }, [leaderboardData, player]);
 
-  // Calculate rating history from games
-  const ratingHistory = useMemo(() => {
-    if (!gamesData || gamesData.length === 0 || !player) return [];
+  // Calculate rating history from games with time period filtering
+  const { ratingHistory, periodDelta } = useMemo(() => {
+    if (!gamesData || gamesData.length === 0 || !player) {
+      return { ratingHistory: [], periodDelta: null };
+    }
 
     // Build rating history from games (newest to oldest)
-    const history = [];
+    const fullHistory = [];
     let currentRating = player.rating;
 
     // Add current rating as the latest point
-    history.push({
+    fullHistory.push({
       date: new Date().toISOString(),
       rating: currentRating,
       gameId: "current",
@@ -85,7 +91,7 @@ export const PlayerProfileView = memo(function PlayerProfileView({
     // Work backwards through games to build history
     gamesData.forEach((game: PlayerGame) => {
       const previousRating = currentRating - (game.ratingChange || 0);
-      history.unshift({
+      fullHistory.unshift({
         date: game.date,
         rating: previousRating,
         gameId: game.id,
@@ -94,8 +100,44 @@ export const PlayerProfileView = memo(function PlayerProfileView({
       currentRating = previousRating;
     });
 
-    return history;
-  }, [gamesData, player]);
+    // Filter based on selected period
+    let filteredHistory = fullHistory;
+    let delta = null;
+
+    if (selectedPeriod !== "all") {
+      const cutoffDate = new Date();
+
+      switch (selectedPeriod) {
+        case "7d":
+          cutoffDate.setDate(cutoffDate.getDate() - 7);
+          break;
+        case "14d":
+          cutoffDate.setDate(cutoffDate.getDate() - 14);
+          break;
+        case "30d":
+          cutoffDate.setDate(cutoffDate.getDate() - 30);
+          break;
+      }
+
+      filteredHistory = fullHistory.filter(
+        point => new Date(point.date) >= cutoffDate
+      );
+
+      // Calculate delta for the period
+      const oldestInPeriod = filteredHistory[0];
+      if (oldestInPeriod && oldestInPeriod.gameId !== "current") {
+        delta = player.rating - oldestInPeriod.rating;
+      }
+    } else {
+      // For "all", calculate delta from first game
+      const firstGame = fullHistory[0];
+      if (firstGame && firstGame.gameId !== "current") {
+        delta = player.rating - firstGame.rating;
+      }
+    }
+
+    return { ratingHistory: filteredHistory, periodDelta: delta };
+  }, [gamesData, player, selectedPeriod]);
 
   // Calculate statistics from game history
   const avgPlacement = useMemo(() => {
@@ -107,33 +149,6 @@ export const PlayerProfileView = memo(function PlayerProfileView({
     const sum = placements.reduce((a: number, b: number) => a + b, 0);
     return sum / placements.length;
   }, [gamesData]);
-
-  const recentTrend = useMemo(() => {
-    if (!gamesData || gamesData.length === 0) return null;
-    if (!player) return null;
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-    // Find the first game that is older than 30 days
-    const gamesOlderThan30Days = gamesData.filter(
-      (g: PlayerGame) => new Date(g.date) <= thirtyDaysAgo
-    );
-
-    if (gamesOlderThan30Days.length === 0) {
-      // All games are within 30 days, use the oldest game's rating before
-      if (gamesData.length > 0) {
-        const oldestGame = gamesData[gamesData.length - 1];
-        return player.rating - oldestGame.ratingBefore;
-      }
-      return null;
-    }
-
-    // Get the rating after the most recent game that's older than 30 days
-    // This represents the player's rating 30 days ago
-    const mostRecentOldGame = gamesOlderThan30Days[0];
-    const ratingThirtyDaysAgo = mostRecentOldGame.ratingAfter;
-    return player.rating - ratingThirtyDaysAgo;
-  }, [gamesData, player]);
 
   if (isLoading) {
     return <PlayerProfileSkeleton />;
@@ -184,6 +199,42 @@ export const PlayerProfileView = memo(function PlayerProfileView({
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
+            {/* Time range selector */}
+            <div className="flex gap-1">
+              <Button
+                variant={selectedPeriod === "7d" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedPeriod("7d")}
+                className="flex-1"
+              >
+                7d
+              </Button>
+              <Button
+                variant={selectedPeriod === "14d" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedPeriod("14d")}
+                className="flex-1"
+              >
+                14d
+              </Button>
+              <Button
+                variant={selectedPeriod === "30d" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedPeriod("30d")}
+                className="flex-1"
+              >
+                30d
+              </Button>
+              <Button
+                variant={selectedPeriod === "all" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedPeriod("all")}
+                className="flex-1"
+              >
+                All
+              </Button>
+            </div>
+
             {/* Rating chart */}
             {gamesLoading ? (
               <Skeleton className="h-48 w-full" />
@@ -195,14 +246,14 @@ export const PlayerProfileView = memo(function PlayerProfileView({
             <div className="flex justify-between text-sm">
               <div>Current: {player.rating.toFixed(1)}</div>
               <div>
-                30-day:{" "}
-                {recentTrend !== null ? (
+                Period Δ:{" "}
+                {periodDelta !== null ? (
                   <>
-                    {recentTrend >= 0 ? "↑" : "↓"}
-                    {Math.abs(recentTrend).toFixed(1)}
+                    {periodDelta >= 0 ? "↑" : "↓"}
+                    {Math.abs(periodDelta).toFixed(1)}
                   </>
                 ) : (
-                  "N/A"
+                  "—"
                 )}
               </div>
             </div>

@@ -42,10 +42,88 @@ export async function fetchLeaderboardData(): Promise<LeaderboardData> {
     throw new Error(`Failed to fetch leaderboard: ${error.message}`);
   }
 
+  // Get recent game history for 7-day delta calculation
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+  const { data: recentGameHistory } = await supabase
+    .from("cached_game_player_results")
+    .select(
+      `
+      player_id,
+      game_id,
+      games!inner(finished_at),
+      rating_after,
+      rating_before
+    `
+    )
+    .eq("config_hash", currentSeasonConfigHash)
+    .gte("games.finished_at", sevenDaysAgo.toISOString())
+    .order("games.finished_at", { ascending: true });
+
+  // Calculate 7-day deltas
+  const playerDeltas: Record<
+    string,
+    { oldestRating: number; hasGamesInPeriod: boolean }
+  > = {};
+  recentGameHistory?.forEach(game => {
+    // Store the oldest game's rating_before as the baseline
+    if (!playerDeltas[game.player_id]) {
+      playerDeltas[game.player_id] = {
+        oldestRating: game.rating_before,
+        hasGamesInPeriod: true,
+      };
+    }
+  });
+
+  // Get last 10 games per player for mini charts
+  const playerIds = players?.map(p => p.player_id) || [];
+  const { data: playerRecentGames } = await supabase
+    .from("cached_game_player_results")
+    .select(
+      `
+      player_id,
+      game_id,
+      games!inner(finished_at),
+      rating_after
+    `
+    )
+    .eq("config_hash", currentSeasonConfigHash)
+    .in("player_id", playerIds)
+    .order("games.finished_at", { ascending: false });
+
+  // Group recent games by player
+  const recentGamesByPlayer: Record<
+    string,
+    Array<{ gameId: string; date: string; rating: number }>
+  > = {};
+  playerRecentGames?.forEach(game => {
+    if (!recentGamesByPlayer[game.player_id]) {
+      recentGamesByPlayer[game.player_id] = [];
+    }
+    // Keep only last 10 games per player
+    if (recentGamesByPlayer[game.player_id].length < 10) {
+      recentGamesByPlayer[game.player_id].push({
+        gameId: game.game_id,
+        date: (game.games as any).finished_at,
+        rating: game.rating_after,
+      });
+    }
+  });
+
   // Transform data to match interface
   const transformedPlayers: Player[] = (
     (players as CachedPlayerRating[]) || []
   ).map(p => {
+    const currentRating = p.rating;
+    const delta = playerDeltas[p.player_id];
+
+    // Calculate 7-day delta
+    let rating7DayDelta: number | null = null;
+    if (delta?.hasGamesInPeriod) {
+      rating7DayDelta = currentRating - delta.oldestRating;
+    }
+
     return {
       id: p.player_id,
       name: p.players[0].name,
@@ -54,8 +132,10 @@ export async function fetchLeaderboardData(): Promise<LeaderboardData> {
       sigma: p.sigma,
       gamesPlayed: p.games_played,
       lastPlayed: p.last_game_date || "",
-      ratingChange: p.rating_change || 0,
+      rating7DayDelta,
       ratingHistory: p.rating_history || [],
+      recentGames: recentGamesByPlayer[p.player_id]?.reverse() || [], // Reverse to get chronological order
+      averagePlacement: undefined, // Will be calculated on-demand in the component
     };
   });
 
@@ -106,6 +186,30 @@ export async function fetchPlayerProfile(playerId: string): Promise<Player> {
     throw new Error(`Failed to fetch player profile: ${error.message}`);
   }
 
+  // Get last 10 games for mini chart
+  const { data: recentGames } = await supabase
+    .from("cached_game_player_results")
+    .select(
+      `
+      game_id,
+      games!inner(finished_at),
+      rating_after
+    `
+    )
+    .eq("player_id", playerId)
+    .eq("config_hash", currentSeasonConfigHash)
+    .order("games.finished_at", { ascending: false })
+    .limit(10);
+
+  const formattedRecentGames =
+    recentGames
+      ?.map(game => ({
+        gameId: game.game_id,
+        date: (game.games as any).finished_at,
+        rating: game.rating_after,
+      }))
+      .reverse() || [];
+
   return {
     id: data.player_id,
     name: data.players[0].name,
@@ -114,8 +218,9 @@ export async function fetchPlayerProfile(playerId: string): Promise<Player> {
     sigma: data.sigma,
     gamesPlayed: data.games_played,
     lastPlayed: data.last_game_date || "",
-    ratingChange: data.rating_change || 0,
+    rating7DayDelta: null, // Not needed for profile view
     ratingHistory: data.rating_history || [],
+    recentGames: formattedRecentGames,
   };
 }
 

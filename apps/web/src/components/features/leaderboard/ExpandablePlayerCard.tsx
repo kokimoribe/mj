@@ -3,11 +3,19 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronUp, ChevronDown, TrendingUp, TrendingDown } from "lucide-react";
+import { ChevronUp, ChevronDown } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import type { Player } from "@/lib/queries";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 interface ExpandablePlayerCardProps {
   player: Player;
@@ -30,9 +38,10 @@ function ExpandablePlayerCardComponent({
     router.push(`/player/${player.id}`);
   };
 
-  // Calculate rating change
-  const ratingChange = player.ratingChange || 0;
-  const isPositiveChange = ratingChange >= 0;
+  // Format 7-day delta
+  const rating7DayDelta = player.rating7DayDelta;
+  const hasChange = rating7DayDelta !== null && rating7DayDelta !== undefined;
+  const isPositiveChange = hasChange && rating7DayDelta >= 0;
 
   return (
     <Card
@@ -80,31 +89,26 @@ function ExpandablePlayerCardComponent({
                 <div
                   className={cn(
                     "flex items-center justify-end text-sm",
-                    isPositiveChange ? "text-green-600" : "text-red-600"
+                    hasChange &&
+                      (isPositiveChange ? "text-green-600" : "text-red-600")
                   )}
                 >
-                  {isPositiveChange ? (
+                  {!hasChange ? (
+                    <span className="text-muted-foreground">—</span>
+                  ) : isPositiveChange ? (
                     <>
-                      <TrendingUp
-                        className="mr-1 h-3 w-3"
-                        aria-label="Rating increased"
-                      />
                       <span
-                        aria-label={`Rating increased by ${ratingChange.toFixed(1)} points`}
+                        aria-label={`Rating increased by ${rating7DayDelta.toFixed(1)} points in the last 7 days`}
                       >
-                        ↑ {ratingChange.toFixed(1)}
+                        ▲{rating7DayDelta.toFixed(1)}
                       </span>
                     </>
                   ) : (
                     <>
-                      <TrendingDown
-                        className="mr-1 h-3 w-3"
-                        aria-label="Rating decreased"
-                      />
                       <span
-                        aria-label={`Rating decreased by ${Math.abs(ratingChange).toFixed(1)} points`}
+                        aria-label={`Rating decreased by ${Math.abs(rating7DayDelta).toFixed(1)} points in the last 7 days`}
                       >
-                        ↓ {Math.abs(ratingChange).toFixed(1)}
+                        ▼{Math.abs(rating7DayDelta).toFixed(1)}
                       </span>
                     </>
                   )}
@@ -126,8 +130,32 @@ function ExpandablePlayerCardComponent({
         {/* Expanded Content */}
         {isExpanded && (
           <div className="bg-muted/30 space-y-3 border-t px-4 py-4">
-            {/* Quick Stats */}
+            {/* 7-Day Change Detail */}
             <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground text-sm">
+                  7-day change:
+                </span>
+                <span className="font-semibold">
+                  {!hasChange ? (
+                    "—"
+                  ) : (
+                    <>
+                      {isPositiveChange ? "▲" : "▼"}
+                      {Math.abs(rating7DayDelta).toFixed(1)} (from{" "}
+                      {(player.rating - rating7DayDelta).toFixed(1)})
+                    </>
+                  )}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground text-sm">
+                  Avg Placement:
+                </span>
+                <span className="font-semibold">
+                  {player.averagePlacement?.toFixed(1) || "—"}
+                </span>
+              </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground text-sm">
                   Last Played:
@@ -142,35 +170,13 @@ function ExpandablePlayerCardComponent({
               </div>
             </div>
 
-            {/* Rating Trend Sparkline */}
-            {player.ratingHistory && player.ratingHistory.length > 0 && (
+            {/* Mini Rating Chart */}
+            {player.recentGames && player.recentGames.length > 0 && (
               <div>
                 <div className="text-muted-foreground mb-2 text-sm">
-                  Rating Trend (Last 10 Games)
+                  Recent Performance (Last 10 games):
                 </div>
-                <div className="flex h-12 items-end gap-1">
-                  {player.ratingHistory!.slice(-10).map((rating, i) => {
-                    const minRating = Math.min(
-                      ...player.ratingHistory!.slice(-10)
-                    );
-                    const maxRating = Math.max(
-                      ...player.ratingHistory!.slice(-10)
-                    );
-                    const height =
-                      maxRating === minRating
-                        ? 50
-                        : ((rating - minRating) / (maxRating - minRating)) *
-                          100;
-                    return (
-                      <div
-                        key={i}
-                        className="bg-primary/20 flex-1 rounded-t"
-                        style={{ height: `${Math.max(height, 10)}%` }}
-                        title={`Rating: ${rating.toFixed(1)}`}
-                      />
-                    );
-                  })}
-                </div>
+                <MiniRatingChart games={player.recentGames} />
               </div>
             )}
 
@@ -201,3 +207,57 @@ export const ExpandablePlayerCard = React.memo(
     );
   }
 );
+
+interface MiniRatingChartProps {
+  games: Array<{
+    gameId: string;
+    date: string;
+    rating: number;
+  }>;
+}
+
+function MiniRatingChart({ games }: MiniRatingChartProps) {
+  const chartData = games.map((game, index) => ({
+    index,
+    rating: game.rating,
+    date: game.date,
+  }));
+
+  const minRating = Math.min(...games.map(g => g.rating));
+  const maxRating = Math.max(...games.map(g => g.rating));
+  const padding = (maxRating - minRating) * 0.1 || 1;
+
+  return (
+    <div className="h-24 w-full" data-testid="mini-rating-chart">
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart
+          data={chartData}
+          margin={{ top: 5, right: 5, bottom: 5, left: 5 }}
+        >
+          <YAxis domain={[minRating - padding, maxRating + padding]} hide />
+          <XAxis dataKey="index" hide />
+          <Tooltip
+            content={({ active, payload }) => {
+              if (active && payload && payload[0]) {
+                return (
+                  <div className="bg-background/95 rounded border p-2 text-xs shadow-md">
+                    {payload[0].value?.toFixed(1)}
+                  </div>
+                );
+              }
+              return null;
+            }}
+          />
+          <Line
+            type="monotone"
+            dataKey="rating"
+            stroke="#10b981"
+            strokeWidth={2}
+            dot={{ fill: "#10b981", r: 3 }}
+            animationDuration={300}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}

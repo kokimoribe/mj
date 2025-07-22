@@ -90,11 +90,11 @@ The Game History page provides a chronological view of all games played in the c
 
 3. **Pagination (Show/Hide Toggle)**
    - Load 10 games initially
-   - "Load More Games" adds 10 more games
-   - After loading more, button changes to "Show Less Games"
+   - "Load More Games" reveals 10 additional games (already loaded)
+   - Button changes to "Show Less Games" after expansion
    - "Show Less Games" hides the additional games (back to initial 10)
-   - Smooth scroll preservation
-   - Loading indicator during fetch
+   - All game data loaded initially for simple client-side show/hide
+   - Smooth transitions between states
 
 ### Game Card Layout
 
@@ -379,6 +379,33 @@ const { data: allPlayers } = await supabase
    - Lazy load images (if added)
    - Efficient re-renders
    - Minimal layout shifts
+
+## Mobile iOS vs Desktop Chrome Strategy
+
+**Approach**: Consistent UI with platform-appropriate interactions.
+
+**Mobile (iOS, <768px)**:
+
+- Touch-sized filter controls (44x44px minimum)
+- Dropdown filter with native select on iOS
+- Pull-to-refresh support
+- Bottom navigation visible
+- Smooth momentum scrolling
+
+**Desktop (Chrome, ≥768px)**:
+
+- Same layout structure (single column)
+- Hover states on game cards
+- Keyboard navigation support
+- Bottom navigation remains (functional parity)
+- Standard scrolling behavior
+
+**Benefits**:
+
+- Single component structure
+- CSS handles responsive differences
+- Functional parity maintained
+- Simple, maintainable codebase
 
 ## Accessibility Requirements
 

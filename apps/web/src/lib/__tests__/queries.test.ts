@@ -56,9 +56,10 @@ describe("usePlayerProfile", () => {
       lastPlayed: "2025-07-06T18:34:24+00:00", // Should be transformed from 'lastGameDate'
     });
 
-    // Verify duplicate fields are removed
-    expect(result.current.data).not.toHaveProperty("games");
-    expect(result.current.data).not.toHaveProperty("lastGameDate");
+    // Verify duplicate fields are undefined/removed
+    expect((result.current.data as any)?.games).toBeUndefined();
+    expect((result.current.data as any)?.lastGameDate).toBeUndefined();
+    expect((result.current.data as any)?.ratingChange).toBeUndefined();
   });
 
   test("handles missing fields gracefully", async () => {

@@ -17,30 +17,57 @@ vi.mock("sonner", () => ({
   },
 }));
 
+// Mock ResizeObserver for chart component
+global.ResizeObserver = vi.fn().mockImplementation(() => ({
+  observe: vi.fn(),
+  unobserve: vi.fn(),
+  disconnect: vi.fn(),
+}));
+
 const mockLeaderboardData = {
   players: [
     {
       id: "1",
       name: "Joseph",
-      rating: 1524,
+      rating: 46.3,
       mu: 30.5,
       sigma: 5.2,
-      gamesPlayed: 42,
+      gamesPlayed: 20,
       lastPlayed: "2024-01-15",
-      ratingChange: 25,
+      rating7DayDelta: 4.2, // Updated from ratingChange
+      recentGames: [
+        { gameId: "g1", date: "2024-01-15", rating: 46.3 },
+        { gameId: "g2", date: "2024-01-14", rating: 45.8 },
+        { gameId: "g3", date: "2024-01-13", rating: 44.2 },
+      ],
     },
     {
       id: "2",
       name: "Josh",
-      rating: 1488,
+      rating: 39.2,
       mu: 29.8,
       sigma: 5.5,
-      gamesPlayed: 38,
+      gamesPlayed: 16,
       lastPlayed: "2024-01-14",
-      ratingChange: -15,
+      rating7DayDelta: -2.1, // Updated from ratingChange
+      recentGames: [
+        { gameId: "g4", date: "2024-01-14", rating: 39.2 },
+        { gameId: "g5", date: "2024-01-13", rating: 40.1 },
+      ],
+    },
+    {
+      id: "3",
+      name: "Mikey",
+      rating: 36.0,
+      mu: 28.0,
+      sigma: 6.0,
+      gamesPlayed: 23,
+      lastPlayed: "2024-01-05", // More than 7 days ago
+      rating7DayDelta: null, // No games in 7 days
+      recentGames: [],
     },
   ],
-  totalGames: 50,
+  totalGames: 24,
   lastUpdated: "2024-01-15T10:00:00Z",
   seasonName: "Season 3",
 };
@@ -114,14 +141,21 @@ describe("LeaderboardView", () => {
 
     // Check header
     expect(screen.getByText(/Season 3.*Leaderboard/)).toBeInTheDocument();
-    expect(screen.getByText(/50\s+games/)).toBeInTheDocument();
-    expect(screen.getByText(/2\s+players/)).toBeInTheDocument();
+    expect(screen.getByText(/24\s+games/)).toBeInTheDocument();
+    expect(screen.getByText(/3\s+players/)).toBeInTheDocument();
 
     // Check players
     expect(screen.getByText("Joseph")).toBeInTheDocument();
     expect(screen.getByText("Josh")).toBeInTheDocument();
-    expect(screen.getByText("1524.0")).toBeInTheDocument();
-    expect(screen.getByText("1488.0")).toBeInTheDocument();
+    expect(screen.getByText("Mikey")).toBeInTheDocument();
+    expect(screen.getByText("46.3")).toBeInTheDocument();
+    expect(screen.getByText("39.2")).toBeInTheDocument();
+    expect(screen.getByText("36.0")).toBeInTheDocument();
+
+    // Check 7-day deltas
+    expect(screen.getByText("▲4.2")).toBeInTheDocument(); // Joseph
+    expect(screen.getByText("▼2.1")).toBeInTheDocument(); // Josh
+    expect(screen.getByText("—")).toBeInTheDocument(); // Mikey (no games in 7 days)
   });
 
   it("expands and collapses player cards when clicked", async () => {
@@ -247,5 +281,59 @@ describe("LeaderboardView", () => {
     // Find the refresh button by its test ID
     const refreshButton = screen.getByTestId("refresh-button");
     expect(refreshButton).toBeDisabled();
+  });
+
+  it("displays 7-day change and mini chart in expanded card", async () => {
+    vi.mocked(queries.useLeaderboard).mockReturnValue({
+      data: mockLeaderboardData,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+      isRefetching: false,
+    } as any);
+
+    renderWithQuery(<LeaderboardView />);
+
+    const josephCard = screen
+      .getByText("Joseph")
+      .closest('[data-slot="card"]')!;
+
+    // Click to expand
+    fireEvent.click(josephCard);
+
+    // Should show 7-day change detail
+    await waitFor(() => {
+      expect(screen.getByText("7-day change:")).toBeInTheDocument();
+      expect(screen.getByText(/▲4.2 \(from 42.1\)/)).toBeInTheDocument();
+    });
+
+    // Should show mini chart (mocked as a div with test id)
+    const miniChart = screen.getByTestId("mini-rating-chart");
+    expect(miniChart).toBeInTheDocument();
+  });
+
+  it("shows em dash for players with no recent games", async () => {
+    vi.mocked(queries.useLeaderboard).mockReturnValue({
+      data: mockLeaderboardData,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+      isRefetching: false,
+    } as any);
+
+    renderWithQuery(<LeaderboardView />);
+
+    const mikeyCard = screen.getByText("Mikey").closest('[data-slot="card"]')!;
+
+    // Click to expand
+    fireEvent.click(mikeyCard);
+
+    // Should show em dash for 7-day change
+    await waitFor(() => {
+      expect(screen.getByText("7-day change:")).toBeInTheDocument();
+      // Find the em dash specifically within the expanded card content
+      const emDashes = screen.getAllByText("—");
+      expect(emDashes.length).toBeGreaterThan(0);
+    });
   });
 });

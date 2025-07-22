@@ -11,7 +11,7 @@ describe("ExpandablePlayerCard", () => {
     sigma: 5.2,
     gamesPlayed: 42,
     lastPlayed: "2024-01-15",
-    ratingChange: 25,
+    rating7DayDelta: 25,
   };
 
   const mockOnToggle = vi.fn();
@@ -45,14 +45,14 @@ describe("ExpandablePlayerCard", () => {
       />
     );
 
-    expect(screen.getByText("↑ 25.0")).toBeInTheDocument();
+    expect(screen.getByText("▲25.0")).toBeInTheDocument();
     // Find the element containing the rating change with green color
-    const container = screen.getByText("↑ 25.0").closest(".text-green-600");
+    const container = screen.getByText("▲25.0").closest(".text-green-600");
     expect(container).toBeInTheDocument();
   });
 
   it("shows rating change indicator when rating decreases", () => {
-    const playerWithLoss = { ...mockPlayer, ratingChange: -15 };
+    const playerWithLoss = { ...mockPlayer, rating7DayDelta: -15 };
     render(
       <ExpandablePlayerCard
         player={playerWithLoss}
@@ -62,10 +62,24 @@ describe("ExpandablePlayerCard", () => {
       />
     );
 
-    expect(screen.getByText("↓ 15.0")).toBeInTheDocument();
+    expect(screen.getByText("▼15.0")).toBeInTheDocument();
     // Find the element containing the rating change with red color
-    const container = screen.getByText("↓ 15.0").closest(".text-red-600");
+    const container = screen.getByText("▼15.0").closest(".text-red-600");
     expect(container).toBeInTheDocument();
+  });
+
+  it("shows em dash when no games in 7 days", () => {
+    const playerNoRecentGames = { ...mockPlayer, rating7DayDelta: null };
+    render(
+      <ExpandablePlayerCard
+        player={playerNoRecentGames}
+        rank={4}
+        isExpanded={false}
+        onToggle={mockOnToggle}
+      />
+    );
+
+    expect(screen.getByText("—")).toBeInTheDocument();
   });
 
   it("calls onToggle when clicked", () => {
@@ -103,7 +117,7 @@ describe("ExpandablePlayerCard", () => {
   });
 
   it("handles players with no rating change", () => {
-    const playerNoChange = { ...mockPlayer, ratingChange: undefined };
+    const playerNoChange = { ...mockPlayer, rating7DayDelta: 0 };
     render(
       <ExpandablePlayerCard
         player={playerNoChange}
@@ -113,7 +127,7 @@ describe("ExpandablePlayerCard", () => {
       />
     );
 
-    // Should show "↑ 0.0" for no change (still shown as positive)
-    expect(screen.getByText("↑ 0.0")).toBeInTheDocument();
+    // Should show "▲0.0" for 0 change (still shown as positive)
+    expect(screen.getByText("▲0.0")).toBeInTheDocument();
   });
 });

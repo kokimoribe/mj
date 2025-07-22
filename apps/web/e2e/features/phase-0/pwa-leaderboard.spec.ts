@@ -111,7 +111,7 @@ test.describe("PWA Leaderboard - Specification Tests", () => {
   });
 
   // Test Scenario 4: Expand Player Details
-  test("Expand Player Details - shows additional statistics", async ({
+  test("Expand Player Details - shows additional statistics with mini chart", async ({
     page,
   }) => {
     await navigateTo(page, "/");
@@ -134,13 +134,24 @@ test.describe("PWA Leaderboard - Specification Tests", () => {
     await page.waitForTimeout(300);
 
     // Verify expanded content (within the expanded card)
+    await expect(firstCard.getByText("7-day change:")).toBeVisible();
     await expect(firstCard.getByText("Avg Placement:")).toBeVisible();
     await expect(firstCard.getByText("Last Played:")).toBeVisible();
+    await expect(firstCard.getByText("Recent Performance")).toBeVisible();
+
+    // Verify mini chart is visible
+    const miniChart = firstCard.locator('[data-testid="mini-rating-chart"]');
+    await expect(miniChart).toBeVisible();
+
+    // Verify chart has data points (last 10 games)
+    const chartPoints = miniChart.locator('circle[role="presentation"]');
+    const pointCount = await chartPoints.count();
+    expect(pointCount).toBeGreaterThan(0);
+    expect(pointCount).toBeLessThanOrEqual(10);
+
     await expect(firstCard.getByText("View Full Profile")).toBeVisible();
 
-    // Note: Rating trend sparkline would be visible here once implemented
-
-    await takeScreenshot(page, "pwa-leaderboard/expanded-card");
+    await takeScreenshot(page, "pwa-leaderboard/expanded-card-with-chart");
   });
 
   // Test Scenario 5: Offline Access
@@ -195,19 +206,32 @@ test.describe("PWA Leaderboard - Specification Tests", () => {
   });
 
   // Test Scenario 7: Rating Change Indicators
-  test("Rating Change Indicators - shows up/down arrows with values", async ({
+  test("Rating Change Indicators - shows 7-day delta with arrows", async ({
     page,
   }) => {
     await navigateTo(page, "/");
 
     const cards = page.locator(`[data-testid^="${TEST_IDS.PLAYER_CARD}-"]`);
-    const firstCard = cards.first();
+    const count = await cards.count();
 
-    // Check for rating change indicators - look for text arrows instead of SVG
-    const ratingChange = await firstCard.locator("text=/[↑↓]/").first();
-    await expect(ratingChange).toBeVisible();
+    // Check multiple cards for different delta indicators
+    for (let i = 0; i < Math.min(3, count); i++) {
+      const card = cards.nth(i);
 
-    await takeScreenshot(page, "pwa-leaderboard/rating-indicators");
+      // Look for delta indicators: ▲ for increase, ▼ for decrease, — for no change
+      const deltaText = await card.locator("text=/[▲▼—]/").textContent();
+      expect(deltaText).toBeTruthy();
+
+      // If there's a delta (not —), verify it has a numeric value
+      if (deltaText && (deltaText.includes("▲") || deltaText.includes("▼"))) {
+        const deltaValue = await card
+          .locator("text=/[▲▼]\\s*\\d+\\.\\d+/")
+          .textContent();
+        expect(deltaValue).toMatch(/[▲▼]\s*\d+\.\d+/);
+      }
+    }
+
+    await takeScreenshot(page, "pwa-leaderboard/7-day-delta-indicators");
   });
 
   // Test Scenario 8: Season Summary Display
@@ -332,6 +356,67 @@ test.describe("PWA Leaderboard - Specification Tests", () => {
     });
 
     expect(cls).toBeLessThan(0.1);
+  });
+
+  // Test 7-Day Delta Calculation
+  test("7-Day Delta Calculation - validates dynamic calculation from game history", async ({
+    page,
+  }) => {
+    await navigateTo(page, "/");
+
+    // Expand a card to see the 7-day change detail
+    const firstCard = page
+      .locator(`[data-testid^="${TEST_IDS.PLAYER_CARD}-"]`)
+      .first();
+    await firstCard.click();
+
+    // Wait for expansion
+    await page.waitForTimeout(300);
+
+    // Check for 7-day change text
+    const sevenDayChange = firstCard.locator("text=/7-day change:/");
+    await expect(sevenDayChange).toBeVisible();
+
+    // Verify the format: "7-day change: ▲4.2 (from 42.1)" or "7-day change: —"
+    const changeText = await sevenDayChange.textContent();
+    expect(changeText).toMatch(
+      /7-day change:\s*([▲▼]\d+\.\d+\s*\(from \d+\.\d+\)|—)/
+    );
+
+    await takeScreenshot(page, "pwa-leaderboard/7-day-delta-detail");
+  });
+
+  // Desktop vs Mobile UI Test
+  test("Desktop vs Mobile UI - functional parity with visual differences", async ({
+    page,
+  }) => {
+    // Test desktop view
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await navigateTo(page, "/");
+
+    // Verify bottom navigation is visible on desktop
+    const desktopNav = page.locator('[data-testid="bottom-navigation"]');
+    await expect(desktopNav).toBeVisible();
+
+    // Test hover states on desktop
+    const firstCard = page
+      .locator(`[data-testid^="${TEST_IDS.PLAYER_CARD}-"]`)
+      .first();
+    await firstCard.hover();
+
+    await takeScreenshot(page, "pwa-leaderboard/desktop-view");
+
+    // Test mobile view
+    await page.setViewportSize({ width: 393, height: 852 });
+
+    // Verify same functional elements are present
+    await expect(desktopNav).toBeVisible();
+
+    // Verify touch targets
+    const cardBox = await firstCard.boundingBox();
+    expect(cardBox?.height).toBeGreaterThanOrEqual(44);
+
+    await takeScreenshot(page, "pwa-leaderboard/mobile-desktop-comparison");
   });
 
   // Accessibility Test

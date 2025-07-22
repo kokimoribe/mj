@@ -128,12 +128,12 @@ const mockPlayers = [
 ];
 
 const mockGameCounts = {
-  p1: 2, // Joseph
-  p2: 1, // Alice
-  p3: 2, // Mikey
-  p4: 1, // Frank
-  p5: 1, // Josh
-  p6: 1, // Hyun
+  p1: 24, // Joseph
+  p2: 20, // Alice
+  p3: 24, // Mikey
+  p4: 16, // Frank
+  p5: 8, // Josh
+  p6: 4, // Hyun
   p7: 0, // Koki
   p8: 0, // Jackie
 };
@@ -436,8 +436,8 @@ describe("GameHistoryView - Specification Tests", () => {
       });
 
       // Should show all players with game counts
-      expect(screen.getByText(/Joseph \(2 games\)/)).toBeInTheDocument();
-      expect(screen.getByText(/Mikey \(2 games\)/)).toBeInTheDocument();
+      expect(screen.getByText(/Joseph \(24 games\)/)).toBeInTheDocument();
+      expect(screen.getByText(/Mikey \(24 games\)/)).toBeInTheDocument();
       expect(screen.getByText(/Jackie \(0 games\)/)).toBeInTheDocument();
     });
 
@@ -491,12 +491,12 @@ describe("GameHistoryView - Specification Tests", () => {
       // Wait for dropdown to open
       await waitFor(() => {
         expect(
-          screen.getByRole("option", { name: /Joseph \(2 games\)/ })
+          screen.getByRole("option", { name: /Joseph \(24 games\)/ })
         ).toBeInTheDocument();
       });
 
       await userEvent.click(
-        screen.getByRole("option", { name: /Joseph \(2 games\)/ })
+        screen.getByRole("option", { name: /Joseph \(24 games\)/ })
       );
 
       expect(filterSpy).toHaveBeenCalledWith("p1");

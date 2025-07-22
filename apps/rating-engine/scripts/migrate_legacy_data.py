@@ -68,6 +68,61 @@ class SupabaseLegacyDataMigrator:
         self.supabase = create_client(url, key)
         logger.info("✅ Connected to Supabase")
 
+    def truncate_tables(self, keep_players: bool = True) -> None:
+        """Truncate tables before migration (except rating_configurations).
+        
+        Args:
+            keep_players: If True, preserve existing player records
+        """
+        logger.info("🗑️  Truncating tables for clean migration...")
+        
+        # Tables to truncate in dependency order
+        # Must delete in order to respect foreign key constraints
+        tables_to_truncate = [
+            "cached_game_results",   # Depends on games
+            "cached_player_ratings", # Depends on players
+            "player_ratings",        # Depends on games and players
+            "game_seats",            # Depends on games and players
+            "games",                 # Core game data
+        ]
+        
+        if not keep_players:
+            tables_to_truncate.append("players")
+        
+        for table in tables_to_truncate:
+            try:
+                # Different approach for different tables due to primary key differences
+                if table == "game_seats":
+                    # game_seats has composite primary key, not an id column
+                    self.supabase.table(table).delete().gte(
+                        "game_id", "00000000-0000-0000-0000-000000000000"
+                    ).execute()
+                elif table == "cached_game_results":
+                    # cached_game_results might have different structure
+                    self.supabase.table(table).delete().gte(
+                        "game_id", "00000000-0000-0000-0000-000000000000"
+                    ).execute()
+                elif table == "cached_player_ratings":
+                    # cached_player_ratings keyed by player_id and config_hash
+                    self.supabase.table(table).delete().gte(
+                        "player_id", "00000000-0000-0000-0000-000000000000"
+                    ).execute()
+                elif table == "player_ratings":
+                    # player_ratings might also have composite key
+                    self.supabase.table(table).delete().gte(
+                        "player_id", "00000000-0000-0000-0000-000000000000"
+                    ).execute()
+                else:
+                    # For tables with id column (games, players)
+                    self.supabase.table(table).delete().neq(
+                        "id", "00000000-0000-0000-0000-000000000000"
+                    ).execute()
+                logger.info(f"  ✅ Truncated {table}")
+            except Exception as e:
+                logger.warning(f"  ⚠️  Could not truncate {table}: {e}")
+        
+        logger.info("✅ Table truncation complete")
+
     def load_season_3_config(self) -> dict[str, any]:
         """Load Season 3 configuration from YAML file."""
         if not SEASON_3_CONFIG_PATH.exists():
@@ -157,18 +212,25 @@ class SupabaseLegacyDataMigrator:
     def process_csv_game(self, row: dict[str, str]) -> dict[str, any]:
         """Process a single CSV row into game and game_seats data."""
         # Parse CSV data
-        timestamp_str = row["Timestamp"]
-        date_str = row["date"]
+        played_at_str = row["played_at"]
+        timestamp_str = row["Timestamp"]  # Use this to ensure uniqueness
 
-        # Convert timestamp
+        # Convert played_at timestamp for game start/finish times
         try:
-            game_datetime = datetime.strptime(timestamp_str, "%m/%d/%Y %H:%M:%S")
+            game_datetime = datetime.strptime(played_at_str, "%m/%d/%Y %H:%M:%S")
         except ValueError:
-            logger.error(f"❌ Invalid timestamp format: {timestamp_str}")
+            logger.error(f"❌ Invalid played_at format: {played_at_str}")
             raise
 
-        # Generate deterministic game ID
-        game_key = f"{date_str}_{timestamp_str}"
+        # Generate deterministic game ID based on played_at,
+        # record timestamp, and players.
+        # This ensures idempotency - same game data always gets same ID
+        player_names = [
+            row["East player"], row["South player"], 
+            row["West player"], row["North player"]
+        ]
+        # Include both played_at and record timestamp to handle duplicate game times
+        game_key = f"{played_at_str}_{timestamp_str}_{'_'.join(sorted(player_names))}"
         game_id = self.generate_deterministic_uuid("game", game_key)
 
         # Process players and scores
@@ -265,12 +327,19 @@ class SupabaseLegacyDataMigrator:
 
         logger.info(f"✅ Migration completed: {games_processed} games processed")
 
-    def run_migration(self) -> None:
-        """Execute the complete migration process."""
+    def run_migration(self, keep_players: bool = False) -> None:
+        """Execute the complete migration process.
+        
+        Args:
+            keep_players: If True, preserve existing player records
+        """
         logger.info("🚀 Starting legacy data migration with Supabase client")
 
         # Connect to Supabase
         self.connect_to_supabase()
+
+        # Truncate tables for clean migration
+        self.truncate_tables(keep_players=keep_players)
 
         # Ensure Season 3 configuration exists
         self.season_3_config_id = self.ensure_season_3_config_in_db()
@@ -283,10 +352,23 @@ class SupabaseLegacyDataMigrator:
 
 def main():
     """Main entry point."""
+    import argparse
+    
+    parser = argparse.ArgumentParser(
+        description="Migrate legacy CSV mahjong data to Phase 0 database"
+    )
+    parser.add_argument(
+        "--keep-players",
+        action="store_true",
+        help="Keep existing player records (default: delete and recreate all players)"
+    )
+    
+    args = parser.parse_args()
+    
     migrator = SupabaseLegacyDataMigrator()
 
     try:
-        migrator.run_migration()
+        migrator.run_migration(keep_players=args.keep_players)
     except Exception as e:
         logger.error(f"❌ Migration failed: {e}")
         sys.exit(1)

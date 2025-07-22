@@ -16,7 +16,7 @@ vi.mock("./RatingChart", () => ({
   RatingChart: ({ data }: any) => (
     <div data-testid="rating-chart">
       <div>Current: {data?.[data.length - 1]?.rating || "N/A"}</div>
-      <div>30-day: {data?.length > 0 ? "↑4.2" : "N/A"}</div>
+      <div>Period Δ: {data?.length > 0 ? "↑4.2" : "N/A"}</div>
     </div>
   ),
 }));
@@ -34,7 +34,10 @@ vi.mock("date-fns", async importOriginal => {
   const actual = await importOriginal<typeof import("date-fns")>();
   return {
     ...actual,
-    formatDistanceToNow: vi.fn(() => "3 days ago"),
+    formatDistanceToNow: vi.fn((date, options) => {
+      // Return with addSuffix if requested
+      return options?.addSuffix ? "3 days ago" : "3 days";
+    }),
     format: vi.fn((date, formatStr) => {
       const d = new Date(date);
       const months = [
@@ -68,21 +71,21 @@ const mockPlayerData = {
   rating: 46.3,
   mu: 50.5,
   sigma: 2.1,
-  games: 20,
-  lastGameDate: "2024-01-15",
+  gamesPlayed: 20,
+  lastPlayed: "2024-01-15",
   totalPlusMinus: 15000,
   averagePlusMinus: 750,
   bestGame: 32700,
   worstGame: -25000,
-  ratingChange: 2.1,
+  rating7DayDelta: 2.1,
   ratingHistory: [44.2, 44.5, 44.8, 45.1, 45.3, 45.5, 45.8, 46.0, 46.1, 46.3],
 };
 
 const mockLeaderboardData = {
   players: [
-    { id: "joseph", name: "Joseph", rating: 46.3, games: 20 },
-    { id: "josh", name: "Josh", rating: 39.2, games: 16 },
-    { id: "mikey", name: "Mikey", rating: 36.0, games: 23 },
+    { id: "joseph", name: "Joseph", rating: 46.3, gamesPlayed: 20 },
+    { id: "josh", name: "Josh", rating: 39.2, gamesPlayed: 16 },
+    { id: "mikey", name: "Mikey", rating: 36.0, gamesPlayed: 23 },
   ],
   totalGames: 24,
   lastUpdated: new Date().toISOString(),
@@ -275,7 +278,7 @@ describe("Player Profile Component Tests", () => {
 
       // NOTE: Component currently always shows ↑4.2 as it's hardcoded
       // This needs to be implemented to calculate from actual game history
-      expect(screen.getByText(/30-day: ↑4\.2/)).toBeInTheDocument();
+      expect(screen.getByText(/Period Δ: ↑4\.2/)).toBeInTheDocument();
     });
 
     it("calculates 30-day change correctly", () => {
@@ -306,12 +309,12 @@ describe("Player Profile Component Tests", () => {
       renderWithQuery(<PlayerProfileView playerId="joseph" />);
 
       // 46.3 - 42.1 = 4.2
-      expect(screen.getByText(/30-day: ↑4\.2/)).toBeInTheDocument();
+      expect(screen.getByText(/Period Δ: ↑4\.2/)).toBeInTheDocument();
     });
 
     it("shows message for players with < 2 games", () => {
       vi.mocked(queries.usePlayerProfile).mockReturnValue({
-        data: { ...mockPlayerData, games: 1 },
+        data: { ...mockPlayerData, gamesPlayed: 1 },
         isLoading: false,
         error: null,
       } as any);
@@ -567,10 +570,10 @@ describe("Player Profile Component Tests", () => {
 
       const firstGame = screen.getByTestId("game-entry-game1");
 
-      // Date is formatted as "Jan 14, 2024 • 12:00 AM" by the component
-      expect(within(firstGame).getByText(/Jan 14, 2024/)).toBeInTheDocument();
-      expect(within(firstGame).getByText(/1st Place/)).toBeInTheDocument();
-      expect(within(firstGame).getByText(/32,700 pts/)).toBeInTheDocument();
+      // Date is formatted as "Jan 14" by the component (due to date parsing/timezone)
+      expect(within(firstGame).getByText(/Jan 14/)).toBeInTheDocument();
+      expect(within(firstGame).getByText(/1st/)).toBeInTheDocument();
+      expect(within(firstGame).getByText(/\+23,000 pts/)).toBeInTheDocument();
       expect(within(firstGame).getByText(/↑0\.2/)).toBeInTheDocument();
     });
   });
@@ -578,7 +581,7 @@ describe("Player Profile Component Tests", () => {
   describe("Edge Cases", () => {
     it("shows empty state for player with no games", () => {
       vi.mocked(queries.usePlayerProfile).mockReturnValue({
-        data: { ...mockPlayerData, games: 0 },
+        data: { ...mockPlayerData, gamesPlayed: 0 },
         isLoading: false,
         error: null,
       } as any);

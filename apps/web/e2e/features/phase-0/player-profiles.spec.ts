@@ -8,7 +8,7 @@ import {
 } from "../../utils/test-helpers";
 
 test.describe("Player Profiles - Specification Tests", () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async () => {
     // Use production data for testing
   });
 

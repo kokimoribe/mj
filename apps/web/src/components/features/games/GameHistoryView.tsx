@@ -205,7 +205,13 @@ const GameCard = memo(function GameCard({ game }: GameCardProps) {
   const formatRatingChange = (change: number) => {
     if (change === 0) return "—";
     const arrow = change > 0 ? "↑" : "↓";
-    return `${arrow}${Math.abs(change)}`;
+    // Preserve the precision from the data
+    const absChange = Math.abs(change);
+    // If it's a whole number, show one decimal place
+    // Otherwise, show the precision as provided
+    const formatted =
+      absChange % 1 === 0 ? absChange.toFixed(1) : absChange.toString();
+    return `${arrow}${formatted}`;
   };
 
   const formatScore = (score: number) => {

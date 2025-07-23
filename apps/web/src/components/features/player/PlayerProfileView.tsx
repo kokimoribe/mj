@@ -214,6 +214,7 @@ export const PlayerProfileView = memo(function PlayerProfileView({
                 variant={selectedPeriod === "7d" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setSelectedPeriod("7d")}
+                aria-pressed={selectedPeriod === "7d"}
                 className="flex-1"
               >
                 7d
@@ -222,6 +223,7 @@ export const PlayerProfileView = memo(function PlayerProfileView({
                 variant={selectedPeriod === "14d" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setSelectedPeriod("14d")}
+                aria-pressed={selectedPeriod === "14d"}
                 className="flex-1"
               >
                 14d
@@ -230,6 +232,7 @@ export const PlayerProfileView = memo(function PlayerProfileView({
                 variant={selectedPeriod === "30d" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setSelectedPeriod("30d")}
+                aria-pressed={selectedPeriod === "30d"}
                 className="flex-1"
               >
                 30d
@@ -238,6 +241,7 @@ export const PlayerProfileView = memo(function PlayerProfileView({
                 variant={selectedPeriod === "all" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setSelectedPeriod("all")}
+                aria-pressed={selectedPeriod === "all"}
                 className="flex-1"
               >
                 All

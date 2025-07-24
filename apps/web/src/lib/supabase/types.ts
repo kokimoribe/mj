@@ -18,11 +18,11 @@ export interface GameSeat {
   players:
     | {
         id: string;
-        name: string;
+        display_name: string;
       }
     | Array<{
         id: string;
-        name: string;
+        display_name: string;
       }>;
 }
 

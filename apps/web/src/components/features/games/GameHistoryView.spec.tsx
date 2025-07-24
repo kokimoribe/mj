@@ -117,14 +117,14 @@ const mockGameData = {
 };
 
 const mockPlayers = [
-  { id: "p1", name: "Joseph" },
-  { id: "p2", name: "Alice" },
-  { id: "p3", name: "Mikey" },
-  { id: "p4", name: "Frank" },
-  { id: "p5", name: "Josh" },
-  { id: "p6", name: "Hyun" },
-  { id: "p7", name: "Koki" },
-  { id: "p8", name: "Jackie" },
+  { id: "p1", display_name: "Joseph" },
+  { id: "p2", display_name: "Alice" },
+  { id: "p3", display_name: "Mikey" },
+  { id: "p4", display_name: "Frank" },
+  { id: "p5", display_name: "Josh" },
+  { id: "p6", display_name: "Hyun" },
+  { id: "p7", display_name: "Koki" },
+  { id: "p8", display_name: "Jackie" },
 ];
 
 const mockGameCounts = {

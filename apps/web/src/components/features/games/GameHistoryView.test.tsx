@@ -124,14 +124,14 @@ const createQueryClient = () =>
 
 // Mock data for players and game counts
 const mockPlayers = [
-  { id: "1", name: "Joseph" },
-  { id: "2", name: "Josh" },
-  { id: "3", name: "Mikey" },
-  { id: "4", name: "Hyun" },
-  { id: "5", name: "Alice" },
-  { id: "6", name: "Bob" },
-  { id: "7", name: "Charlie" },
-  { id: "8", name: "Diana" },
+  { id: "1", display_name: "Joseph" },
+  { id: "2", display_name: "Josh" },
+  { id: "3", display_name: "Mikey" },
+  { id: "4", display_name: "Hyun" },
+  { id: "5", display_name: "Alice" },
+  { id: "6", display_name: "Bob" },
+  { id: "7", display_name: "Charlie" },
+  { id: "8", display_name: "Diana" },
 ];
 
 const mockGameCounts = {

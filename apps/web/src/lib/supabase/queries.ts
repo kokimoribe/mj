@@ -421,8 +421,8 @@ export async function fetchAllPlayers() {
 
   const { data: players, error } = await supabase
     .from("players")
-    .select("id, name")
-    .order("name", { ascending: true });
+    .select("id, display_name")
+    .order("display_name", { ascending: true });
 
   if (error) {
     throw new Error(`Failed to fetch players: ${error.message}`);
@@ -451,7 +451,7 @@ export async function fetchGameHistory(
         final_score,
         players!inner(
           id,
-          name
+          display_name
         )
       )
     `,
@@ -550,9 +550,9 @@ export async function fetchGameHistory(
           playerId: result.player_id,
           playerName:
             (Array.isArray(seat?.players)
-              ? seat?.players[0]?.name
-              : (seat?.players as { name: string } | undefined)?.name) ||
-            "Unknown",
+              ? seat?.players[0]?.display_name
+              : (seat?.players as { display_name: string } | undefined)
+                  ?.display_name) || "Unknown",
           placement: result.placement,
           rawScore: seat?.final_score || 0,
           scoreAdjustment: result.score_delta || 0,

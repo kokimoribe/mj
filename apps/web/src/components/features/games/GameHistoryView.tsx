@@ -25,7 +25,7 @@ import { testIds } from "@/lib/test-ids";
 
 interface Player {
   id: string;
-  name: string;
+  display_name: string;
 }
 
 export const GameHistoryView = memo(function GameHistoryView() {
@@ -135,7 +135,7 @@ export const GameHistoryView = memo(function GameHistoryView() {
               const count = gameCounts?.[player.id] || 0;
               return (
                 <SelectItem key={player.id} value={player.id}>
-                  {player.name} ({count} games)
+                  {player.display_name} ({count} games)
                 </SelectItem>
               );
             })}

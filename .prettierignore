@@ -13,3 +13,16 @@ uv.lock
 package-lock.json
 yarn.lock
 pnpm-lock.yaml
+
+# Test results
+test-results/
+coverage/
+
+# Large markdown files that might cause issues
+validation-report.md
+spec-validation-report.md
+COMPREHENSIVE_BUG_REPORT.md
+
+# Generated files
+*.min.js
+*.min.css

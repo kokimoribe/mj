@@ -221,10 +221,11 @@ interface PlayerProfileData {
 ### Supabase Queries
 
 ```typescript
-// Configuration from environment or default
+// Season configuration is now hardcoded in src/config/index.ts
 // Must match the configuration used in leaderboard feature
-const currentSeasonConfigHash =
-  process.env.NEXT_PUBLIC_SEASON_CONFIG_HASH || "season_3_2024";
+import { config } from "@/config";
+
+const currentSeasonConfigHash = config.season.hash;
 
 // Get player basic info and current rating
 const { data: playerData } = await supabase

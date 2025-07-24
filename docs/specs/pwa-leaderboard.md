@@ -168,14 +168,12 @@ interface LeaderboardData {
 ### Configuration
 
 ```typescript
-// Default season config hash (manually updated per season)
+// Season configuration is now hardcoded in src/config/index.ts
 // This hash references the configuration stored in Supabase
-// The frontend uses this default to fetch initial data
-const DEFAULT_SEASON_CONFIG_HASH = "season_3_2024"; // Update this value for new seasons
+// Update the config file when starting a new season
+import { config } from "@/config";
 
-// Get current season configuration
-const currentSeasonConfigHash =
-  process.env.NEXT_PUBLIC_SEASON_CONFIG_HASH || DEFAULT_SEASON_CONFIG_HASH;
+const currentSeasonConfigHash = config.season.hash;
 ```
 
 ### Supabase Queries

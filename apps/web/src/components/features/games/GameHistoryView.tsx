@@ -22,6 +22,7 @@ import {
 import { format } from "date-fns";
 import { Calendar } from "lucide-react";
 import { testIds } from "@/lib/test-ids";
+import { safeFormatNumber } from "@/lib/utils/data-validation";
 
 interface Player {
   id: string;
@@ -223,7 +224,9 @@ const GameCard = memo(function GameCard({ game }: GameCardProps) {
   };
 
   const formatRatingChange = (change: number) => {
-    if (change === 0) return "—";
+    const validated = safeFormatNumber(change, 1);
+    if (validated === "--" || change === 0) return "—";
+
     const arrow = change > 0 ? "↑" : "↓";
     // Preserve the precision from the data
     const absChange = Math.abs(change);
@@ -235,10 +238,15 @@ const GameCard = memo(function GameCard({ game }: GameCardProps) {
   };
 
   const formatScore = (score: number) => {
-    return score.toLocaleString();
+    const formatted = safeFormatNumber(score, 0);
+    if (formatted === "--") return "0";
+    return parseInt(formatted).toLocaleString();
   };
 
   const formatScoreAdjustment = (adjustment: number) => {
+    if (!isFinite(adjustment) || isNaN(adjustment)) {
+      return "±0";
+    }
     const sign = adjustment >= 0 ? "+" : "";
     return `${sign}${adjustment.toLocaleString()}`;
   };
@@ -281,7 +289,7 @@ const GameCard = memo(function GameCard({ game }: GameCardProps) {
                       : "text-red-600"
                   }
                 >
-                  {formatScoreAdjustment(result.scoreAdjustment)}
+                  {formatScoreAdjustment(result.scoreAdjustment)} pts
                 </span>
                 <Badge variant="outline" className="text-xs">
                   {formatRatingChange(result.ratingChange)}

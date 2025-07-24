@@ -2,6 +2,13 @@ import { createClient } from "./client";
 import type { GameSeat, CachedPlayerRating, CachedGameResult } from "./types";
 import { config } from "@/config";
 
+// Helper function to calculate score delta based on uma when database value is missing
+function calculateScoreDelta(placement: number): number {
+  // Season 3 uma values from configuration
+  const uma = [15, 5, -5, -15];
+  return uma[placement - 1] * 1000; // Convert to points (multiply by 1000)
+}
+
 // Core types for the application
 export interface Player {
   id: string;
@@ -562,7 +569,8 @@ export async function fetchGameHistory(
                   ?.display_name) || "Unknown",
           placement: result.placement,
           rawScore: seat?.final_score || 0,
-          scoreAdjustment: result.score_delta || 0,
+          scoreAdjustment:
+            result.score_delta ?? calculateScoreDelta(result.placement),
           ratingBefore: result.rating_before,
           ratingAfter: result.rating_after,
           ratingChange: result.rating_change,

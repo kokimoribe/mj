@@ -81,7 +81,9 @@ export const PlayerProfileView = memo(function PlayerProfileView({
       return { ratingHistory: [], periodDelta: null };
     }
 
-    // Check if we have materialized rating history from database
+    // For now, always build from games since rating_history is not populated in database
+    // TODO: When rating_history is populated, uncomment the code below
+    /*
     if (
       player.ratingHistory &&
       Array.isArray(player.ratingHistory) &&
@@ -108,8 +110,9 @@ export const PlayerProfileView = memo(function PlayerProfileView({
         change: 0,
       });
 
-      return { ratingHistory: points, periodDelta: null }; // TODO: Calculate period delta from materialized data
+      return { ratingHistory: points, periodDelta: null }; 
     }
+    */
 
     // Fallback: build from games efficiently
     const chartPoints = gamesData.map((game: PlayerGame) => ({

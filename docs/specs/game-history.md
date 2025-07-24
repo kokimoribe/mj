@@ -104,24 +104,33 @@ Each game card contains:
 - 4 player rows with:
   - Placement icon (🥇🥈🥉4️⃣)
   - Player name
-  - Final score → Plus/minus
+  - Final table score (e.g., 42,700)
   - Rating change (↑/↓ with value)
 ```
 
 ### Score Display Format
 
 ```
-Raw Score → Adjusted Score
-42,700 → +32,700 (Uma/Oka applied)
-11,800 → -28,200 (Uma/Oka applied)
+Display only the final table score:
+- 1st: 42,700 pts
+- 2nd: 31,200 pts
+- 3rd: 11,800 pts
+- 4th: 14,300 pts
+
+Note: Uma/Oka calculations are internal implementation details
+used for rating calculations and should NOT be displayed to users.
 ```
 
 ### Rating Change Display
 
 ```
-Rating changes use the precision from the data:
-↑0.8 or ↑1.23 (display as provided by data)
-↓0.5 or ↓0.567 (display as provided by data)
+Show the actual rating change for each player:
+↑0.8 (rating increased by 0.8 points)
+↓1.2 (rating decreased by 1.2 points)
+— (no change or first game)
+
+Rating changes should reflect the actual OpenSkill rating
+difference, not score adjustments.
 ```
 
 ### Date Format

@@ -86,7 +86,7 @@ test.describe("Rating Calculation Regression Tests", () => {
         .single();
 
       if (!player) {
-        test.skip("No player data available");
+        test.skip(!player, "No player data available");
         return;
       }
 
@@ -201,7 +201,7 @@ test.describe("Rating Calculation Regression Tests", () => {
         .limit(1);
 
       if (!recentGames || recentGames.length === 0) {
-        test.skip("No recent games for delta test");
+        test.skip(true, "No recent games for delta test");
         return;
       }
 
@@ -216,7 +216,7 @@ test.describe("Rating Calculation Regression Tests", () => {
         .single();
 
       if (!currentRating) {
-        test.skip("No current rating data");
+        test.skip(true, "No current rating data");
         return;
       }
 

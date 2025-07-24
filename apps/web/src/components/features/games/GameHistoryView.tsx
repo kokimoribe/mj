@@ -243,14 +243,6 @@ const GameCard = memo(function GameCard({ game }: GameCardProps) {
     return parseInt(formatted).toLocaleString();
   };
 
-  const formatScoreAdjustment = (adjustment: number) => {
-    if (!isFinite(adjustment) || isNaN(adjustment)) {
-      return "±0";
-    }
-    const sign = adjustment >= 0 ? "+" : "";
-    return `${sign}${adjustment.toLocaleString()}`;
-  };
-
   return (
     <Card
       data-testid={testIds.gameHistory.gameCard}
@@ -280,17 +272,7 @@ const GameCard = memo(function GameCard({ game }: GameCardProps) {
                 <span className="font-medium">{result.playerName}</span>
               </div>
               <div className="flex items-center gap-3 text-xs">
-                <span>{formatScore(result.rawScore)}</span>
-                <span>→</span>
-                <span
-                  className={
-                    result.scoreAdjustment >= 0
-                      ? "text-green-600"
-                      : "text-red-600"
-                  }
-                >
-                  {formatScoreAdjustment(result.scoreAdjustment)} pts
-                </span>
+                <span>{formatScore(result.rawScore)} pts</span>
                 <Badge variant="outline" className="text-xs">
                   {formatRatingChange(result.ratingChange)}
                 </Badge>

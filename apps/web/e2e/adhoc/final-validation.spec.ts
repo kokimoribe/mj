@@ -152,7 +152,7 @@ test.describe("Final Validation - All Fixes Working", () => {
       console.log("✓ Average placement displayed:", avgText);
 
       // Extract number and validate
-      const avgMatch = avgText.match(/(\d+\.?\d*)/);
+      const avgMatch = avgText?.match(/(\d+\.?\d*)/);
       if (avgMatch) {
         const avgValue = parseFloat(avgMatch[1]);
         expect(avgValue).toBeGreaterThanOrEqual(1);

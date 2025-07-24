@@ -86,9 +86,9 @@ The Player Profile page provides comprehensive information about an individual p
 1. **Rating Chart Interactions**
    - Tap/hover on data points to see exact values
    - Single green color (#10b981) for all data points
-   - Discrete points for each game (no connecting lines by default)
+   - Line connects discrete points for each game
    - Highlight current rating point
-   - Simple scatter plot visualization (simpler is better)
+   - Simple line chart visualization (simpler is better)
 
 2. **Game History**
    - All games loaded initially (single query)
@@ -107,11 +107,12 @@ The Player Profile page provides comprehensive information about an individual p
 ### Rating Chart Specifications
 
 ```
-Chart Type: Interactive Scatter Plot with Time Range Selection
+Chart Type: Interactive Line Chart with Time Range Selection
 X-axis: Date of games (chronological)
 Y-axis: Rating value (auto-scaled with padding)
 Data Points: One per game played
 Point Style: Filled circles, 6px diameter
+Line Style: Smooth line connecting points
 Time Range Selector:
   - Options: [7d] [14d] [30d] [All]
   - Default: All games
@@ -124,7 +125,7 @@ Interactive Features:
   - Simple value display (no crosshair)
 
 Visual Design:
-  - All points: Green (#10b981) - single color
+  - Line and points: Green (#10b981) - single color
   - Current point: Larger size (8px) with label
   - Background grid: Subtle gray
   - Clean, minimalist appearance

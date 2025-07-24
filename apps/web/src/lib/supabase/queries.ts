@@ -476,21 +476,28 @@ export async function fetchGameHistory(
       `
       )
       .eq("player_id", playerId)
-      .eq("games.status", "finished")
-      .order("games.finished_at", { ascending: false })
-      .range(offset, offset + limit - 1);
+      .eq("games.status", "finished");
 
     if (playerError) {
       throw new Error(`Failed to fetch player games: ${playerError.message}`);
     }
 
-    const gameIds = playerGames?.map(g => g.game_id) || [];
+    // Sort the games by finished_at date in descending order
+    const sortedPlayerGames = (playerGames || []).sort((a, b) => {
+      const dateA = new Date((a as any).games?.finished_at || 0).getTime();
+      const dateB = new Date((b as any).games?.finished_at || 0).getTime();
+      return dateB - dateA;
+    });
+
+    // Apply pagination after sorting
+    const paginatedGames = sortedPlayerGames.slice(offset, offset + limit);
+    const gameIds = paginatedGames.map(g => g.game_id);
 
     if (gameIds.length === 0) {
       return {
         games: [],
-        totalGames: 0,
-        hasMore: false,
+        totalGames: sortedPlayerGames.length,
+        hasMore: sortedPlayerGames.length > offset + limit,
         showingAll: false,
       };
     }

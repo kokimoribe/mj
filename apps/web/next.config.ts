@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
 export default withPWA({
   dest: "public",
   register: true,
-  disable: false, // Enable PWA in development for Phase 0 testing
+  disable: process.env.NODE_ENV === "production", // Temporarily disable PWA in production due to service worker error
   reloadOnOnline: true,
   workboxOptions: {
     skipWaiting: true,

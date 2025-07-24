@@ -9,21 +9,14 @@ const nextConfig: NextConfig = {
 export default withPWA({
   dest: "public",
   register: true,
-  disable: process.env.NODE_ENV === "production", // Temporarily disable PWA in production due to service worker error
+  disable: false, // Re-enable PWA with fixed configuration
   reloadOnOnline: true,
+  cacheStartUrl: true,
+  dynamicStartUrl: false,
   workboxOptions: {
     skipWaiting: true,
-    runtimeCaching: [
-      {
-        urlPattern: /^https?.*$/,
-        handler: "NetworkFirst",
-        options: {
-          cacheName: "offlineCache",
-          expiration: {
-            maxEntries: 200,
-          },
-        },
-      },
-    ],
+    clientsClaim: true,
+    // Remove the problematic runtimeCaching for now
+    // We'll use the default caching strategy
   },
 })(nextConfig);

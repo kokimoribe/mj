@@ -40,6 +40,7 @@ export interface CachedPlayerRating {
     name: string;
   }>;
   rating: number;
+  display_rating: number;
   mu: number;
   sigma: number;
   games_played: number;

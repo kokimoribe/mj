@@ -113,6 +113,14 @@ The PWA Leaderboard is the primary landing page of the Riichi Mahjong League app
 - Shows the rating change compared to the player's rating from their oldest game within the last 7 days
 - Format: ▲ for increase, ▼ for decrease, — for no games played in 7 days
 - Calculated dynamically from game history data
+- Must handle edge cases: Display "--" if calculation fails or results in infinity/NaN
+
+**Required Data Display**:
+
+- **Avg Placement**: Must show calculated average placement value (e.g., "2.1"), not just label
+- **7-day change**: Must show both direction and value (e.g., "▲4.2 (from 42.1)")
+- **Last Played**: Show relative time or "--" if no games
+- **Recent Performance Chart**: Must render if player has 2+ games, show message if insufficient data
 
 ## Technical Requirements
 
@@ -416,6 +424,15 @@ const { data: playerGameResults } = await supabase
 5. **Stale Data**: Show warning if data > 24 hours old
 6. **Query Failures**: Show stale data if available, otherwise simple error message (app may be non-functional)
 7. **Offline Mode**: Show cached data when available (up to 2 days old), app may be non-functional without connection
+8. **Invalid Data Values**:
+   - **Infinity/NaN**: Display "N/A" or "--" for any infinity, negative infinity, or NaN values
+   - **Negative Game Counts**: Treat as 0 and log error for investigation
+   - **Missing Player Names**: Display "Unknown Player" as fallback
+   - **Null/Undefined Ratings**: Display "--" and exclude from sorting
+9. **Data Calculation Failures**:
+   - **Average Placement**: Show "--" if no games or calculation fails
+   - **7-Day Delta**: Show "--" if insufficient data or calculation error
+   - **Rating Charts**: Show "Insufficient data" message if < 2 data points
 
 ## Accessibility Requirements
 

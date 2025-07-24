@@ -239,7 +239,7 @@ export async function fetchLeaderboardData(): Promise<LeaderboardData> {
   const transformedPlayers: Player[] = (
     (players as CachedPlayerRating[]) || []
   ).map(p => {
-    const currentRating = p.mu - 3 * p.sigma;
+    const currentRating = p.display_rating;
     const delta = playerDeltas[p.player_id];
 
     // Calculate 7-day delta

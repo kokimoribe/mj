@@ -11,6 +11,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { format } from "date-fns";
+import { safeFormatNumber } from "@/lib/utils/data-validation";
 
 interface RatingDataPoint {
   date: string;
@@ -24,18 +25,30 @@ interface RatingChartProps {
 }
 
 export function RatingChart({ data }: RatingChartProps) {
-  const chartData = useMemo(() => {
-    return data.map((point, index) => ({
-      ...point,
-      displayDate: format(new Date(point.date), "MMM d"),
-      isLatest: index === data.length - 1,
-    }));
+  // Filter out invalid data points
+  const validData = useMemo(() => {
+    return data.filter(
+      d =>
+        isFinite(d.rating) &&
+        !isNaN(d.rating) &&
+        d.date &&
+        !isNaN(new Date(d.date).getTime())
+    );
   }, [data]);
 
-  const minRating = Math.min(...data.map(d => d.rating)) - 2;
-  const maxRating = Math.max(...data.map(d => d.rating)) + 2;
+  const chartData = useMemo(() => {
+    return validData.map((point, index) => ({
+      ...point,
+      displayDate: format(new Date(point.date), "MMM d"),
+      isLatest: index === validData.length - 1,
+    }));
+  }, [validData]);
 
-  if (data.length < 2) {
+  const ratings = validData.map(d => d.rating);
+  const minRating = ratings.length > 0 ? Math.min(...ratings) - 2 : 0;
+  const maxRating = ratings.length > 0 ? Math.max(...ratings) + 2 : 100;
+
+  if (validData.length < 2) {
     return (
       <div
         className="bg-muted text-muted-foreground flex h-48 items-center justify-center rounded"
@@ -88,17 +101,17 @@ export function RatingChart({ data }: RatingChartProps) {
           <p className="text-sm">
             Rating:{" "}
             <span className="font-mono font-bold">
-              {data.rating.toFixed(1)}
+              {safeFormatNumber(data.rating, 1)}
             </span>
           </p>
-          {data.change !== 0 && (
+          {data.change !== 0 && isFinite(data.change) && (
             <p className="text-sm">
               Change:
               <span
                 className={`ml-1 font-mono ${data.change > 0 ? "text-green-600" : "text-red-600"}`}
               >
                 {data.change > 0 ? "+" : ""}
-                {data.change.toFixed(1)}
+                {safeFormatNumber(data.change, 1)}
               </span>
             </p>
           )}

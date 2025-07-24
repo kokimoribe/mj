@@ -11,6 +11,7 @@ import { LeaderboardHeader } from "./LeaderboardHeader";
 import { ExpandablePlayerCard } from "./ExpandablePlayerCard";
 import { toast } from "sonner";
 import { TEST_IDS } from "@/lib/test-ids";
+import { safeFormatGameCount } from "@/lib/utils/data-validation";
 
 function LeaderboardViewComponent() {
   const { data, isLoading, error, refetch, isRefetching } = useLeaderboard();
@@ -58,18 +59,24 @@ function LeaderboardViewComponent() {
   }
 
   // Sort players by rating (desc), then games (desc), then name (alphabetically)
-  const sortedPlayers = [...data.players].sort((a, b) => {
-    // Primary: Rating (descending)
-    if (a.rating !== b.rating) {
-      return b.rating - a.rating;
-    }
-    // Secondary: Games played (descending)
-    if (a.gamesPlayed !== b.gamesPlayed) {
-      return b.gamesPlayed - a.gamesPlayed;
-    }
-    // Tertiary: Name (alphabetical)
-    return a.name.localeCompare(b.name);
-  });
+  // Filter out invalid entries first
+  const sortedPlayers = [...data.players]
+    .filter(player => {
+      // Filter out players with invalid ratings
+      return isFinite(player.rating) && !isNaN(player.rating);
+    })
+    .sort((a, b) => {
+      // Primary: Rating (descending)
+      if (a.rating !== b.rating) {
+        return b.rating - a.rating;
+      }
+      // Secondary: Games played (descending)
+      if (a.gamesPlayed !== b.gamesPlayed) {
+        return b.gamesPlayed - a.gamesPlayed;
+      }
+      // Tertiary: Name (alphabetical)
+      return a.name.localeCompare(b.name);
+    });
 
   return (
     <PullToRefresh
@@ -87,8 +94,8 @@ function LeaderboardViewComponent() {
 
         <LeaderboardHeader
           seasonName={data.seasonName}
-          totalGames={data.totalGames}
-          totalPlayers={data.players.length}
+          totalGames={safeFormatGameCount(data.totalGames)}
+          totalPlayers={sortedPlayers.length}
           lastUpdated={data.lastUpdated}
           onRefresh={handleRefresh}
           isRefreshing={isRefetching}

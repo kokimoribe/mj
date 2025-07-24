@@ -15,6 +15,10 @@ import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
 import { RatingChart } from "./RatingChart";
 import { PlayerGamesList } from "./PlayerGamesList";
+import {
+  safeFormatNumber,
+  validatePlayerData,
+} from "@/lib/utils/data-validation";
 
 interface PlayerGame {
   id: string;
@@ -44,7 +48,8 @@ export const PlayerProfileView = memo(function PlayerProfileView({
     "7d" | "14d" | "30d" | "all"
   >("all");
 
-  const { data: player, isLoading, error } = usePlayerProfile(playerId);
+  const { data: rawPlayer, isLoading, error } = usePlayerProfile(playerId);
+  const player = rawPlayer ? validatePlayerData(rawPlayer) : null;
   const { data: gamesData, isLoading: gamesLoading } = usePlayerGames(
     playerId,
     100
@@ -77,14 +82,23 @@ export const PlayerProfileView = memo(function PlayerProfileView({
     }
 
     // Check if we have materialized rating history from database
-    if (player.ratingHistory && player.ratingHistory.length > 0) {
+    if (
+      player.ratingHistory &&
+      Array.isArray(player.ratingHistory) &&
+      player.ratingHistory.length > 0
+    ) {
       // Use materialized history - convert to chart format
-      const points = player.ratingHistory.map((rating, index) => ({
-        date: gamesData[index]?.date || new Date().toISOString(),
-        rating,
-        gameId: gamesData[index]?.id || `game-${index}`,
-        change: index > 0 ? rating - player.ratingHistory![index - 1] : 0,
-      }));
+      const points = player.ratingHistory.map(
+        (rating: number, index: number) => ({
+          date: gamesData[index]?.date || new Date().toISOString(),
+          rating,
+          gameId: gamesData[index]?.id || `game-${index}`,
+          change:
+            index > 0 && player.ratingHistory
+              ? rating - player.ratingHistory[index - 1]
+              : 0,
+        })
+      );
 
       // Add current rating point
       points.push({
@@ -193,8 +207,8 @@ export const PlayerProfileView = memo(function PlayerProfileView({
       <div className="space-y-1">
         <h1 className="text-2xl font-bold">{player.name}</h1>
         <h2 className="text-muted-foreground text-base">
-          Rank #{playerRank || "—"} • Rating: {player.rating.toFixed(1)} •{" "}
-          {player.gamesPlayed} games
+          Rank #{playerRank || "—"} • Rating:{" "}
+          {safeFormatNumber(player.rating, 1)} • {player.gamesPlayed} games
         </h2>
       </div>
 
@@ -257,13 +271,13 @@ export const PlayerProfileView = memo(function PlayerProfileView({
 
             {/* Trend stats */}
             <div className="flex justify-between text-sm">
-              <div>Current: {player.rating.toFixed(1)}</div>
+              <div>Current: {safeFormatNumber(player.rating, 1)}</div>
               <div>
                 Period Δ:{" "}
-                {periodDelta !== null ? (
+                {periodDelta !== null && isFinite(periodDelta) ? (
                   <>
                     {periodDelta >= 0 ? "↑" : "↓"}
-                    {Math.abs(periodDelta).toFixed(1)}
+                    {safeFormatNumber(Math.abs(periodDelta), 1)}
                   </>
                 ) : (
                   "—"
@@ -287,13 +301,15 @@ export const PlayerProfileView = memo(function PlayerProfileView({
             <div>
               <p className="text-sm">
                 Average Placement:{" "}
-                {avgPlacement !== null ? avgPlacement.toFixed(1) : "—"}
+                {avgPlacement !== null && isFinite(avgPlacement)
+                  ? safeFormatNumber(avgPlacement, 1)
+                  : "—"}
               </p>
             </div>
             <div>
               <p className="text-sm">
                 Last Played:{" "}
-                {player.lastPlayed && !isNaN(Date.parse(player.lastPlayed))
+                {player.lastPlayed
                   ? formatDistanceToNow(new Date(player.lastPlayed), {
                       addSuffix: true,
                     })

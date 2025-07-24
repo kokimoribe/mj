@@ -457,6 +457,15 @@ const ratingAllTime = calculateRatingDelta(null, allGames, currentRating);
 8. **Name Changes**: Always show current name (queried by player_id from denormalized database)
 9. **Tied Placements**: Display as provided by data
 10. **High Sigma (Provisional)**: Display same as established ratings
+11. **Invalid Data Values**:
+    - **Infinity/NaN Ratings**: Display "--" for chart points, exclude from calculations
+    - **Invalid Average Placement**: Show "--" if calculation results in NaN/Infinity
+    - **Missing Games Data**: Show "No data available" message
+    - **Negative Values**: Log error and display closest valid value (0 for counts)
+12. **Chart Rendering**:
+    - **Insufficient Data**: Show "Need at least 2 games for chart" message
+    - **All Invalid Points**: Display "Unable to render chart" with explanation
+    - **Mixed Valid/Invalid**: Render valid points only, skip invalid ones
 
 ## Mobile Optimizations
 

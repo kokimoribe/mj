@@ -205,18 +205,18 @@ export async function fetchLeaderboardData(): Promise<LeaderboardData> {
   // REQUIREMENT: Average Placement Calculation
   // Calculate average placement for each player from ALL their game results
   const playerAveragePlacements: Record<string, number> = {};
-  
+
   // We need ALL games for placement calculation, not just recent ones
   // Get all cached results for ALL players' games
   const allPlayerPlacements: Record<string, number[]> = {};
-  
+
   if (playerGameIds.length > 0) {
     const { data: allCachedResults } = await supabase
       .from("cached_game_results")
       .select("player_id, placement")
       .eq("config_hash", currentSeasonConfigHash)
       .in("player_id", playerIds);
-    
+
     if (allCachedResults) {
       allCachedResults.forEach(result => {
         if (!allPlayerPlacements[result.player_id]) {
@@ -226,7 +226,7 @@ export async function fetchLeaderboardData(): Promise<LeaderboardData> {
       });
     }
   }
-  
+
   // Calculate averages
   Object.entries(allPlayerPlacements).forEach(([playerId, placements]) => {
     if (placements.length > 0) {
@@ -267,7 +267,10 @@ export async function fetchLeaderboardData(): Promise<LeaderboardData> {
   // REQUIREMENT: Total Games Calculation
   // The total games count MUST represent unique games played, not the sum of individual player games
   // Use the maximum games played by any single player
-  const totalGames = Math.max(...transformedPlayers.map(p => p.gamesPlayed));
+  const gameCounts = transformedPlayers
+    .map(p => p.gamesPlayed)
+    .filter(g => isFinite(g) && g >= 0);
+  const totalGames = gameCounts.length > 0 ? Math.max(...gameCounts) : 0;
   const lastUpdated = players?.[0]?.materialized_at || new Date().toISOString();
 
   const seasonName = config.season.name;

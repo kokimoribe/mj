@@ -16,6 +16,10 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import {
+  safeFormatNumber,
+  validatePlayerData,
+} from "@/lib/utils/data-validation";
 
 interface ExpandablePlayerCardProps {
   player: Player;
@@ -26,21 +30,27 @@ interface ExpandablePlayerCardProps {
 }
 
 function ExpandablePlayerCardComponent({
-  player,
+  player: rawPlayer,
   isExpanded,
   onToggle,
   "data-testid": dataTestId,
 }: ExpandablePlayerCardProps) {
   const router = useRouter();
 
+  // Validate player data to handle edge cases
+  const player = validatePlayerData(rawPlayer);
+
   const handleProfileClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     router.push(`/player/${player.id}`);
   };
 
-  // Format 7-day delta
+  // Format 7-day delta with validation
   const rating7DayDelta = player.rating7DayDelta;
-  const hasChange = rating7DayDelta !== null && rating7DayDelta !== undefined;
+  const hasChange =
+    rating7DayDelta !== null &&
+    rating7DayDelta !== undefined &&
+    isFinite(rating7DayDelta);
   const isPositiveChange = hasChange && rating7DayDelta >= 0;
 
   return (
@@ -84,7 +94,7 @@ function ExpandablePlayerCardComponent({
             <div className="flex items-center gap-3">
               <div className="text-right">
                 <div className="font-mono text-2xl font-bold tabular-nums">
-                  {(player.rating || 0).toFixed(1)}
+                  {safeFormatNumber(player.rating, 1)}
                 </div>
                 <div
                   className={cn(
@@ -100,7 +110,7 @@ function ExpandablePlayerCardComponent({
                       <span
                         aria-label={`Rating increased by ${rating7DayDelta.toFixed(1)} points in the last 7 days`}
                       >
-                        ▲{rating7DayDelta.toFixed(1)}
+                        ▲{safeFormatNumber(rating7DayDelta, 1)}
                       </span>
                     </>
                   ) : (
@@ -108,7 +118,7 @@ function ExpandablePlayerCardComponent({
                       <span
                         aria-label={`Rating decreased by ${Math.abs(rating7DayDelta).toFixed(1)} points in the last 7 days`}
                       >
-                        ▼{Math.abs(rating7DayDelta).toFixed(1)}
+                        ▼{safeFormatNumber(Math.abs(rating7DayDelta), 1)}
                       </span>
                     </>
                   )}
@@ -138,12 +148,19 @@ function ExpandablePlayerCardComponent({
                 </span>
                 <span className="font-semibold">
                   {!hasChange ? (
-                    "—"
+                    "--"
                   ) : (
                     <>
                       {isPositiveChange ? "▲" : "▼"}
-                      {Math.abs(rating7DayDelta).toFixed(1)} (from{" "}
-                      {(player.rating - rating7DayDelta).toFixed(1)})
+                      {safeFormatNumber(
+                        Math.abs(rating7DayDelta),
+                        1
+                      )} (from{" "}
+                      {safeFormatNumber(
+                        (player.rating || 0) - rating7DayDelta,
+                        1
+                      )}
+                      )
                     </>
                   )}
                 </span>
@@ -152,8 +169,15 @@ function ExpandablePlayerCardComponent({
                 <span className="text-muted-foreground text-sm">
                   Avg Placement:
                 </span>
-                <span className="font-semibold">
-                  {player.averagePlacement?.toFixed(1) || "—"}
+                <span
+                  className="font-semibold"
+                  data-testid="avg-placement-value"
+                >
+                  {player.averagePlacement !== undefined &&
+                  player.averagePlacement !== null &&
+                  isFinite(player.averagePlacement)
+                    ? safeFormatNumber(player.averagePlacement, 1)
+                    : "--"}
                 </span>
               </div>
               <div className="flex justify-between">
@@ -161,22 +185,33 @@ function ExpandablePlayerCardComponent({
                   Last Played:
                 </span>
                 <span className="font-semibold">
-                  {player.lastPlayed
+                  {player.lastPlayed && typeof player.lastPlayed === "string"
                     ? formatDistanceToNow(new Date(player.lastPlayed), {
                         addSuffix: true,
                       })
-                    : "N/A"}
+                    : "--"}
                 </span>
               </div>
             </div>
 
             {/* Mini Rating Chart */}
-            {player.recentGames && player.recentGames.length > 0 && (
+            {player.recentGames &&
+            Array.isArray(player.recentGames) &&
+            player.recentGames.length >= 2 ? (
               <div>
                 <div className="text-muted-foreground mb-2 text-sm">
-                  Recent Performance (Last 10 games):
+                  Recent Performance (Last{" "}
+                  {Math.min(10, player.recentGames.length)} games):
                 </div>
                 <MiniRatingChart games={player.recentGames} />
+              </div>
+            ) : (
+              <div className="text-muted-foreground py-4 text-center text-sm">
+                {player.recentGames &&
+                Array.isArray(player.recentGames) &&
+                player.recentGames.length === 1
+                  ? "Need at least 2 games for chart"
+                  : "No recent games to display"}
               </div>
             )}
 
@@ -217,14 +252,26 @@ interface MiniRatingChartProps {
 }
 
 function MiniRatingChart({ games }: MiniRatingChartProps) {
-  const chartData = games.map((game, index) => ({
+  // Filter out invalid ratings
+  const validGames = games.filter(g => isFinite(g.rating) && !isNaN(g.rating));
+
+  if (validGames.length < 2) {
+    return (
+      <div className="text-muted-foreground flex h-24 w-full items-center justify-center text-sm">
+        Insufficient data for chart
+      </div>
+    );
+  }
+
+  const chartData = validGames.map((game, index) => ({
     index,
     rating: game.rating,
     date: game.date,
   }));
 
-  const minRating = Math.min(...games.map(g => g.rating));
-  const maxRating = Math.max(...games.map(g => g.rating));
+  const ratings = validGames.map(g => g.rating);
+  const minRating = Math.min(...ratings);
+  const maxRating = Math.max(...ratings);
   const padding = (maxRating - minRating) * 0.1 || 1;
 
   return (
@@ -238,12 +285,20 @@ function MiniRatingChart({ games }: MiniRatingChartProps) {
           <XAxis dataKey="index" hide />
           <Tooltip
             content={({ active, payload }) => {
-              if (active && payload && payload[0]) {
-                return (
-                  <div className="bg-background/95 rounded border p-2 text-xs shadow-md">
-                    {payload[0].value?.toFixed(1)}
-                  </div>
-                );
+              if (
+                active &&
+                payload &&
+                payload[0] &&
+                payload[0].value !== undefined
+              ) {
+                const value = payload[0].value;
+                if (isFinite(value)) {
+                  return (
+                    <div className="bg-background/95 rounded border p-2 text-xs shadow-md">
+                      {safeFormatNumber(value, 1)}
+                    </div>
+                  );
+                }
               }
               return null;
             }}

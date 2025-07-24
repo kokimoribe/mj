@@ -26,7 +26,7 @@ export function BottomNav() {
   return (
     <nav
       aria-label="Main navigation"
-      className="bg-background fixed right-0 bottom-0 left-0 z-50 border-t md:hidden"
+      className="bg-background fixed right-0 bottom-0 left-0 z-50 border-t"
     >
       <div className="grid h-16 grid-cols-2" role="list">
         {navigation.map(item => {

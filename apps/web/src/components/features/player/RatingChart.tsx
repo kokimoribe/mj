@@ -130,8 +130,8 @@ export function RatingChart({ data }: RatingChartProps) {
           <Line
             type="monotone"
             dataKey="rating"
-            stroke="transparent"
-            strokeWidth={0}
+            stroke="#10b981"
+            strokeWidth={2}
             dot={CustomDot}
           />
         </LineChart>

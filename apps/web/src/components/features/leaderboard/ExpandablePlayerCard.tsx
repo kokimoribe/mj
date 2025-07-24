@@ -251,8 +251,8 @@ function MiniRatingChart({ games }: MiniRatingChartProps) {
           <Line
             type="monotone"
             dataKey="rating"
-            stroke="transparent"
-            strokeWidth={0}
+            stroke="#10b981"
+            strokeWidth={2}
             dot={{ fill: "#10b981", r: 3 }}
             animationDuration={300}
           />

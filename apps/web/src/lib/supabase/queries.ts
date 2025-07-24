@@ -202,6 +202,39 @@ export async function fetchLeaderboardData(): Promise<LeaderboardData> {
     }
   });
 
+  // REQUIREMENT: Average Placement Calculation
+  // Calculate average placement for each player from ALL their game results
+  const playerAveragePlacements: Record<string, number> = {};
+  
+  // We need ALL games for placement calculation, not just recent ones
+  // Get all cached results for ALL players' games
+  const allPlayerPlacements: Record<string, number[]> = {};
+  
+  if (playerGameIds.length > 0) {
+    const { data: allCachedResults } = await supabase
+      .from("cached_game_results")
+      .select("player_id, placement")
+      .eq("config_hash", currentSeasonConfigHash)
+      .in("player_id", playerIds);
+    
+    if (allCachedResults) {
+      allCachedResults.forEach(result => {
+        if (!allPlayerPlacements[result.player_id]) {
+          allPlayerPlacements[result.player_id] = [];
+        }
+        allPlayerPlacements[result.player_id].push(result.placement);
+      });
+    }
+  }
+  
+  // Calculate averages
+  Object.entries(allPlayerPlacements).forEach(([playerId, placements]) => {
+    if (placements.length > 0) {
+      const sum = placements.reduce((acc, p) => acc + p, 0);
+      playerAveragePlacements[playerId] = sum / placements.length;
+    }
+  });
+
   // Transform data to match interface
   const transformedPlayers: Player[] = (
     (players as CachedPlayerRating[]) || []
@@ -226,15 +259,15 @@ export async function fetchLeaderboardData(): Promise<LeaderboardData> {
       rating7DayDelta,
       ratingHistory: [], // Column doesn't exist in current schema
       recentGames: recentGamesByPlayer[p.player_id]?.reverse() || [], // Reverse to get chronological order
-      averagePlacement: undefined, // Will be calculated on-demand in the component
+      averagePlacement: playerAveragePlacements[p.player_id] || undefined,
     };
   });
 
   // Get season metadata
-  const totalGames = transformedPlayers.reduce(
-    (sum, p) => sum + p.gamesPlayed,
-    0
-  );
+  // REQUIREMENT: Total Games Calculation
+  // The total games count MUST represent unique games played, not the sum of individual player games
+  // Use the maximum games played by any single player
+  const totalGames = Math.max(...transformedPlayers.map(p => p.gamesPlayed));
   const lastUpdated = players?.[0]?.materialized_at || new Date().toISOString();
 
   const seasonName = config.season.name;

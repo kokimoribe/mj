@@ -90,10 +90,6 @@ export async function fetchLeaderboardData(): Promise<LeaderboardData> {
   const recentGameIds = recentGames?.map(g => g.id) || [];
   interface RecentGameHistoryResult extends CachedGameResult {
     games: { finished_at: string };
-    mu_before?: number;
-    sigma_before?: number;
-    mu_after?: number;
-    sigma_after?: number;
   }
   let recentGameHistory: RecentGameHistoryResult[] = [];
 
@@ -130,11 +126,8 @@ export async function fetchLeaderboardData(): Promise<LeaderboardData> {
   recentGameHistory?.forEach(game => {
     // Store the oldest game's rating_before as the baseline
     if (!playerDeltas[game.player_id]) {
-      // Calculate display rating from mu and sigma if available, otherwise use rating_before
-      const oldestRating =
-        game.mu_before && game.sigma_before
-          ? game.mu_before - 3 * game.sigma_before
-          : game.rating_before;
+      // Calculate display rating from mu and sigma
+      const oldestRating = game.mu_before - 3 * game.sigma_before;
       playerDeltas[game.player_id] = {
         oldestRating,
         hasGamesInPeriod: true,
@@ -162,10 +155,7 @@ export async function fetchLeaderboardData(): Promise<LeaderboardData> {
 
   // Get cached results for these games
   interface PlayerRecentGame extends CachedGameResult {
-    game_id: string;
     games?: { finished_at: string };
-    mu_after?: number;
-    sigma_after?: number;
   }
   let playerRecentGames: PlayerRecentGame[] = [];
   if (playerGameIds.length > 0) {
@@ -187,12 +177,19 @@ export async function fetchLeaderboardData(): Promise<LeaderboardData> {
     }
   }
 
+  // Sort games by date to ensure we get the most recent ones
+  const sortedPlayerRecentGames = playerRecentGames?.sort(
+    (a, b) =>
+      new Date(b.games?.finished_at || 0).getTime() -
+      new Date(a.games?.finished_at || 0).getTime()
+  );
+
   // Group recent games by player
   const recentGamesByPlayer: Record<
     string,
     Array<{ gameId: string; date: string; rating: number }>
   > = {};
-  playerRecentGames?.forEach(game => {
+  sortedPlayerRecentGames?.forEach(game => {
     if (!recentGamesByPlayer[game.player_id]) {
       recentGamesByPlayer[game.player_id] = [];
     }
@@ -201,10 +198,7 @@ export async function fetchLeaderboardData(): Promise<LeaderboardData> {
       recentGamesByPlayer[game.player_id].push({
         gameId: game.game_id,
         date: game.games?.finished_at || "",
-        rating:
-          game.mu_after && game.sigma_after
-            ? game.mu_after - 3 * game.sigma_after
-            : game.rating_after,
+        rating: game.mu_after - 3 * game.sigma_after,
       });
     }
   });
@@ -332,10 +326,7 @@ export async function fetchPlayerProfile(playerId: string): Promise<Player> {
 
   // Get cached results
   interface RecentGameWithDetails extends CachedGameResult {
-    game_id: string;
     games?: { finished_at: string };
-    mu_after?: number;
-    sigma_after?: number;
   }
   let recentGames: RecentGameWithDetails[] = [];
   if (gameIds.length > 0) {
@@ -369,10 +360,7 @@ export async function fetchPlayerProfile(playerId: string): Promise<Player> {
       ?.map(game => ({
         gameId: game.game_id,
         date: game.games?.finished_at || "",
-        rating:
-          game.mu_after && game.sigma_after
-            ? game.mu_after - 3 * game.sigma_after
-            : game.rating_after,
+        rating: game.mu_after - 3 * game.sigma_after,
       }))
       .reverse() || [];
 
@@ -571,9 +559,12 @@ export async function fetchGameHistory(
           rawScore: seat?.final_score || 0,
           scoreAdjustment:
             result.score_delta ?? calculateScoreDelta(result.placement),
-          ratingBefore: result.rating_before,
-          ratingAfter: result.rating_after,
-          ratingChange: result.rating_change,
+          ratingBefore: result.mu_before - 3 * result.sigma_before,
+          ratingAfter: result.mu_after - 3 * result.sigma_after,
+          ratingChange:
+            result.mu_after -
+            3 * result.sigma_after -
+            (result.mu_before - 3 * result.sigma_before),
         };
       })
       .sort((a: GameResult, b: GameResult) => a.placement - b.placement);

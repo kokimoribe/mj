@@ -3,12 +3,16 @@
 export interface CachedGameResult {
   config_hash: string;
   player_id: string;
+  game_id: string;
   placement: number;
   raw_score: number;
   score_delta: number;
-  rating_before: number;
-  rating_after: number;
-  rating_change: number;
+  mu_before: number;
+  sigma_before: number;
+  mu_after: number;
+  sigma_after: number;
+  player_name?: string;
+  date?: string;
 }
 
 export interface GameSeat {
@@ -57,8 +61,10 @@ export interface CachedGamePlayerResultWithGame {
   games: {
     finished_at: string;
   };
-  rating_after: number;
-  rating_before?: number;
+  mu_after: number;
+  sigma_after: number;
+  mu_before: number;
+  sigma_before: number;
 }
 
 export interface PlayerWithRatings {
@@ -83,7 +89,8 @@ export interface CachedGamePlayerResult {
   placement: number;
   raw_score: number;
   score_delta: number;
-  rating_before: number;
-  rating_after: number;
-  rating_change: number;
+  mu_before: number;
+  sigma_before: number;
+  mu_after: number;
+  sigma_after: number;
 }

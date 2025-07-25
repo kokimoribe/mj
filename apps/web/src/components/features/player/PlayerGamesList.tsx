@@ -12,7 +12,6 @@ interface PlayerGame {
   date: string;
   placement: number;
   score: number;
-  plusMinus: number;
   ratingBefore: number;
   ratingAfter: number;
   ratingChange: number;
@@ -22,6 +21,7 @@ interface PlayerGame {
     placement: number;
     score: number;
   }>;
+  // Note: plusMinus (uma/oka) removed - it's an internal calculation detail
 }
 
 interface PlayerGamesListProps {
@@ -83,7 +83,7 @@ export const PlayerGamesList = memo(function PlayerGamesList({
           data-testid={`game-entry-${game.id}`}
           className="space-y-1 border-b pb-3 last:border-0"
         >
-          {/* Simple format as per spec: [Date] • [Placement] • [±Score] • [↑↓Rating] */}
+          {/* Format as per spec: [Date] • [Placement] • [↑↓Rating] */}
           <div className="text-sm">
             <span className="text-muted-foreground">
               {format(new Date(game.date), "MMM d")}
@@ -95,21 +95,21 @@ export const PlayerGamesList = memo(function PlayerGamesList({
             {" • "}
             <span
               className={cn(
-                "font-mono",
-                game.plusMinus >= 0 ? "text-green-600" : "text-red-600"
+                isFinite(game.ratingChange) && !isNaN(game.ratingChange)
+                  ? game.ratingChange >= 0
+                    ? "text-green-600"
+                    : "text-red-600"
+                  : "text-muted-foreground"
               )}
             >
-              {game.plusMinus >= 0 ? "+" : ""}
-              {game.plusMinus.toLocaleString()} pts
-            </span>
-            {" • "}
-            <span
-              className={cn(
-                game.ratingChange >= 0 ? "text-green-600" : "text-red-600"
+              {isFinite(game.ratingChange) && !isNaN(game.ratingChange) ? (
+                <>
+                  {game.ratingChange >= 0 ? "↑" : "↓"}
+                  {Math.abs(game.ratingChange).toFixed(1)}
+                </>
+              ) : (
+                "—" // Show dash for invalid rating changes
               )}
-            >
-              {game.ratingChange >= 0 ? "↑" : "↓"}
-              {Math.abs(game.ratingChange).toFixed(1)}
             </span>
           </div>
           {/* vs. opponents line */}

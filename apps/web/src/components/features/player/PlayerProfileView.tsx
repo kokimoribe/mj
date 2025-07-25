@@ -25,7 +25,6 @@ interface PlayerGame {
   date: string;
   placement: number;
   score: number;
-  plusMinus: number;
   ratingBefore: number;
   ratingAfter: number;
   ratingChange: number;
@@ -34,6 +33,7 @@ interface PlayerGame {
     placement: number;
     score: number;
   }>;
+  // Note: plusMinus (uma/oka) removed - it's an internal calculation detail
 }
 
 interface PlayerProfileViewProps {
@@ -114,13 +114,27 @@ export const PlayerProfileView = memo(function PlayerProfileView({
     }
     */
 
-    // Fallback: build from games efficiently
-    const chartPoints = gamesData.map((game: PlayerGame) => ({
-      date: game.date,
-      rating: game.ratingAfter,
-      gameId: game.id,
-      change: game.ratingChange || 0,
-    }));
+    // Fallback: build from games efficiently with data validation
+    const chartPoints = gamesData
+      .filter((game: PlayerGame) => {
+        // Only include games with valid rating data
+        return (
+          game.ratingAfter !== null &&
+          game.ratingAfter !== undefined &&
+          isFinite(game.ratingAfter) &&
+          !isNaN(game.ratingAfter) &&
+          game.date
+        );
+      })
+      .map((game: PlayerGame) => ({
+        date: game.date,
+        rating: game.ratingAfter,
+        gameId: game.id,
+        change:
+          isFinite(game.ratingChange) && !isNaN(game.ratingChange)
+            ? game.ratingChange
+            : 0,
+      }));
 
     // Add current rating as the latest point
     chartPoints.push({

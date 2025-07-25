@@ -86,7 +86,6 @@ export function usePlayerGames(playerId: string, limit = 10) {
             date: game.date,
             placement: playerResult.placement,
             score: playerResult.rawScore,
-            plusMinus: playerResult.scoreAdjustment,
             ratingBefore: playerResult.ratingBefore,
             ratingAfter: playerResult.ratingAfter,
             ratingChange: playerResult.ratingChange,
@@ -98,6 +97,7 @@ export function usePlayerGames(playerId: string, limit = 10) {
                 score: r.rawScore,
               })),
           };
+          // Note: scoreAdjustment (uma/oka) intentionally excluded from frontend
         })
         .filter((game): game is NonNullable<typeof game> => game !== null);
     },

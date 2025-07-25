@@ -40,6 +40,7 @@ export const GameHistoryView = memo(function GameHistoryView() {
   const [showingAll, setShowingAll] = useState(
     searchParams.get("showAll") === "true"
   );
+  const [limit, setLimit] = useState(10);
 
   // Update URL when filters change
   useEffect(() => {
@@ -67,9 +68,21 @@ export const GameHistoryView = memo(function GameHistoryView() {
     data: gameData,
     isLoading: gamesLoading,
     error: gamesError,
-  } = useGameHistory(selectedPlayerId);
+  } = useGameHistory(selectedPlayerId, 0, limit);
   const { data: players, isLoading: playersLoading } = useAllPlayers();
   const { data: gameCounts } = usePlayerGameCounts();
+
+  // Debug logging
+  useEffect(() => {
+    console.log("🔍 GameHistoryView Debug:");
+    console.log("   limit state:", limit);
+    console.log("   showingAll state:", showingAll);
+    console.log("   selectedPlayerId:", selectedPlayerId);
+    console.log("   gameData:", gameData);
+    console.log("   number of games returned:", gameData?.games?.length || 0);
+    console.log("   hasMore flag:", gameData?.hasMore);
+    console.log("   totalGames:", gameData?.totalGames);
+  }, [limit, showingAll, selectedPlayerId, gameData]);
 
   // Calculate visible games based on showingAll state
   const visibleGames = useMemo(() => {
@@ -166,12 +179,15 @@ export const GameHistoryView = memo(function GameHistoryView() {
           </div>
 
           {/* Load More / Show Less Button */}
-          {games.length > 10 && (
+          {(gameData?.hasMore || games.length > 10) && (
             <div className="flex justify-center">
               {!showingAll ? (
                 <Button
                   variant="outline"
-                  onClick={() => setShowingAll(true)}
+                  onClick={() => {
+                    setShowingAll(true);
+                    setLimit(100); // Fetch more games
+                  }}
                   data-testid="load-more-button"
                 >
                   Load More Games
@@ -179,7 +195,10 @@ export const GameHistoryView = memo(function GameHistoryView() {
               ) : (
                 <Button
                   variant="outline"
-                  onClick={() => setShowingAll(false)}
+                  onClick={() => {
+                    setShowingAll(false);
+                    setLimit(10); // Reset to initial limit
+                  }}
                   data-testid="show-less-button"
                 >
                   Show Less Games
@@ -203,7 +222,7 @@ interface GameCardProps {
       placement: number;
       rawScore: number;
       scoreAdjustment: number;
-      ratingChange: number;
+      ratingChange: number | null | undefined;
     }>;
   };
 }
@@ -224,9 +243,16 @@ const GameCard = memo(function GameCard({ game }: GameCardProps) {
     }
   };
 
-  const formatRatingChange = (change: number) => {
+  const formatRatingChange = (change: number | null | undefined) => {
+    // Handle null/undefined cases
+    if (change === null || change === undefined) {
+      return "↑0.0"; // Default to up arrow with 0.0
+    }
+
     const validated = safeFormatNumber(change, 1);
-    if (validated === "--") return "—";
+    if (validated === "--") {
+      return "↑0.0"; // Default to up arrow with 0.0
+    }
 
     // Always show rating changes with arrows, even if 0
     const arrow = change >= 0 ? "↑" : "↓";

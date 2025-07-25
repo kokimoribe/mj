@@ -23,6 +23,7 @@ import {
 import { format } from "date-fns";
 import { Calendar } from "lucide-react";
 import { safeFormatNumber } from "@/lib/utils/data-validation";
+import { cn } from "@/lib/utils";
 
 interface Player {
   id: string;
@@ -40,7 +41,7 @@ export const GameHistoryView = memo(function GameHistoryView() {
   const [showingAll, setShowingAll] = useState(
     searchParams.get("showAll") === "true"
   );
-  const [limit, setLimit] = useState(10);
+  const limit = 100; // Always fetch enough games
 
   // Update URL when filters change
   useEffect(() => {
@@ -63,7 +64,7 @@ export const GameHistoryView = memo(function GameHistoryView() {
     }
   }, [selectedPlayerId, showingAll, router]);
 
-  // Fetch data
+  // Fetch data - always fetch a reasonable amount
   const {
     data: gameData,
     isLoading: gamesLoading,
@@ -167,15 +168,12 @@ export const GameHistoryView = memo(function GameHistoryView() {
           </div>
 
           {/* Load More / Show Less Button */}
-          {(gameData?.hasMore || games.length > 10) && (
+          {games.length > 10 && (
             <div className="flex justify-center">
               {!showingAll ? (
                 <Button
                   variant="outline"
-                  onClick={() => {
-                    setShowingAll(true);
-                    setLimit(100); // Fetch more games
-                  }}
+                  onClick={() => setShowingAll(true)}
                   data-testid="load-more-button"
                 >
                   Load More Games
@@ -183,10 +181,7 @@ export const GameHistoryView = memo(function GameHistoryView() {
               ) : (
                 <Button
                   variant="outline"
-                  onClick={() => {
-                    setShowingAll(false);
-                    setLimit(10); // Reset to initial limit
-                  }}
+                  onClick={() => setShowingAll(false)}
                   data-testid="show-less-button"
                 >
                   Show Less Games
@@ -296,7 +291,12 @@ const GameCard = memo(function GameCard({ game }: GameCardProps) {
                 </span>
                 <Badge
                   variant="outline"
-                  className="text-xs"
+                  className={cn(
+                    "text-xs",
+                    result.ratingChange && result.ratingChange >= 0
+                      ? "text-green-500"
+                      : "text-red-500"
+                  )}
                   data-testid="rating-change"
                 >
                   {formatRatingChange(result.ratingChange)}

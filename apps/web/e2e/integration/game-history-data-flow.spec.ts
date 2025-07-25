@@ -28,7 +28,7 @@ test.describe("Game History Data Flow - Integration Tests", () => {
 
     // Verify initial display shows only 10 games
     const visibleGames = await page
-      .locator('[data-testid^="game-card-"]')
+      .locator('[data-testid="game-card"]')
       .count();
     expect(visibleGames).toBeLessThanOrEqual(10);
 
@@ -49,7 +49,7 @@ test.describe("Game History Data Flow - Integration Tests", () => {
 
       // More games should be visible
       const expandedGames = await page
-        .locator('[data-testid^="game-card-"]')
+        .locator('[data-testid="game-card"]')
         .count();
       expect(expandedGames).toBeGreaterThan(10);
       expect(expandedGames).toBeLessThanOrEqual(20);

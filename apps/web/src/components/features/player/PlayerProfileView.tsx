@@ -290,11 +290,13 @@ export const PlayerProfileView = memo(function PlayerProfileView({
             </div>
 
             {/* Rating chart */}
-            {gamesLoading ? (
-              <Skeleton className="h-48 w-full" />
-            ) : (
-              <RatingChart data={ratingHistory} />
-            )}
+            <div data-testid="rating-chart-container">
+              {gamesLoading ? (
+                <Skeleton className="h-48 w-full" />
+              ) : (
+                <RatingChart data={ratingHistory} />
+              )}
+            </div>
 
             {/* Trend stats */}
             <div className="flex justify-between text-sm">

@@ -16,8 +16,8 @@ interface PlayerGame {
   ratingAfter: number;
   ratingChange: number;
   opponents: Array<{
+    id: string;
     name: string;
-    id?: string; // Optional ID, will use name as fallback
     placement: number;
     score: number;
   }>;
@@ -118,7 +118,7 @@ export const PlayerGamesList = memo(function PlayerGamesList({
             {game.opponents.map((opponent, index) => (
               <span key={opponent.name}>
                 <Link
-                  href={`/player/${opponent.id || opponent.name.toLowerCase()}`}
+                  href={`/player/${opponent.id}`}
                   className="text-primary hover:underline"
                   data-testid="opponent-link"
                 >

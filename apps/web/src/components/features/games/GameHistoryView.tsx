@@ -298,8 +298,8 @@ const GameCard = memo(function GameCard({ game }: GameCardProps) {
                   className="text-xs"
                   style={{
                     color:
-                      result.ratingChange !== null &&
-                      result.ratingChange !== undefined &&
+                      result.ratingChange === null ||
+                      result.ratingChange === undefined ||
                       result.ratingChange >= 0
                         ? "rgb(34, 197, 94)"
                         : "rgb(239, 68, 68)",

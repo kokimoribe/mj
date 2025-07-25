@@ -92,6 +92,7 @@ export function usePlayerGames(playerId: string, limit = 10) {
             opponents: game.results
               .filter(r => r.playerId !== playerId)
               .map(r => ({
+                id: r.playerId,
                 name: r.playerName,
                 placement: r.placement,
                 score: r.rawScore,

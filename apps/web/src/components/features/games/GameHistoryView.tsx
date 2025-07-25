@@ -23,7 +23,6 @@ import {
 import { format } from "date-fns";
 import { Calendar } from "lucide-react";
 import { safeFormatNumber } from "@/lib/utils/data-validation";
-import { cn } from "@/lib/utils";
 
 interface Player {
   id: string;
@@ -173,7 +172,7 @@ export const GameHistoryView = memo(function GameHistoryView() {
           </div>
 
           {/* Load More / Show Less Button */}
-          {games.length > 10 && (
+          {(games.length > 10 || (gameData?.hasMore && !showingAll)) && (
             <div className="flex justify-center">
               {!showingAll ? (
                 <Button
@@ -296,12 +295,15 @@ const GameCard = memo(function GameCard({ game }: GameCardProps) {
                 </span>
                 <Badge
                   variant="outline"
-                  className={cn(
-                    "text-xs",
-                    result.ratingChange && result.ratingChange >= 0
-                      ? "text-green-500"
-                      : "text-red-500"
-                  )}
+                  className="text-xs"
+                  style={{
+                    color:
+                      result.ratingChange !== null &&
+                      result.ratingChange !== undefined &&
+                      result.ratingChange >= 0
+                        ? "rgb(34, 197, 94)"
+                        : "rgb(239, 68, 68)",
+                  }}
                   data-testid="rating-change"
                 >
                   {formatRatingChange(result.ratingChange)}

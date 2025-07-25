@@ -45,6 +45,11 @@ export const GameHistoryView = memo(function GameHistoryView() {
 
   // Update URL when filters change
   useEffect(() => {
+    // Don't update URL if not on games page
+    if (window.location.pathname !== "/games") {
+      return;
+    }
+
     const params = new URLSearchParams();
 
     if (selectedPlayerId) {

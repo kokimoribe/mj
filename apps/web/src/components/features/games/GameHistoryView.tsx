@@ -2,6 +2,7 @@
 
 import { useState, useMemo, memo, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import {
   useGameHistory,
   useAllPlayers,
@@ -102,15 +103,12 @@ export const GameHistoryView = memo(function GameHistoryView() {
   const games = gameData?.games || [];
 
   return (
-    <div className="space-y-4" data-testid={testIds.gameHistory.container}>
+    <div className="space-y-4" data-testid="game-history-view">
       {/* Header */}
-      <div data-testid={testIds.gameHistory.header}>
+      <div>
         <h1 className="text-2xl font-bold">🎮 Game History</h1>
         <p className="text-muted-foreground text-sm">
-          Season 3 •{" "}
-          <span data-testid={testIds.gameHistory.gameCount}>
-            {totalGames} games
-          </span>
+          Season 3 • {totalGames} games
         </p>
       </div>
 
@@ -124,19 +122,26 @@ export const GameHistoryView = memo(function GameHistoryView() {
           }}
         >
           <SelectTrigger
-            className="w-[200px]"
-            data-testid={testIds.gameHistory.filterDropdown}
+            className="h-11 w-[200px]"
+            data-testid="player-filter"
             aria-label="Filter games by player"
           >
             <SelectValue placeholder="Filter by player" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Games</SelectItem>
+            <SelectItem value="all" data-testid="filter-option">
+              All Games
+            </SelectItem>
             {players?.map((player: Player) => {
               const count = gameCounts?.[player.id] || 0;
               return (
-                <SelectItem key={player.id} value={player.id}>
-                  {player.display_name} ({count} games)
+                <SelectItem
+                  key={player.id}
+                  value={player.id}
+                  data-testid="filter-option"
+                >
+                  {player.display_name} ({count}{" "}
+                  {count === 1 ? "game" : "games"})
                 </SelectItem>
               );
             })}
@@ -146,7 +151,7 @@ export const GameHistoryView = memo(function GameHistoryView() {
 
       {/* Games List */}
       {games.length === 0 ? (
-        <Card data-testid={testIds.gameHistory.emptyState}>
+        <Card data-testid="empty-state">
           <CardContent className="py-8 text-center">
             <p className="text-muted-foreground">
               {selectedPlayerId ? "No games found" : "No games played yet"}
@@ -155,10 +160,7 @@ export const GameHistoryView = memo(function GameHistoryView() {
         </Card>
       ) : (
         <>
-          <div
-            className="space-y-3"
-            data-testid={testIds.gameHistory.gamesList}
-          >
+          <div className="space-y-3">
             {visibleGames.map(game => (
               <GameCard key={game.id} game={game} />
             ))}
@@ -171,7 +173,7 @@ export const GameHistoryView = memo(function GameHistoryView() {
                 <Button
                   variant="outline"
                   onClick={() => setShowingAll(true)}
-                  data-testid={testIds.gameHistory.loadMoreButton}
+                  data-testid="load-more-button"
                 >
                   Load More Games
                 </Button>
@@ -179,7 +181,7 @@ export const GameHistoryView = memo(function GameHistoryView() {
                 <Button
                   variant="outline"
                   onClick={() => setShowingAll(false)}
-                  data-testid={testIds.gameHistory.showLessButton}
+                  data-testid="show-less-button"
                 >
                   Show Less Games
                 </Button>
@@ -225,15 +227,13 @@ const GameCard = memo(function GameCard({ game }: GameCardProps) {
 
   const formatRatingChange = (change: number) => {
     const validated = safeFormatNumber(change, 1);
-    if (validated === "--" || change === 0) return "—";
+    if (validated === "--") return "—";
 
-    const arrow = change > 0 ? "↑" : "↓";
-    // Preserve the precision from the data
+    // Always show rating changes with arrows, even if 0
+    const arrow = change >= 0 ? "↑" : "↓";
     const absChange = Math.abs(change);
-    // If it's a whole number, show one decimal place
-    // Otherwise, show the precision as provided
-    const formatted =
-      absChange % 1 === 0 ? absChange.toFixed(1) : absChange.toString();
+    // Always show one decimal place for consistency
+    const formatted = absChange.toFixed(1);
     return `${arrow}${formatted}`;
   };
 
@@ -245,7 +245,7 @@ const GameCard = memo(function GameCard({ game }: GameCardProps) {
 
   return (
     <Card
-      data-testid={testIds.gameHistory.gameCard}
+      data-testid="game-card"
       aria-label={`Game played on ${format(new Date(game.date), "MMM d, yyyy")}`}
     >
       <CardHeader className="pb-3">
@@ -266,14 +266,26 @@ const GameCard = memo(function GameCard({ game }: GameCardProps) {
               data-testid="player-result"
             >
               <div className="flex items-center gap-2">
-                <span className="text-lg">
+                <span className="text-lg" data-testid="placement">
                   {getPlacementMedal(result.placement)}
                 </span>
-                <span className="font-medium">{result.playerName}</span>
+                <Link
+                  href={`/player/${result.playerId}`}
+                  className="font-medium hover:underline"
+                  data-testid="player-name"
+                >
+                  {result.playerName}
+                </Link>
               </div>
               <div className="flex items-center gap-3 text-xs">
-                <span>{formatScore(result.rawScore)} pts</span>
-                <Badge variant="outline" className="text-xs">
+                <span data-testid="final-score">
+                  {formatScore(result.rawScore)}
+                </span>
+                <Badge
+                  variant="outline"
+                  className="text-xs"
+                  data-testid="rating-change"
+                >
                   {formatRatingChange(result.ratingChange)}
                 </Badge>
               </div>
@@ -287,7 +299,7 @@ const GameCard = memo(function GameCard({ game }: GameCardProps) {
 
 function GameHistorySkeleton() {
   return (
-    <div className="space-y-4" data-testid={testIds.gameHistory.loadingState}>
+    <div className="space-y-4">
       <Skeleton className="h-20 w-full" />
       <Skeleton className="h-10 w-[200px]" />
       <div className="space-y-3">

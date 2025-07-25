@@ -23,7 +23,9 @@ test.describe("Game History - Core Experience", () => {
         const dateText = await card
           .locator('[data-testid="game-date"]')
           .textContent();
-        return new Date(dateText || "");
+        // Extract just the date part before the bullet point
+        const datePart = dateText?.split(" • ")[0] || "";
+        return new Date(datePart);
       })
     );
 

@@ -60,7 +60,9 @@ export function BottomNav() {
                 )}
                 aria-hidden="true"
               />
-              <span className="text-[10px]">{item.name}</span>
+              <span className="text-[10px]" aria-selected={isActive}>
+                {item.name}
+              </span>
             </Link>
           );
         })}

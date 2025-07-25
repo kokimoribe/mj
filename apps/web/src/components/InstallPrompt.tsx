@@ -31,7 +31,7 @@ export function InstallPrompt() {
       // iOS Safari check
       const isIOSStandalone =
         "standalone" in window.navigator &&
-        (window.navigator as any).standalone;
+        (window.navigator as Navigator & { standalone?: boolean }).standalone;
 
       // Android app check
       const isAndroidApp = document.referrer.includes("android-app://");

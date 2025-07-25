@@ -478,11 +478,14 @@ export async function fetchGameHistory(
     }
 
     // Sort the games by finished_at date in descending order
-    const sortedPlayerGames = (playerGames || []).sort((a, b) => {
-      const dateA = new Date((a as any).games?.finished_at || 0).getTime();
-      const dateB = new Date((b as any).games?.finished_at || 0).getTime();
-      return dateB - dateA;
-    });
+    type GameSeatWithGame = typeof playerGames extends (infer T)[] ? T : never;
+    const sortedPlayerGames = (playerGames || []).sort(
+      (a: GameSeatWithGame, b: GameSeatWithGame) => {
+        const dateA = new Date((a as any).games?.finished_at || 0).getTime();
+        const dateB = new Date((b as any).games?.finished_at || 0).getTime();
+        return dateB - dateA;
+      }
+    );
 
     // Apply pagination after sorting
     const paginatedGames = sortedPlayerGames.slice(offset, offset + limit);

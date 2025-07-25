@@ -22,7 +22,6 @@ import {
 } from "@/components/ui/select";
 import { format } from "date-fns";
 import { Calendar } from "lucide-react";
-import { testIds } from "@/lib/test-ids";
 import { safeFormatNumber } from "@/lib/utils/data-validation";
 
 interface Player {

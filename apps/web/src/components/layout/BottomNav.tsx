@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 
 const navigation = [
   {
-    name: "Home",
+    name: "Leaderboard",
     href: "/",
     icon: Home,
     description: "Leaderboard",
@@ -18,6 +18,12 @@ const navigation = [
     icon: History,
     description: "Game History",
   },
+  {
+    name: "Players",
+    href: "/players",
+    icon: Home,
+    description: "All Players",
+  },
 ];
 
 export function BottomNav() {
@@ -27,8 +33,9 @@ export function BottomNav() {
     <nav
       aria-label="Main navigation"
       className="bg-background fixed right-0 bottom-0 left-0 z-50 border-t"
+      data-testid="bottom-navigation"
     >
-      <div className="grid h-16 grid-cols-2" role="list">
+      <div className="grid h-16 grid-cols-3" role="list">
         {navigation.map(item => {
           const isActive =
             pathname === item.href ||

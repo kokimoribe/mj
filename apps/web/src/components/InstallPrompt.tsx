@@ -117,11 +117,15 @@ export function InstallPrompt() {
 
   if (!isInstallable) {
     return (
-      <div className="text-muted-foreground relative rounded border-l-4 border-blue-500 bg-blue-500/10 p-4 text-sm">
+      <div
+        className="text-muted-foreground relative rounded border-l-4 border-blue-500 bg-blue-500/10 p-4 text-sm"
+        data-testid="pwa-install-prompt"
+      >
         <button
           onClick={handleDismiss}
           aria-label="Dismiss notification"
           className="text-muted-foreground hover:text-foreground absolute top-2 right-2 transition-colors"
+          data-testid="dismiss-button"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -150,11 +154,15 @@ export function InstallPrompt() {
   }
 
   return (
-    <div className="relative rounded border-l-4 border-green-500 bg-green-500/10 p-4">
+    <div
+      className="relative rounded border-l-4 border-green-500 bg-green-500/10 p-4"
+      data-testid="pwa-install-prompt"
+    >
       <button
         onClick={handleDismiss}
         aria-label="Dismiss notification"
         className="text-muted-foreground hover:text-foreground absolute top-2 right-2 transition-colors"
+        data-testid="dismiss-button"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -180,6 +188,7 @@ export function InstallPrompt() {
       <button
         onClick={handleInstallClick}
         className="rounded bg-green-600 px-4 py-2 text-white transition-colors hover:bg-green-700"
+        data-testid="install-button"
       >
         Install App
       </button>

@@ -81,10 +81,13 @@ function ExpandablePlayerCardComponent({
           <div className="flex items-center justify-between">
             {/* Player Name & Games */}
             <div className="min-w-0 flex-1">
-              <h3 className="truncate font-medium">
+              <h3 className="truncate font-medium" data-testid="player-name">
                 {player.name || "Unknown Player"}
               </h3>
-              <p className="text-muted-foreground text-sm">
+              <p
+                className="text-muted-foreground text-sm"
+                data-testid="games-played"
+              >
                 {player.gamesPlayed || 0} game
                 {player.gamesPlayed !== 1 ? "s" : ""}
               </p>
@@ -93,7 +96,10 @@ function ExpandablePlayerCardComponent({
             {/* Rating & Change */}
             <div className="flex items-center gap-3">
               <div className="text-right">
-                <div className="font-mono text-2xl font-bold tabular-nums">
+                <div
+                  className="font-mono text-2xl font-bold tabular-nums"
+                  data-testid="player-rating"
+                >
                   {safeFormatNumber(player.rating, 1)}
                 </div>
                 <div
@@ -102,6 +108,7 @@ function ExpandablePlayerCardComponent({
                     hasChange &&
                       (isPositiveChange ? "text-green-600" : "text-red-600")
                   )}
+                  data-testid="rating-change"
                 >
                   {!hasChange ? (
                     <span className="text-muted-foreground">—</span>
@@ -110,7 +117,7 @@ function ExpandablePlayerCardComponent({
                       <span
                         aria-label={`Rating increased by ${rating7DayDelta.toFixed(1)} points in the last 7 days`}
                       >
-                        ▲{safeFormatNumber(rating7DayDelta, 1)}
+                        ↑{safeFormatNumber(rating7DayDelta, 1)}
                       </span>
                     </>
                   ) : (
@@ -118,7 +125,7 @@ function ExpandablePlayerCardComponent({
                       <span
                         aria-label={`Rating decreased by ${Math.abs(rating7DayDelta).toFixed(1)} points in the last 7 days`}
                       >
-                        ▼{safeFormatNumber(Math.abs(rating7DayDelta), 1)}
+                        ↓{safeFormatNumber(Math.abs(rating7DayDelta), 1)}
                       </span>
                     </>
                   )}
@@ -139,7 +146,10 @@ function ExpandablePlayerCardComponent({
 
         {/* Expanded Content */}
         {isExpanded && (
-          <div className="bg-muted/30 space-y-3 border-t px-4 py-4">
+          <div
+            className="bg-muted/30 space-y-3 border-t px-4 py-4"
+            data-testid="expanded-content"
+          >
             {/* 7-Day Change Detail */}
             <div className="space-y-2">
               <div className="flex justify-between">

@@ -79,12 +79,17 @@ export function LeaderboardHeader({
           </div>
         </CardHeader>
         <CardContent className="pb-3">
-          <div className="text-muted-foreground flex items-center gap-3 text-sm">
+          <div
+            className="text-muted-foreground flex items-center gap-3 text-sm"
+            data-testid="season-summary"
+          >
             <span>{totalGames} games</span>
             <span>•</span>
             <span>{totalPlayers} players</span>
             <span>•</span>
-            <span>Updated {formatLastUpdated(lastUpdated)}</span>
+            <span data-testid="last-updated">
+              Updated {formatLastUpdated(lastUpdated)}
+            </span>
           </div>
         </CardContent>
       </Card>

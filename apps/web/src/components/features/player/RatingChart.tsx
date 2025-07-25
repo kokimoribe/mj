@@ -50,11 +50,10 @@ export function RatingChart({ data }: RatingChartProps) {
 
   if (validData.length < 2) {
     return (
-      <div
-        className="bg-muted text-muted-foreground flex h-48 items-center justify-center rounded"
-        data-testid="rating-chart"
-      >
-        Need more games for chart
+      <div className="h-48 w-full" data-testid="rating-chart">
+        <div className="bg-muted text-muted-foreground flex h-full items-center justify-center rounded">
+          Need more games for chart
+        </div>
       </div>
     );
   }

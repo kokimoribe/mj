@@ -215,17 +215,27 @@ export const PlayerProfileView = memo(function PlayerProfileView({
   return (
     <div className="space-y-6">
       {/* Back Button */}
-      <Button variant="ghost" onClick={() => router.push("/")} size="sm">
+      <Button
+        variant="ghost"
+        onClick={() => router.push("/")}
+        size="sm"
+        data-testid="back-button"
+      >
         <ArrowLeft className="mr-2 h-4 w-4" />
         Back
       </Button>
 
       {/* Player Header */}
-      <div className="space-y-1">
-        <h1 className="text-2xl font-bold">{player.name}</h1>
+      <div className="space-y-1" data-testid="player-header">
+        <h1 className="text-2xl font-bold" data-testid="player-name">
+          {player.name}
+        </h1>
         <h2 className="text-muted-foreground text-base">
-          Rank #{playerRank || "—"} • Rating:{" "}
-          {safeFormatNumber(player.rating, 1)} • {player.gamesPlayed} games
+          <span data-testid="player-rank">#{playerRank || "—"}</span> • Rating:{" "}
+          <span data-testid="player-rating">
+            {safeFormatNumber(player.rating, 1)}
+          </span>{" "}
+          • <span data-testid="total-games">{player.gamesPlayed} games</span>
         </h2>
       </div>
 
@@ -240,7 +250,7 @@ export const PlayerProfileView = memo(function PlayerProfileView({
         <CardContent>
           <div className="space-y-4">
             {/* Time range selector */}
-            <div className="flex gap-1">
+            <div className="flex gap-1" data-testid="time-filter-buttons">
               <Button
                 variant={selectedPeriod === "7d" ? "default" : "outline"}
                 size="sm"
@@ -314,23 +324,51 @@ export const PlayerProfileView = memo(function PlayerProfileView({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3" data-testid="performance-stats">
+          <div className="space-y-3" data-testid="performance-metrics">
             <div>
               <p className="text-sm">
                 Average Placement:{" "}
-                {avgPlacement !== null && isFinite(avgPlacement)
-                  ? safeFormatNumber(avgPlacement, 1)
-                  : "—"}
+                <span data-testid="avg-placement">
+                  {avgPlacement !== null && isFinite(avgPlacement)
+                    ? safeFormatNumber(avgPlacement, 1)
+                    : "—"}
+                </span>
               </p>
             </div>
             <div>
               <p className="text-sm">
                 Last Played:{" "}
-                {player.lastPlayed
-                  ? formatDistanceToNow(new Date(player.lastPlayed), {
-                      addSuffix: true,
-                    })
-                  : "N/A"}
+                <span data-testid="last-played">
+                  {player.lastPlayed
+                    ? formatDistanceToNow(new Date(player.lastPlayed), {
+                        addSuffix: true,
+                      })
+                    : "N/A"}
+                </span>
+              </p>
+            </div>
+            <div>
+              <p className="text-sm">
+                30-day Rating Change:{" "}
+                <span data-testid="30d-rating-change">
+                  {(() => {
+                    // Calculate 30-day delta
+                    const thirtyDaysAgo = new Date();
+                    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                    const thirtyDayGames = gamesData?.filter(
+                      (game: PlayerGame) => new Date(game.date) >= thirtyDaysAgo
+                    );
+                    if (!thirtyDayGames || thirtyDayGames.length === 0)
+                      return "N/A";
+                    const oldestGame =
+                      thirtyDayGames[thirtyDayGames.length - 1];
+                    const delta = player.rating - oldestGame.ratingBefore;
+                    if (!isFinite(delta)) return "N/A";
+                    return delta >= 0
+                      ? `↑${safeFormatNumber(Math.abs(delta), 1)}`
+                      : `↓${safeFormatNumber(Math.abs(delta), 1)}`;
+                  })()}
+                </span>
               </p>
             </div>
           </div>
@@ -338,7 +376,7 @@ export const PlayerProfileView = memo(function PlayerProfileView({
       </Card>
 
       {/* Recent Games */}
-      <Card>
+      <Card data-testid="game-history">
         <CardHeader>
           <CardTitle>
             <span className="text-xl">🎮</span> Recent Games •{" "}

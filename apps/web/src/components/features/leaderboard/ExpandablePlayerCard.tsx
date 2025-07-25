@@ -228,7 +228,7 @@ function ExpandablePlayerCardComponent({
             {/* Action Button */}
             <Button
               variant="outline"
-              className="w-full"
+              className="min-h-[44px] w-full"
               onClick={handleProfileClick}
             >
               View Full Profile

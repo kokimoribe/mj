@@ -80,7 +80,7 @@ export const PlayerGamesList = memo(function PlayerGamesList({
       {visibleGames.map(game => (
         <div
           key={game.id}
-          data-testid={`game-entry-${game.id}`}
+          data-testid="game-entry"
           className="space-y-1 border-b pb-3 last:border-0"
         >
           {/* Format as per spec: [Date] • [Placement] • [↑↓Rating] */}
@@ -120,6 +120,7 @@ export const PlayerGamesList = memo(function PlayerGamesList({
                 <Link
                   href={`/player/${opponent.id || opponent.name.toLowerCase()}`}
                   className="text-primary hover:underline"
+                  data-testid="opponent-link"
                 >
                   {opponent.name}
                 </Link>
@@ -145,6 +146,7 @@ export const PlayerGamesList = memo(function PlayerGamesList({
             className="flex-1"
             onClick={loadMore}
             disabled={isLoadingMore}
+            data-testid="load-more-games"
           >
             {isLoadingMore ? "Loading..." : "Show More Games"}
           </Button>

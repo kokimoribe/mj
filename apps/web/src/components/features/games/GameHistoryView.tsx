@@ -72,18 +72,6 @@ export const GameHistoryView = memo(function GameHistoryView() {
   const { data: players, isLoading: playersLoading } = useAllPlayers();
   const { data: gameCounts } = usePlayerGameCounts();
 
-  // Debug logging
-  useEffect(() => {
-    console.log("🔍 GameHistoryView Debug:");
-    console.log("   limit state:", limit);
-    console.log("   showingAll state:", showingAll);
-    console.log("   selectedPlayerId:", selectedPlayerId);
-    console.log("   gameData:", gameData);
-    console.log("   number of games returned:", gameData?.games?.length || 0);
-    console.log("   hasMore flag:", gameData?.hasMore);
-    console.log("   totalGames:", gameData?.totalGames);
-  }, [limit, showingAll, selectedPlayerId, gameData]);
-
   // Calculate visible games based on showingAll state
   const visibleGames = useMemo(() => {
     if (!gameData?.games) return [];

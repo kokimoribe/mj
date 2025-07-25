@@ -7,13 +7,53 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
+// localStorage keys for persistence
+const PWA_STORAGE_KEYS = {
+  DISMISSED: "pwa-install-dismissed",
+  DISMISSED_DATE: "pwa-install-dismissed-date",
+};
+
 export function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
   const [isInstallable, setIsInstallable] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
+  const [isInstalledPWA, setIsInstalledPWA] = useState(false);
 
   useEffect(() => {
+    // Check if running as installed PWA
+    const checkIfInstalledPWA = () => {
+      const isStandalone =
+        window.matchMedia("(display-mode: standalone)").matches ||
+        window.matchMedia("(display-mode: fullscreen)").matches ||
+        window.matchMedia("(display-mode: minimal-ui)").matches;
+
+      // iOS Safari check
+      const isIOSStandalone =
+        "standalone" in window.navigator &&
+        (window.navigator as any).standalone;
+
+      // Android app check
+      const isAndroidApp = document.referrer.includes("android-app://");
+
+      return isStandalone || isIOSStandalone || isAndroidApp;
+    };
+
+    // Check localStorage for previous dismissal
+    const checkDismissalStatus = () => {
+      try {
+        const dismissed = localStorage.getItem(PWA_STORAGE_KEYS.DISMISSED);
+        return dismissed === "true";
+      } catch {
+        // localStorage might not be available
+        return false;
+      }
+    };
+
+    // Set initial states
+    setIsInstalledPWA(checkIfInstalledPWA());
+    setIsDismissed(checkDismissalStatus());
+
     const handleBeforeInstallPrompt = (e: Event) => {
       // Prevent the mini-infobar from appearing on mobile
       e.preventDefault();
@@ -24,11 +64,6 @@ export function InstallPrompt() {
     };
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-
-    // Check if already installed (development info)
-    if (window.matchMedia("(display-mode: standalone)").matches) {
-      // PWA already installed, no need to show prompt
-    }
 
     return () => {
       window.removeEventListener(
@@ -59,20 +94,34 @@ export function InstallPrompt() {
   };
 
   const handleDismiss = () => {
+    // Persist dismissal preference
+    try {
+      localStorage.setItem(PWA_STORAGE_KEYS.DISMISSED, "true");
+      localStorage.setItem(
+        PWA_STORAGE_KEYS.DISMISSED_DATE,
+        new Date().toISOString()
+      );
+    } catch {
+      // localStorage might not be available
+    }
     setIsDismissed(true);
   };
 
-  if (isDismissed) {
+  // Don't show prompt if:
+  // 1. User is already using installed PWA
+  // 2. User has previously dismissed the prompt
+  // 3. Browser doesn't support PWA installation
+  if (isInstalledPWA || isDismissed) {
     return null;
   }
 
   if (!isInstallable) {
     return (
-      <div className="relative rounded border-l-4 border-blue-500 bg-blue-500/10 p-4 text-sm text-muted-foreground">
+      <div className="text-muted-foreground relative rounded border-l-4 border-blue-500 bg-blue-500/10 p-4 text-sm">
         <button
           onClick={handleDismiss}
           aria-label="Dismiss notification"
-          className="absolute top-2 right-2 text-muted-foreground hover:text-foreground transition-colors"
+          className="text-muted-foreground hover:text-foreground absolute top-2 right-2 transition-colors"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -105,7 +154,7 @@ export function InstallPrompt() {
       <button
         onClick={handleDismiss}
         aria-label="Dismiss notification"
-        className="absolute top-2 right-2 text-muted-foreground hover:text-foreground transition-colors"
+        className="text-muted-foreground hover:text-foreground absolute top-2 right-2 transition-colors"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -125,7 +174,7 @@ export function InstallPrompt() {
       <h3 className="mb-2 font-semibold text-green-500">
         Install Mahjong League App
       </h3>
-      <p className="mb-3 text-sm text-muted-foreground">
+      <p className="text-muted-foreground mb-3 text-sm">
         Install this app on your device for quick access and offline capability.
       </p>
       <button

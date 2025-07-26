@@ -1,7 +1,7 @@
 {
-  "name": "Riichi Tracker",
-  "short_name": "Riichi",
-  "description": "Track Riichi Mahjong ratings and games",
+  "name": "mj",
+  "short_name": "mj",
+  "description": "River Terrace Mahjong Parlor",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0a0a0a",

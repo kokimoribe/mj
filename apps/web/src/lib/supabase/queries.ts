@@ -604,7 +604,7 @@ export async function fetchGameHistory(
     playerId,
     gamesCount: games?.length || 0,
     totalCount: count,
-    error: error?.message || "none",
+    error: "none",
     hasGames: !!games,
   });
 
@@ -627,7 +627,9 @@ export async function fetchGameHistory(
     .in("game_id", gameIds);
 
   if (resultsError) {
-    throw new Error(`Failed to fetch game results: ${resultsError.message}`);
+    throw new Error(
+      `Failed to fetch game results: ${resultsError.message || resultsError}`
+    );
   }
 
   // Debug logging for cached results
@@ -635,7 +637,7 @@ export async function fetchGameHistory(
     playerId,
     cachedResultsCount: cachedResults?.length || 0,
     gameIdsForResults: gameIds.length,
-    resultsError: resultsError?.message || "none",
+    resultsError: "none",
   });
 
   // Create a map of game results by game_id

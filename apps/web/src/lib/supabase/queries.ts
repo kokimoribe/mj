@@ -2,6 +2,11 @@ import { createClient } from "./client";
 import type { GameSeat, CachedPlayerRating, CachedGameResult } from "./types";
 import { config } from "@/config";
 
+// NOTE: Rating calculations use different formulas in different tables:
+// - cached_player_ratings.display_rating uses μ - 2σ
+// - cached_game_results.rating_before/after uses μ - 3σ
+// - Code calculations use μ - 3σ to match cached_game_results
+
 // Helper function to calculate score delta based on uma when database value is missing
 function calculateScoreDelta(placement: number): number {
   // Season 3 uma values from configuration
@@ -127,6 +132,8 @@ export async function fetchLeaderboardData(): Promise<LeaderboardData> {
     // Store the oldest game's rating_before as the baseline
     if (!playerDeltas[game.player_id]) {
       // Calculate display rating from mu and sigma
+      // NOTE: Code uses μ - 3σ (OpenSkill standard) but database display_rating uses μ - 2σ
+      // This discrepancy exists in cached_game_results rating_before/after columns
       const oldestRating = game.mu_before - 3 * game.sigma_before;
       playerDeltas[game.player_id] = {
         oldestRating,

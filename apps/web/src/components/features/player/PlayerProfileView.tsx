@@ -136,13 +136,18 @@ export const PlayerProfileView = memo(function PlayerProfileView({
             : 0,
       }));
 
-    // Add current rating as the latest point
-    chartPoints.push({
-      date: new Date().toISOString(),
-      rating: player.rating,
-      gameId: "current",
-      change: 0,
-    });
+    // NOTE: We intentionally do not add the current rating as an artificial point
+    // because it can cause misleading spikes when there's a gap between the last
+    // game rating and the current rating (e.g., when only recent games are loaded).
+    // The chart should only show actual game data points.
+
+    // Uncomment below only if we're loading the FULL game history:
+    // chartPoints.push({
+    //   date: new Date().toISOString(),
+    //   rating: player.rating,
+    //   gameId: "current",
+    //   change: 0,
+    // });
 
     // Filter based on selected period and calculate delta
     let filteredHistory = chartPoints;

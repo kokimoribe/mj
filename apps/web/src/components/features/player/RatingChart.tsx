@@ -136,6 +136,7 @@ export function RatingChart({ data }: RatingChartProps) {
           <YAxis
             domain={[minRating, maxRating]}
             tick={{ fontSize: 12 }}
+            tickFormatter={value => value.toFixed(1)}
             className="text-muted-foreground"
           />
           <Tooltip content={<CustomTooltip />} />

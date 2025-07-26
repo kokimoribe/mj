@@ -263,8 +263,9 @@ export const PlayerProfileView = memo(function PlayerProfileView({
                 onClick={() => setSelectedPeriod("7d")}
                 aria-pressed={selectedPeriod === "7d"}
                 className="flex-1"
+                title="Last 7 days"
               >
-                7d
+                7 days
               </Button>
               <Button
                 variant={selectedPeriod === "14d" ? "default" : "outline"}
@@ -272,8 +273,9 @@ export const PlayerProfileView = memo(function PlayerProfileView({
                 onClick={() => setSelectedPeriod("14d")}
                 aria-pressed={selectedPeriod === "14d"}
                 className="flex-1"
+                title="Last 14 days"
               >
-                14d
+                14 days
               </Button>
               <Button
                 variant={selectedPeriod === "30d" ? "default" : "outline"}
@@ -281,8 +283,9 @@ export const PlayerProfileView = memo(function PlayerProfileView({
                 onClick={() => setSelectedPeriod("30d")}
                 aria-pressed={selectedPeriod === "30d"}
                 className="flex-1"
+                title="Last 30 days"
               >
-                30d
+                30 days
               </Button>
               <Button
                 variant={selectedPeriod === "all" ? "default" : "outline"}
@@ -300,7 +303,23 @@ export const PlayerProfileView = memo(function PlayerProfileView({
               {gamesLoading ? (
                 <Skeleton className="h-48 w-full" />
               ) : (
-                <RatingChart data={ratingHistory} />
+                <>
+                  <RatingChart data={ratingHistory} />
+                  {/* Date range indicator */}
+                  {ratingHistory.length > 0 && (
+                    <p className="text-muted-foreground mt-1 text-center text-xs">
+                      {selectedPeriod === "all"
+                        ? `Showing all ${ratingHistory.length} games`
+                        : `Showing ${ratingHistory.length} games from the last ${
+                            selectedPeriod === "7d"
+                              ? "7 days"
+                              : selectedPeriod === "14d"
+                                ? "14 days"
+                                : "30 days"
+                          }`}
+                    </p>
+                  )}
+                </>
               )}
             </div>
 

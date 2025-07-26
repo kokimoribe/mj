@@ -9,7 +9,7 @@ async function diagnoseRatingIssues() {
 
   try {
     console.log("📊 1. TESTING LEADERBOARD RATING CHARTS...");
-    await page.goto("https://mj-web-psi.vercel.app/", {
+    await page.goto("https://rtmjp.vercel.app/", {
       waitUntil: "networkidle",
     });
     await page.waitForTimeout(3000);
@@ -58,7 +58,7 @@ async function diagnoseRatingIssues() {
 
     console.log("\n👤 2. TESTING PLAYER PROFILE PAGE...");
     const playerId = "e0f959ee-eb77-57de-b3af-acdecf679e70";
-    await page.goto(`https://mj-web-psi.vercel.app/player/${playerId}`, {
+    await page.goto(`https://rtmjp.vercel.app/player/${playerId}`, {
       waitUntil: "networkidle",
     });
     await page.waitForTimeout(3000);
@@ -91,7 +91,7 @@ async function diagnoseRatingIssues() {
     console.log(`   Rating Progression section visible: ${ratingSection}`);
 
     console.log("\n🎮 3. TESTING GAME HISTORY DISPLAY...");
-    await page.goto("https://mj-web-psi.vercel.app/games", {
+    await page.goto("https://rtmjp.vercel.app/games", {
       waitUntil: "networkidle",
     });
     await page.waitForTimeout(3000);
@@ -141,7 +141,7 @@ async function diagnoseRatingIssues() {
     }
 
     console.log("\n🔍 4. CHECKING SPECIFIC PLAYER GAMES...");
-    await page.goto(`https://mj-web-psi.vercel.app/player/${playerId}`, {
+    await page.goto(`https://rtmjp.vercel.app/player/${playerId}`, {
       waitUntil: "networkidle",
     });
     await page.waitForTimeout(3000);

@@ -6,7 +6,7 @@ async function checkProductionData() {
   // Check game history page
   console.log("1. Checking game history page...");
   try {
-    const response = await fetch("https://mj-web-psi.vercel.app/games");
+    const response = await fetch("https://rtmjp.vercel.app/games");
     const html = await response.text();
 
     // Check for uma/oka adjustments (should NOT be present)
@@ -31,7 +31,7 @@ async function checkProductionData() {
   console.log("\n2. Checking player profile page...");
   try {
     const response = await fetch(
-      "https://mj-web-psi.vercel.app/player/e0f959ee-eb77-57de-b3af-acdecf679e70"
+      "https://rtmjp.vercel.app/player/e0f959ee-eb77-57de-b3af-acdecf679e70"
     );
     const html = await response.text();
 
@@ -54,7 +54,7 @@ async function checkProductionData() {
   // Check leaderboard
   console.log("\n3. Checking leaderboard page...");
   try {
-    const response = await fetch("https://mj-web-psi.vercel.app/");
+    const response = await fetch("https://rtmjp.vercel.app/");
     const html = await response.text();
 
     // Check for NaN

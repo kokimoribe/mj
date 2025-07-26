@@ -2,7 +2,7 @@
 
 ## Summary
 
-The E2E tests are failing against the Vercel deployment (`https://mj-web-psi.vercel.app/`) due to a configuration issue, not because the production site is inaccessible or broken.
+The E2E tests are failing against the Vercel deployment (`https://rtmjp.vercel.app/`) due to a configuration issue, not because the production site is inaccessible or broken.
 
 ## Root Cause
 
@@ -14,7 +14,7 @@ The E2E tests are failing against the Vercel deployment (`https://mj-web-psi.ver
 
 ### Production Site Status
 
-- ✅ Site is accessible at https://mj-web-psi.vercel.app/
+- ✅ Site is accessible at https://rtmjp.vercel.app/
 - ✅ Returns HTTP 200 status
 - ✅ All test elements are present (`[data-testid="leaderboard-view"]`, player cards, etc.)
 - ✅ API calls to Supabase are working
@@ -44,7 +44,7 @@ await page.goto("/");  // This fails without baseURL!
 
 ```bash
 # Run tests with custom base URL
-PLAYWRIGHT_BASE_URL=https://mj-web-psi.vercel.app npx playwright test
+PLAYWRIGHT_BASE_URL=https://rtmjp.vercel.app npx playwright test
 ```
 
 However, this requires modifying the config to use the environment variable:
@@ -62,7 +62,7 @@ Update `playwright.production.config.ts`:
 
 ```typescript
 use: {
-  baseURL: "https://mj-web-psi.vercel.app",
+  baseURL: "https://rtmjp.vercel.app",
   // ... rest of config
 }
 ```
@@ -80,7 +80,7 @@ Create tests that use full URLs:
 ```typescript
 // e2e/production/smoke-test.spec.ts
 test("production smoke test", async ({ page }) => {
-  await page.goto("https://mj-web-psi.vercel.app/");
+  await page.goto("https://rtmjp.vercel.app/");
   // ... rest of test
 });
 ```
@@ -107,7 +107,7 @@ The best approach is **Option 1** - modify the main Playwright config to accept 
 1. Update `playwright.config.ts` to use `process.env.PLAYWRIGHT_BASE_URL`
 2. Add a npm script for production testing:
    ```json
-   "test:e2e:production": "PLAYWRIGHT_BASE_URL=https://mj-web-psi.vercel.app playwright test"
+   "test:e2e:production": "PLAYWRIGHT_BASE_URL=https://rtmjp.vercel.app playwright test"
    ```
 3. This allows the same tests to work for both local and production environments
 

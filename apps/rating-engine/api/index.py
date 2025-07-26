@@ -31,11 +31,11 @@ import re
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:3000", 
+        "http://localhost:3000",
         "http://127.0.0.1:3000",
         "https://mj-web-beta.vercel.app",
-        "https://mj-web-psi.vercel.app",
-        "https://mj-web-git-main-kokimoribes-projects.vercel.app"
+        "https://rtmjp.vercel.app",
+        "https://mj-web-git-main-kokimoribes-projects.vercel.app",
     ],
     allow_origin_regex=r"https://mj-web-.*\.vercel\.app",  # Regex pattern for all preview deployments
     allow_credentials=True,
@@ -74,8 +74,12 @@ async def debug_env():
     return {
         "has_supabase_url": bool(os.getenv("SUPABASE_URL")),
         "has_supabase_secret_key": bool(os.getenv("SUPABASE_SECRET_KEY")),
-        "supabase_url_prefix": (os.getenv("SUPABASE_URL") or "")[:30] + "..." if os.getenv("SUPABASE_URL") else None,
-        "secret_key_prefix": (os.getenv("SUPABASE_SECRET_KEY") or "")[:20] + "..." if os.getenv("SUPABASE_SECRET_KEY") else None,
+        "supabase_url_prefix": (os.getenv("SUPABASE_URL") or "")[:30] + "..."
+        if os.getenv("SUPABASE_URL")
+        else None,
+        "secret_key_prefix": (os.getenv("SUPABASE_SECRET_KEY") or "")[:20] + "..."
+        if os.getenv("SUPABASE_SECRET_KEY")
+        else None,
     }
 
 
@@ -146,10 +150,7 @@ async def get_current_leaderboard() -> dict:
         # First, check if the view exists and has data
         try:
             result = (
-                supabase.table("current_leaderboard")
-                .select("*")
-                .limit(1)
-                .execute()
+                supabase.table("current_leaderboard").select("*").limit(1).execute()
             )
         except Exception as view_error:
             # View might not exist or have issues, let's try a simpler approach
@@ -161,39 +162,45 @@ async def get_current_leaderboard() -> dict:
                 .limit(20)
                 .execute()
             )
-            
+
             if not result.data:
                 return {
                     "seasonName": "No Data Available",
                     "players": [],
                     "totalGames": 0,
                     "lastUpdated": datetime.now().isoformat(),
-                    "debug": "No cached ratings found"
+                    "debug": "No cached ratings found",
                 }
 
             # Transform cached_player_ratings data
             players = []
             for row in result.data:
-                players.append({
-                    "id": row["players"]["display_name"].lower().replace(" ", "_"),
-                    "name": row["players"]["display_name"],
-                    "rating": float(row["display_rating"]),
-                    "mu": float(row["mu"]),
-                    "sigma": float(row["sigma"]),
-                    "games": row["games_played"],
-                    "lastGameDate": row["last_game_date"] if row["last_game_date"] else "2024-01-01T00:00:00Z",
-                    "totalPlusMinus": row["total_plus_minus"] or 0,
-                    "averagePlusMinus": float(row["total_plus_minus"] / max(row["games_played"], 1)),
-                    "bestGame": row["best_game_plus"] or 0,
-                    "worstGame": row["worst_game_minus"] or 0,
-                })
+                players.append(
+                    {
+                        "id": row["players"]["display_name"].lower().replace(" ", "_"),
+                        "name": row["players"]["display_name"],
+                        "rating": float(row["display_rating"]),
+                        "mu": float(row["mu"]),
+                        "sigma": float(row["sigma"]),
+                        "games": row["games_played"],
+                        "lastGameDate": row["last_game_date"]
+                        if row["last_game_date"]
+                        else "2024-01-01T00:00:00Z",
+                        "totalPlusMinus": row["total_plus_minus"] or 0,
+                        "averagePlusMinus": float(
+                            row["total_plus_minus"] / max(row["games_played"], 1)
+                        ),
+                        "bestGame": row["best_game_plus"] or 0,
+                        "worstGame": row["worst_game_minus"] or 0,
+                    }
+                )
 
             return {
                 "seasonName": "Season 3",
                 "players": players,
                 "totalGames": max([p["games"] for p in players], default=0),
                 "lastUpdated": datetime.now().isoformat(),
-                "debug": f"Used cached_player_ratings, found {len(players)} players"
+                "debug": f"Used cached_player_ratings, found {len(players)} players",
             }
 
         # If we get here, the view worked
@@ -203,7 +210,7 @@ async def get_current_leaderboard() -> dict:
                 "players": [],
                 "totalGames": 0,
                 "lastUpdated": datetime.now().isoformat(),
-                "debug": "current_leaderboard view is empty"
+                "debug": "current_leaderboard view is empty",
             }
 
         # Get all data from view
@@ -217,21 +224,27 @@ async def get_current_leaderboard() -> dict:
         # Transform view data for frontend
         players = []
         total_games = 0
-        
+
         for row in result.data:
-            players.append({
-                "id": row["display_name"].lower().replace(" ", "_"),
-                "name": row["display_name"],
-                "rating": float(row["display_rating"]),
-                "mu": 25.0,  # View doesn't have mu/sigma
-                "sigma": 8.33,  # View doesn't have mu/sigma
-                "games": row["games_played"],
-                "lastGameDate": row["last_game_date"] if row["last_game_date"] else "2024-01-01T00:00:00Z",
-                "totalPlusMinus": row["total_plus_minus"] or 0,
-                "averagePlusMinus": float(row["avg_plus_minus"]) if row["avg_plus_minus"] else 0.0,
-                "bestGame": 0,  # Will be added when available
-                "worstGame": 0,  # Will be added when available
-            })
+            players.append(
+                {
+                    "id": row["display_name"].lower().replace(" ", "_"),
+                    "name": row["display_name"],
+                    "rating": float(row["display_rating"]),
+                    "mu": 25.0,  # View doesn't have mu/sigma
+                    "sigma": 8.33,  # View doesn't have mu/sigma
+                    "games": row["games_played"],
+                    "lastGameDate": row["last_game_date"]
+                    if row["last_game_date"]
+                    else "2024-01-01T00:00:00Z",
+                    "totalPlusMinus": row["total_plus_minus"] or 0,
+                    "averagePlusMinus": float(row["avg_plus_minus"])
+                    if row["avg_plus_minus"]
+                    else 0.0,
+                    "bestGame": 0,  # Will be added when available
+                    "worstGame": 0,  # Will be added when available
+                }
+            )
             total_games = max(total_games, row["games_played"])
 
         return {
@@ -239,7 +252,7 @@ async def get_current_leaderboard() -> dict:
             "players": players,
             "totalGames": total_games,
             "lastUpdated": datetime.now().isoformat(),
-            "debug": f"Used current_leaderboard view, found {len(players)} players"
+            "debug": f"Used current_leaderboard view, found {len(players)} players",
         }
 
     except Exception as e:
@@ -250,7 +263,7 @@ async def get_current_leaderboard() -> dict:
             "totalGames": 0,
             "lastUpdated": datetime.now().isoformat(),
             "error": str(e),
-            "debug": "Exception occurred in leaderboard endpoint"
+            "debug": "Exception occurred in leaderboard endpoint",
         }
 
 
@@ -285,15 +298,15 @@ async def get_game_history(limit: int = 20) -> dict:
         # Transform game data
         games = []
         for game in result.data:
-            game_result = {
-                "id": game["id"],
-                "date": game["started_at"],
-                "players": []
-            }
-            
+            game_result = {"id": game["id"], "date": game["started_at"], "players": []}
+
             # Sort seats by final score (descending) to get placement
-            seats = sorted(game.get("game_seats", []), key=lambda x: x["final_score"] or 0, reverse=True)
-            
+            seats = sorted(
+                game.get("game_seats", []),
+                key=lambda x: x["final_score"] or 0,
+                reverse=True,
+            )
+
             # Calculate placements and plus/minus
             for i, seat in enumerate(seats):
                 if seat["final_score"] is not None:
@@ -301,20 +314,22 @@ async def get_game_history(limit: int = 20) -> dict:
                     # Assuming uma of 15/5/-5/-15 and oka of 25000
                     base_score = seat["final_score"]
                     plus_minus = round((base_score - 25000) / 1000)
-                    
+
                     # Add uma based on placement
                     uma_values = [15, 5, -5, -15]
                     if i < 4:
                         plus_minus += uma_values[i]
-                    
-                    game_result["players"].append({
-                        "name": seat["players"]["display_name"],
-                        "placement": i + 1,
-                        "score": seat["final_score"],
-                        "plusMinus": plus_minus,
-                        "ratingDelta": 0  # Would need to calculate this from rating history
-                    })
-            
+
+                    game_result["players"].append(
+                        {
+                            "name": seat["players"]["display_name"],
+                            "placement": i + 1,
+                            "score": seat["final_score"],
+                            "plusMinus": plus_minus,
+                            "ratingDelta": 0,  # Would need to calculate this from rating history
+                        }
+                    )
+
             # Only add games that have complete results
             if len(game_result["players"]) == 4:
                 games.append(game_result)
@@ -322,10 +337,7 @@ async def get_game_history(limit: int = 20) -> dict:
         return {"games": games}
 
     except Exception as e:
-        return {
-            "games": [],
-            "error": str(e)
-        }
+        return {"games": [], "error": str(e)}
 
 
 @app.get("/players/{player_id}")
@@ -345,7 +357,7 @@ async def get_player_profile(player_id: str) -> dict:
 
         # Convert player_id to display_name (e.g., "joseph" -> "Joseph")
         player_name = player_id.replace("_", " ").title()
-        
+
         # Query the current_leaderboard view directly
         result = (
             supabase.table("current_leaderboard")
@@ -353,13 +365,13 @@ async def get_player_profile(player_id: str) -> dict:
             .eq("display_name", player_name)
             .execute()
         )
-        
+
         if not result.data or len(result.data) == 0:
             raise HTTPException(status_code=404, detail="Player not found")
-        
+
         # Get the player data
         player_data = result.data[0]
-        
+
         # Return in the expected format
         return {
             "id": player_id,
@@ -368,9 +380,13 @@ async def get_player_profile(player_id: str) -> dict:
             "mu": 25.0,  # Default values since view doesn't have them
             "sigma": 8.33,
             "games": player_data["games_played"],
-            "lastGameDate": player_data["last_game_date"] if player_data["last_game_date"] else "2024-01-01T00:00:00Z",
+            "lastGameDate": player_data["last_game_date"]
+            if player_data["last_game_date"]
+            else "2024-01-01T00:00:00Z",
             "totalPlusMinus": player_data["total_plus_minus"] or 0,
-            "averagePlusMinus": float(player_data["avg_plus_minus"]) if player_data["avg_plus_minus"] else 0.0,
+            "averagePlusMinus": float(player_data["avg_plus_minus"])
+            if player_data["avg_plus_minus"]
+            else 0.0,
             "bestGame": 0,  # View doesn't have these fields
             "worstGame": 0,
         }
@@ -395,10 +411,10 @@ async def get_player_games(player_id: str, limit: int = 20) -> list:
             )
 
         supabase = create_client(url, key)
-        
+
         # Convert player_id to display_name (e.g., "joseph" -> "Joseph")
         player_name = player_id.replace("_", " ").title()
-        
+
         # First get the player to ensure they exist and get their ID
         player_result = (
             supabase.table("players")
@@ -406,12 +422,12 @@ async def get_player_games(player_id: str, limit: int = 20) -> list:
             .eq("display_name", player_name)
             .execute()
         )
-        
+
         if not player_result.data:
             raise HTTPException(status_code=404, detail="Player not found")
-        
+
         player = player_result.data[0]
-        
+
         # Get current rating from leaderboard
         leaderboard_result = (
             supabase.table("current_leaderboard")
@@ -419,11 +435,11 @@ async def get_player_games(player_id: str, limit: int = 20) -> list:
             .eq("display_name", player_name)
             .execute()
         )
-        
+
         current_rating = 25.0  # default
         if leaderboard_result.data and len(leaderboard_result.data) > 0:
             current_rating = float(leaderboard_result.data[0]["display_rating"])
-        
+
         # Get player's recent games from game_seats with all player data
         games_result = (
             supabase.table("game_seats")
@@ -433,62 +449,68 @@ async def get_player_games(player_id: str, limit: int = 20) -> list:
             .limit(limit)
             .execute()
         )
-        
+
         if not games_result.data:
             return []
-        
+
         # Format the games data with full details
         games = []
         for seat_data in games_result.data:
             game = seat_data.get("games", {})
             if not game:
                 continue
-                
+
             # Get all seats for this game to find opponents
             all_seats = game.get("game_seats", [])
             opponents = []
-            
+
             for other_seat in all_seats:
                 if other_seat["player_id"] != player["id"]:
                     opponent_placement = other_seat.get("placement") or 0
-                    if opponent_placement > 0:  # Only include opponents with valid placements
-                        opponents.append({
-                            "name": other_seat["players"]["display_name"],
-                            "placement": opponent_placement,
-                            "score": other_seat.get("final_score", 0)
-                        })
-            
+                    if (
+                        opponent_placement > 0
+                    ):  # Only include opponents with valid placements
+                        opponents.append(
+                            {
+                                "name": other_seat["players"]["display_name"],
+                                "placement": opponent_placement,
+                                "score": other_seat.get("final_score", 0),
+                            }
+                        )
+
             # Sort opponents by placement
             opponents.sort(key=lambda x: x["placement"])
-            
+
             # Calculate plus/minus (score - 25000 + uma)
             score = seat_data.get("final_score", 0)
             placement = seat_data.get("placement") or 0
-            
+
             # Skip if no valid placement
             if not placement or placement < 1 or placement > 4:
                 continue
-                
+
             uma_values = [15, 5, -5, -15]
             uma = uma_values[placement - 1] if 1 <= placement <= 4 else 0
             plus_minus = round((score - 25000) / 1000) + uma
-            
+
             # Mock rating change (would need rating history table for real data)
             rating_changes = [0.8, 0.3, -0.2, -0.9]
             rating_change = rating_changes[placement - 1] if 1 <= placement <= 4 else 0
-            
-            games.append({
-                "id": game.get("id"),
-                "date": game.get("started_at", game.get("created_at")),
-                "placement": placement,
-                "score": score,
-                "plusMinus": plus_minus,
-                "ratingBefore": current_rating - rating_change,
-                "ratingAfter": current_rating,
-                "ratingChange": rating_change,
-                "opponents": opponents
-            })
-        
+
+            games.append(
+                {
+                    "id": game.get("id"),
+                    "date": game.get("started_at", game.get("created_at")),
+                    "placement": placement,
+                    "score": score,
+                    "plusMinus": plus_minus,
+                    "ratingBefore": current_rating - rating_change,
+                    "ratingAfter": current_rating,
+                    "ratingChange": rating_change,
+                    "opponents": opponents,
+                }
+            )
+
         return games
 
     except HTTPException:
@@ -513,11 +535,7 @@ async def get_season_statistics() -> dict:
         supabase = create_client(url, key)
 
         # Get basic stats from current leaderboard
-        leaderboard_result = (
-            supabase.table("current_leaderboard")
-            .select("*")
-            .execute()
-        )
+        leaderboard_result = supabase.table("current_leaderboard").select("*").execute()
 
         if not leaderboard_result.data:
             return {
@@ -530,26 +548,30 @@ async def get_season_statistics() -> dict:
                 "totalPlusMinus": 0,
                 "mostActivePlayer": None,
                 "biggestWinner": None,
-                "biggestLoser": None
+                "biggestLoser": None,
             }
 
         players = leaderboard_result.data
-        
+
         # Calculate statistics
         total_games = sum(p["games_played"] for p in players) // 4  # Approximate
         total_players = len(players)
-        avg_games_per_player = sum(p["games_played"] for p in players) / total_players if total_players > 0 else 0
-        
+        avg_games_per_player = (
+            sum(p["games_played"] for p in players) / total_players
+            if total_players > 0
+            else 0
+        )
+
         ratings = [float(p["display_rating"]) for p in players]
         highest_rating = max(ratings) if ratings else 0
         lowest_rating = min(ratings) if ratings else 0
         average_rating = sum(ratings) / len(ratings) if ratings else 0
-        
+
         # Find special players
         most_active = max(players, key=lambda p: p["games_played"])
         biggest_winner = max(players, key=lambda p: p["total_plus_minus"] or 0)
         biggest_loser = min(players, key=lambda p: p["total_plus_minus"] or 0)
-        
+
         return {
             "totalGames": total_games,
             "totalPlayers": total_players,
@@ -560,16 +582,18 @@ async def get_season_statistics() -> dict:
             "totalPlusMinus": sum(p["total_plus_minus"] or 0 for p in players),
             "mostActivePlayer": {
                 "name": most_active["display_name"],
-                "games": most_active["games_played"]
+                "games": most_active["games_played"],
             },
             "biggestWinner": {
                 "name": biggest_winner["display_name"],
-                "plusMinus": biggest_winner["total_plus_minus"] or 0
+                "plusMinus": biggest_winner["total_plus_minus"] or 0,
             },
             "biggestLoser": {
                 "name": biggest_loser["display_name"],
-                "plusMinus": biggest_loser["total_plus_minus"] or 0
-            } if (biggest_loser["total_plus_minus"] or 0) < 0 else None
+                "plusMinus": biggest_loser["total_plus_minus"] or 0,
+            }
+            if (biggest_loser["total_plus_minus"] or 0) < 0
+            else None,
         }
 
     except Exception as e:
@@ -590,7 +614,7 @@ async def calculate_configuration_ratings(request: dict) -> dict:
             )
 
         supabase = create_client(url, key)
-        
+
         # For now, return same data structure as leaderboard
         # In a real implementation, this would recalculate with the custom config
         result = (
@@ -605,14 +629,14 @@ async def calculate_configuration_ratings(request: dict) -> dict:
                 "seasonName": "Custom Configuration",
                 "players": [],
                 "totalGames": 0,
-                "lastUpdated": datetime.now().isoformat()
+                "lastUpdated": datetime.now().isoformat(),
             }
 
         # Transform data (simplified - would actually recalculate)
         config = request.get("configuration", {})
         mu_offset = config.get("mu", 25) - 25
         sigma_factor = config.get("sigma", 8.33) / 8.33
-        
+
         players = []
         for row in result.data:
             # Simulate different ratings based on config
@@ -623,20 +647,24 @@ async def calculate_configuration_ratings(request: dict) -> dict:
             adjusted_mu = base_mu + mu_offset
             adjusted_sigma = base_sigma * sigma_factor
             adjusted_rating = adjusted_mu - 3 * adjusted_sigma
-            
-            players.append({
-                "id": row["display_name"].lower().replace(" ", "_"),
-                "name": row["display_name"],
-                "rating": adjusted_rating,
-                "mu": adjusted_mu,
-                "sigma": adjusted_sigma,
-                "games": row["games_played"],
-                "lastGameDate": row["last_game_date"] if row["last_game_date"] else "2024-01-01T00:00:00Z",
-                "totalPlusMinus": row["total_plus_minus"] or 0,
-                "averagePlusMinus": float(row["avg_plus_minus"] or 0),
-                "bestGame": row.get("best_game_plus", 0) or 0,
-                "worstGame": row.get("worst_game_minus", 0) or 0,
-            })
+
+            players.append(
+                {
+                    "id": row["display_name"].lower().replace(" ", "_"),
+                    "name": row["display_name"],
+                    "rating": adjusted_rating,
+                    "mu": adjusted_mu,
+                    "sigma": adjusted_sigma,
+                    "games": row["games_played"],
+                    "lastGameDate": row["last_game_date"]
+                    if row["last_game_date"]
+                    else "2024-01-01T00:00:00Z",
+                    "totalPlusMinus": row["total_plus_minus"] or 0,
+                    "averagePlusMinus": float(row["avg_plus_minus"] or 0),
+                    "bestGame": row.get("best_game_plus", 0) or 0,
+                    "worstGame": row.get("worst_game_minus", 0) or 0,
+                }
+            )
 
         # Sort by adjusted rating
         players.sort(key=lambda p: p["rating"], reverse=True)
@@ -645,7 +673,7 @@ async def calculate_configuration_ratings(request: dict) -> dict:
             "seasonName": "Custom Configuration",
             "players": players,
             "totalGames": max([p["games"] for p in players], default=0),
-            "lastUpdated": datetime.now().isoformat()
+            "lastUpdated": datetime.now().isoformat(),
         }
 
     except Exception as e:

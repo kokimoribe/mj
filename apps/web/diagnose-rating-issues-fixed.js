@@ -10,7 +10,7 @@ async function diagnoseRatingIssues() {
   try {
     console.log("👤 TESTING PLAYER PROFILE PAGE...");
     const playerId = "e0f959ee-eb77-57de-b3af-acdecf679e70";
-    await page.goto(`https://mj-web-psi.vercel.app/player/${playerId}`, {
+    await page.goto(`https://rtmjp.vercel.app/player/${playerId}`, {
       waitUntil: "networkidle",
     });
     await page.waitForTimeout(3000);
@@ -70,7 +70,7 @@ async function diagnoseRatingIssues() {
     }
 
     console.log("\n🎮 TESTING GAME HISTORY PAGE...");
-    await page.goto("https://mj-web-psi.vercel.app/games", {
+    await page.goto("https://rtmjp.vercel.app/games", {
       waitUntil: "networkidle",
     });
     await page.waitForTimeout(3000);
@@ -109,7 +109,7 @@ async function diagnoseRatingIssues() {
     }
 
     console.log("\n📊 TESTING LEADERBOARD RATING CHARTS...");
-    await page.goto("https://mj-web-psi.vercel.app/", {
+    await page.goto("https://rtmjp.vercel.app/", {
       waitUntil: "networkidle",
     });
     await page.waitForTimeout(2000);

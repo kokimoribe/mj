@@ -10,8 +10,8 @@ async function diagnoseRoutingIssue() {
   try {
     // Test both routes
     const routes = [
-      { url: "https://mj-web-psi.vercel.app/", name: "Homepage" },
-      { url: "https://mj-web-psi.vercel.app/games", name: "Games Page" },
+      { url: "https://rtmjp.vercel.app/", name: "Homepage" },
+      { url: "https://rtmjp.vercel.app/games", name: "Games Page" },
     ];
 
     for (const route of routes) {
@@ -85,7 +85,7 @@ async function diagnoseRoutingIssue() {
 
     // Check specific DOM structure for game cards
     console.log("\n🎯 Analyzing game card DOM structure...");
-    await page.goto("https://mj-web-psi.vercel.app/games", {
+    await page.goto("https://rtmjp.vercel.app/games", {
       waitUntil: "networkidle",
     });
     await page.waitForTimeout(3000);

@@ -19,7 +19,7 @@ npm run test:e2e:production -- e2e/features/league-standings.spec.ts
 Run with UI mode for debugging:
 
 ```bash
-PLAYWRIGHT_BASE_URL=https://mj-web-psi.vercel.app npm run test:e2e:ui
+PLAYWRIGHT_BASE_URL=https://rtmjp.vercel.app npm run test:e2e:ui
 ```
 
 ## Configuration
@@ -27,7 +27,7 @@ PLAYWRIGHT_BASE_URL=https://mj-web-psi.vercel.app npm run test:e2e:ui
 The E2E tests are configured to support both local and production testing through the `PLAYWRIGHT_BASE_URL` environment variable:
 
 - **Local Development** (default): `http://localhost:3000`
-- **Production**: `https://mj-web-psi.vercel.app`
+- **Production**: `https://rtmjp.vercel.app`
 
 The configuration is set in `playwright.config.ts`:
 
@@ -56,18 +56,18 @@ If tests fail in production but pass locally:
 1. Check network connectivity:
 
    ```bash
-   curl -I https://mj-web-psi.vercel.app
+   curl -I https://rtmjp.vercel.app
    ```
 
 2. Run tests in headed mode to see what's happening:
 
    ```bash
-   PLAYWRIGHT_BASE_URL=https://mj-web-psi.vercel.app npx playwright test --headed
+   PLAYWRIGHT_BASE_URL=https://rtmjp.vercel.app npx playwright test --headed
    ```
 
 3. Use the Playwright trace viewer:
    ```bash
-   PLAYWRIGHT_BASE_URL=https://mj-web-psi.vercel.app npx playwright test --trace on
+   PLAYWRIGHT_BASE_URL=https://rtmjp.vercel.app npx playwright test --trace on
    npx playwright show-trace
    ```
 

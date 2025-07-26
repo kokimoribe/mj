@@ -14,7 +14,7 @@ import { format } from "date-fns";
 const supabaseUrl = "https://soihuphdqgkbafozrzqn.supabase.co";
 const supabaseKey = "sb_publishable_68r4JVAt-_ZMMausI3M7QQ_Tqrmu9mV";
 const configHash =
-  "ad7252bdec25767b7eb12451ae30afbc1c7b5b1336c468ef833df7f632b34ba4";
+  "f5bae0d7a2078f90450925c6f1b5a258df10c0d78b79e2fe8ac374e4c450444f";
 
 interface DatabasePlayer {
   player_id: string;

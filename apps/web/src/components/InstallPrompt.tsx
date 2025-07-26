@@ -162,8 +162,8 @@ export function InstallPrompt() {
             </svg>
             → Add to Home Screen
           </span>
-          <span className="mx-1">|</span>
-          <span>Android: Menu ⋮ → Install App</span>
+          {/* <span className="mx-1">|</span> */}
+          {/* <span>Android: Menu ⋮ → Install App</span> */}
         </span>
       </div>
     );

@@ -60,9 +60,7 @@ export function LeaderboardHeader({
       <Card data-testid={dataTestId || TEST_IDS.LEADERBOARD_HEADER}>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-xl font-bold">
-              🏆 {seasonName} Leaderboard
-            </CardTitle>
+            <CardTitle className="text-xl font-bold">{seasonName}</CardTitle>
             <Button
               variant="ghost"
               size="icon"

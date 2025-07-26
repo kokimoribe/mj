@@ -28,10 +28,10 @@ export function AppLayout({ children }: AppLayoutProps) {
           </div>
           <div className="text-center">
             <h1 className="text-foreground text-3xl font-bold">
-              🀄 Riichi Mahjong League
+              River Terrace Mahjong Parlor Leaderboard
             </h1>
             <p className="text-muted-foreground mt-2 text-sm">
-              Phase 0: Enhanced PWA with Modern UI
+              {/* Add description */}
             </p>
           </div>
         </header>
@@ -39,10 +39,8 @@ export function AppLayout({ children }: AppLayoutProps) {
         <main>{children}</main>
 
         <footer className="text-muted-foreground mt-12 text-center">
-          <p className="text-sm">Powered by OpenSkill ratings</p>
-          <p className="mt-1 text-xs">
-            Built with Next.js 15 • Shadcn/ui • TanStack Query
-          </p>
+          <p className="text-sm">{/* footer placeholder</p> */}</p>
+          <p className="mt-1 text-xs">{/* Footer place holder */}</p>
         </footer>
       </div>
 

@@ -46,7 +46,7 @@ export const PlayerProfileView = memo(function PlayerProfileView({
   const router = useRouter();
   const [selectedPeriod, setSelectedPeriod] = useState<
     "7d" | "14d" | "30d" | "all"
-  >("all");
+  >("7d");
 
   const { data: rawPlayer, isLoading, error } = usePlayerProfile(playerId);
   const player = rawPlayer ? validatePlayerData(rawPlayer) : null;

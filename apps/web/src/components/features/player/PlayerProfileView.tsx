@@ -134,7 +134,8 @@ export const PlayerProfileView = memo(function PlayerProfileView({
           isFinite(game.ratingChange) && !isNaN(game.ratingChange)
             ? game.ratingChange
             : 0,
-      }));
+      }))
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()); // Sort by date ascending for chart
 
     // NOTE: We intentionally do not add the current rating as an artificial point
     // because it can cause misleading spikes when there's a gap between the last

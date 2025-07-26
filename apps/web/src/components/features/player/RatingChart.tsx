@@ -62,8 +62,9 @@ export function RatingChart({ data }: RatingChartProps) {
     cx?: number;
     cy?: number;
     payload?: { isLatest?: boolean };
+    index?: number;
   }) => {
-    const { cx, cy, payload } = props;
+    const { cx, cy, payload, index } = props;
     if (!cx || !cy) return <></>; // Return empty fragment instead of null
 
     // All points green (#10b981) as per spec
@@ -71,14 +72,16 @@ export function RatingChart({ data }: RatingChartProps) {
 
     if (payload?.isLatest) {
       return (
-        <g>
+        <g key={`dot-${index}`}>
           <circle cx={cx} cy={cy} r={6} fill={greenColor} />
           <circle cx={cx} cy={cy} r={3} fill="white" />
         </g>
       );
     }
 
-    return <circle cx={cx} cy={cy} r={4} fill={greenColor} />;
+    return (
+      <circle key={`dot-${index}`} cx={cx} cy={cy} r={4} fill={greenColor} />
+    );
   };
 
   const CustomTooltip = ({

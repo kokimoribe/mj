@@ -39,6 +39,21 @@ export const PlayerGamesList = memo(function PlayerGamesList({
   const visibleGames = allGames.slice(0, displayedGames);
   const hasMore = displayedGames < allGames.length;
 
+  // Debug logging - remove after fixing
+  if (
+    typeof window !== "undefined" &&
+    window.location.search.includes("debug")
+  ) {
+    console.log(
+      "PlayerGamesList games:",
+      initialGames.slice(0, 5).map(g => ({
+        placement: g.placement,
+        ratingChange: g.ratingChange,
+        date: g.date,
+      }))
+    );
+  }
+
   const loadMore = () => {
     // Show 5 more games each time
     setIsLoadingMore(true);

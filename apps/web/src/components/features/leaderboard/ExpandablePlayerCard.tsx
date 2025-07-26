@@ -56,29 +56,30 @@ function ExpandablePlayerCardComponent({
 
   return (
     <Card
-      role="button"
-      tabIndex={0}
-      aria-expanded={isExpanded}
-      aria-label={`${player.name || "Unknown"} - Rank ${(player.rating || 0).toFixed(1)} - Click to ${isExpanded ? "collapse" : "expand"} details`}
       data-testid={dataTestId}
       className={cn(
-        "cursor-pointer transition-all duration-200",
-        "hover:shadow-md active:scale-[0.99]",
-        "focus-visible:ring-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
+        "transition-all duration-200",
+        "hover:shadow-md",
         isExpanded && "ring-primary/20 ring-2",
         "min-h-[80px]" // Prevent layout shift
       )}
-      onClick={onToggle}
-      onKeyDown={e => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onToggle();
-        }
-      }}
     >
       <CardContent className="p-0">
-        {/* Main Row */}
-        <div className="px-4 py-3">
+        {/* Main Row - Clickable Header */}
+        <div
+          className="focus-visible:ring-primary cursor-pointer rounded-t-lg px-4 py-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.99]"
+          role="button"
+          tabIndex={0}
+          aria-expanded={isExpanded}
+          aria-label={`${player.name || "Unknown"} - Rank ${(player.rating || 0).toFixed(1)} - Click to ${isExpanded ? "collapse" : "expand"} details`}
+          onClick={onToggle}
+          onKeyDown={e => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              onToggle();
+            }
+          }}
+        >
           <div className="flex items-center justify-between">
             {/* Rank Badge */}
             <div className="mr-3 flex items-center">
@@ -157,6 +158,7 @@ function ExpandablePlayerCardComponent({
           <div
             className="bg-muted/30 space-y-3 border-t px-4 py-4"
             data-testid="expanded-content"
+            onClick={e => e.stopPropagation()}
           >
             {/* 7-Day Change Detail */}
             <div className="space-y-2">

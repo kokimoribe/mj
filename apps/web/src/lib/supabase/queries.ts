@@ -274,11 +274,12 @@ export async function fetchLeaderboardData(): Promise<LeaderboardData> {
   // Get season metadata
   // REQUIREMENT: Total Games Calculation
   // The total games count MUST represent unique games played, not the sum of individual player games
-  // Use the maximum games played by any single player
-  const gameCounts = transformedPlayers
-    .map(p => p.gamesPlayed)
-    .filter(g => isFinite(g) && g >= 0);
-  const totalGames = gameCounts.length > 0 ? Math.max(...gameCounts) : 0;
+  // Get the actual count of games from the database
+  const { count: gameCount, error: gameCountError } = await supabase
+    .from("games")
+    .select("*", { count: "exact", head: true });
+
+  const totalGames = gameCountError ? 0 : gameCount || 0;
   const lastUpdated = players?.[0]?.materialized_at || new Date().toISOString();
 
   const seasonName = config.season.name;
@@ -462,17 +463,6 @@ export async function fetchGameHistory(
   const currentSeasonConfigHash = config.season.hash;
   const { playerId, offset = 0, limit = 10 } = options;
 
-  // Debug parameter validation
-  console.log("DEBUG fetchGameHistory parameters:", {
-    playerId,
-    offset,
-    limit,
-    limitType: typeof limit,
-    limitIsUndefined: limit === undefined,
-    limitIsNumber: typeof limit === "number",
-    optionsReceived: options,
-  });
-
   let query = supabase
     .from("games")
     .select(
@@ -560,25 +550,11 @@ export async function fetchGameHistory(
     try {
       paginatedGames = sortedPlayerGames.slice(offset, offset + limit);
       gameIds = paginatedGames.map(g => g.game_id);
-
-      // Debug logging for production issue
-      console.log("DEBUG fetchGameHistory pagination:", {
-        playerId,
-        totalPlayerGames: sortedPlayerGames.length,
-        paginatedGamesCount: paginatedGames.length,
-        gameIdsCount: gameIds.length,
-        offset,
-        limit,
-        gameIdsSample: gameIds.slice(0, 3),
-        sliceParams: `slice(${offset}, ${offset + limit})`,
-      });
     } catch (error) {
-      console.error("DEBUG fetchGameHistory pagination error:", error);
       throw error;
     }
 
     if (gameIds.length === 0) {
-      console.log("DEBUG: Returning empty games - gameIds.length === 0");
       return {
         games: [],
         totalGames: sortedPlayerGames.length,
@@ -587,7 +563,6 @@ export async function fetchGameHistory(
       };
     }
 
-    console.log("DEBUG: Proceeding with query - gameIds not empty");
     query = query.in("id", gameIds);
   } else {
     query = query.range(offset, offset + limit - 1);
@@ -599,17 +574,7 @@ export async function fetchGameHistory(
     throw new Error(`Failed to fetch game history: ${error.message}`);
   }
 
-  // Debug logging for production issue - check query results
-  console.log("DEBUG fetchGameHistory query result:", {
-    playerId,
-    gamesCount: games?.length || 0,
-    totalCount: count,
-    error: "none",
-    hasGames: !!games,
-  });
-
   if (!games || games.length === 0) {
-    console.log("DEBUG: Returning empty games - no games from query");
     return {
       games: [],
       totalGames: 0,
@@ -631,14 +596,6 @@ export async function fetchGameHistory(
       `Failed to fetch game results: ${resultsError.message || resultsError}`
     );
   }
-
-  // Debug logging for cached results
-  console.log("DEBUG fetchGameHistory cached results:", {
-    playerId,
-    cachedResultsCount: cachedResults?.length || 0,
-    gameIdsForResults: gameIds.length,
-    resultsError: "none",
-  });
 
   // Create a map of game results by game_id
   const resultsByGame: Record<string, CachedGameResult[]> = {};
@@ -686,21 +643,6 @@ export async function fetchGameHistory(
       seasonId: currentSeasonConfigHash,
       results: formattedResults,
     };
-  });
-
-  // Debug logging for final return
-  console.log("DEBUG fetchGameHistory final return:", {
-    playerId,
-    transformedGamesCount: transformedGames.length,
-    totalGames: count || 0,
-    hasMore: (count || 0) > offset + limit,
-    sampleGame: transformedGames[0]
-      ? {
-          id: transformedGames[0].id,
-          date: transformedGames[0].date,
-          resultsCount: transformedGames[0].results.length,
-        }
-      : null,
   });
 
   return {

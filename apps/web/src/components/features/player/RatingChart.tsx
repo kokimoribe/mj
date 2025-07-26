@@ -37,11 +37,38 @@ export function RatingChart({ data }: RatingChartProps) {
   }, [data]);
 
   const chartData = useMemo(() => {
-    return validData.map((point, index) => ({
-      ...point,
-      displayDate: format(new Date(point.date), "MMM d"),
-      isLatest: index === validData.length - 1,
-    }));
+    // Group games by date to handle multiple games per day
+    const gamesByDate = new Map<string, typeof validData>();
+
+    validData.forEach(point => {
+      const dateKey = format(new Date(point.date), "yyyy-MM-dd");
+      if (!gamesByDate.has(dateKey)) {
+        gamesByDate.set(dateKey, []);
+      }
+      gamesByDate.get(dateKey)!.push(point);
+    });
+
+    // Create chart data with unique keys for multiple games on same day
+    return validData.map((point, index) => {
+      const dateKey = format(new Date(point.date), "yyyy-MM-dd");
+      const gamesOnSameDay = gamesByDate.get(dateKey) || [];
+      const gameIndexOnDay = gamesOnSameDay.findIndex(
+        g => g.gameId === point.gameId
+      );
+
+      return {
+        ...point,
+        displayDate: format(new Date(point.date), "MMM d"),
+        // Add time suffix for multiple games on same day
+        chartKey:
+          gamesOnSameDay.length > 1
+            ? `${format(new Date(point.date), "MMM d")} (${gameIndexOnDay + 1}/${gamesOnSameDay.length})`
+            : format(new Date(point.date), "MMM d"),
+        isLatest: index === validData.length - 1,
+        gamesOnSameDay: gamesOnSameDay.length,
+        gameIndexOnDay: gameIndexOnDay + 1,
+      };
+    });
   }, [validData]);
 
   const ratings = validData.map(d => d.rating);
@@ -90,7 +117,13 @@ export function RatingChart({ data }: RatingChartProps) {
   }: {
     active?: boolean;
     payload?: Array<{
-      payload: { date: string; rating: number; change: number };
+      payload: {
+        date: string;
+        rating: number;
+        change: number;
+        gamesOnSameDay?: number;
+        gameIndexOnDay?: number;
+      };
     }>;
   }) => {
     if (active && payload && payload[0]) {
@@ -100,6 +133,11 @@ export function RatingChart({ data }: RatingChartProps) {
           <p className="text-sm font-medium">
             {format(new Date(data.date), "PPP")}
           </p>
+          {data.gamesOnSameDay && data.gamesOnSameDay > 1 && (
+            <p className="text-muted-foreground text-xs">
+              Game {data.gameIndexOnDay} of {data.gamesOnSameDay} on this day
+            </p>
+          )}
           <p className="text-sm">
             Rating:{" "}
             <span className="font-mono font-bold">
@@ -132,9 +170,10 @@ export function RatingChart({ data }: RatingChartProps) {
         >
           <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
           <XAxis
-            dataKey="displayDate"
+            dataKey="chartKey"
             tick={{ fontSize: 12 }}
             className="text-muted-foreground"
+            interval="preserveStartEnd"
           />
           <YAxis
             domain={[minRating, maxRating]}

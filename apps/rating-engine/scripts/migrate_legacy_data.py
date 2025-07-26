@@ -212,7 +212,7 @@ class SupabaseLegacyDataMigrator:
     def process_csv_game(self, row: dict[str, str]) -> dict[str, any]:
         """Process a single CSV row into game and game_seats data."""
         # Parse CSV data
-        played_at_str = row["played_at"]
+        played_at_str = row["date"]  # CSV column is "date" not "played_at"
         timestamp_str = row["Timestamp"]  # Use this to ensure uniqueness
 
         # Convert played_at timestamp for game start/finish times

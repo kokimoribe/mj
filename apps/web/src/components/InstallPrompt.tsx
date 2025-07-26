@@ -145,8 +145,25 @@ export function InstallPrompt() {
         <strong>Welcome to River Terrace Mahjong Parlor</strong> Ready to
         install?
         <br />
-        <span className="text-xs">
-          On mobile: Use browser menu → &ldquo;Add to Home Screen&rdquo;
+        <span className="flex items-center gap-1 text-xs">
+          <span className="flex items-center gap-1">
+            iOS: Tap
+            <svg
+              className="inline-block h-4 w-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M12 2v10m0 0l4-4m-4 4l-4-4" />
+              <path d="M9 21H5a2 2 0 01-2-2V7a2 2 0 012-2h4m10 16h4a2 2 0 002-2V7a2 2 0 00-2-2h-4" />
+            </svg>
+            → Add to Home Screen
+          </span>
+          <span className="mx-1">|</span>
+          <span>Android: Menu ⋮ → Install App</span>
         </span>
       </div>
     );

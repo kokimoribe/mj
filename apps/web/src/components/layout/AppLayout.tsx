@@ -4,6 +4,7 @@ import { InstallPrompt } from "@/components/InstallPrompt";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { BottomNav } from "./BottomNav";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
+// import { EasterEgg } from "@/components/EasterEgg";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -27,9 +28,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             <ThemeToggle />
           </div>
           <div className="text-center">
-            <h1 className="text-foreground text-3xl font-bold">
-              River Terrace Mahjong Parlor Leaderboard
-            </h1>
+            <h1 className="text-foreground text-3xl font-bold">rtmj</h1>
             <p className="text-muted-foreground mt-2 text-sm">
               {/* Add description */}
             </p>
@@ -46,6 +45,9 @@ export function AppLayout({ children }: AppLayoutProps) {
 
       {/* Bottom Navigation - Mobile Only */}
       <BottomNav />
+
+      {/* Easter Egg - Mobile Only */}
+      {/* <EasterEgg /> */}
     </div>
   );
 }

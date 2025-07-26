@@ -8,7 +8,7 @@ description: "Official Season 3 - Special carry-over season covering legacy game
 # Time bounds for this season
 timeRange:
   startDate: "2022-02-16"
-  endDate: "2025-07-22"
+  endDate: "2025-07-26"
   name: "Season 3"
 
 # OpenSkill rating parameters

@@ -546,7 +546,18 @@ export async function fetchGameHistory(
     const paginatedGames = sortedPlayerGames.slice(offset, offset + limit);
     const gameIds = paginatedGames.map(g => g.game_id);
 
+    // Debug logging for production issue
+    console.log("DEBUG fetchGameHistory:", {
+      playerId,
+      totalPlayerGames: sortedPlayerGames.length,
+      paginatedGamesCount: paginatedGames.length,
+      gameIdsCount: gameIds.length,
+      offset,
+      limit,
+    });
+
     if (gameIds.length === 0) {
+      console.log("DEBUG: Returning empty games - gameIds.length === 0");
       return {
         games: [],
         totalGames: sortedPlayerGames.length,

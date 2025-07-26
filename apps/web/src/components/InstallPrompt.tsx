@@ -142,12 +142,11 @@ export function InstallPrompt() {
             <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
         </button>
-        <strong>PWA Status:</strong> Ready for installation
+        <strong>Welcome to River Terrace Mahjong Parlor:</strong> Ready to
+        install?
         <br />
         <span className="text-xs">
           On mobile: Use browser menu → &ldquo;Add to Home Screen&rdquo;
-          <br />
-          On desktop: Look for install icon in address bar
         </span>
       </div>
     );

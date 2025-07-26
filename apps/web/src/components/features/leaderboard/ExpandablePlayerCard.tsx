@@ -31,6 +31,7 @@ interface ExpandablePlayerCardProps {
 
 function ExpandablePlayerCardComponent({
   player: rawPlayer,
+  rank,
   isExpanded,
   onToggle,
   "data-testid": dataTestId,
@@ -79,6 +80,13 @@ function ExpandablePlayerCardComponent({
         {/* Main Row */}
         <div className="px-4 py-3">
           <div className="flex items-center justify-between">
+            {/* Rank Badge */}
+            <div className="mr-3 flex items-center">
+              <div className="bg-muted flex h-10 w-10 items-center justify-center rounded-full font-mono font-semibold">
+                #{rank}
+              </div>
+            </div>
+
             {/* Player Name & Games */}
             <div className="min-w-0 flex-1">
               <h3 className="truncate font-medium" data-testid="player-name">

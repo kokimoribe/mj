@@ -5,7 +5,6 @@ import { Providers } from "@/lib/providers";
 import { Toaster } from "@/components/ui/sonner";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
-import { CacheRefreshButton } from "@/components/CacheRefreshButton";
 import { config } from "@/config";
 
 const inter = Inter({

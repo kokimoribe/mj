@@ -90,7 +90,6 @@ export default function RootLayout({
         <Providers>
           <OfflineIndicator />
           <ErrorBoundary>{children}</ErrorBoundary>
-          <CacheRefreshButton />
           <Toaster />
         </Providers>
       </body>

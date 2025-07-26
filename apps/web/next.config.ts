@@ -15,6 +15,11 @@ export default withPWA({
   dynamicStartUrl: false,
   workboxOptions: {
     skipWaiting: true,
+    cleanupOutdatedCaches: true,
+    // Force new service worker on 2025-07-26T06:13:03.080Z
+    additionalManifestEntries: [
+      { url: "/_cache_bust", revision: "1753510383081" },
+    ],
     clientsClaim: true,
     // Remove the problematic runtimeCaching for now
     // We'll use the default caching strategy

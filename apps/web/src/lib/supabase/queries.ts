@@ -295,10 +295,31 @@ export async function fetchPlayerProfile(playerId: string): Promise<Player> {
   const supabase = createClient();
   const currentSeasonConfigHash = config.season.hash;
 
+  // First, check if playerId is a UUID or a display name
+  let actualPlayerId = playerId;
+
+  // If it's not a UUID (doesn't match UUID pattern), treat it as a display name
+  const uuidPattern =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidPattern.test(playerId)) {
+    // Look up the actual UUID by display name
+    const { data: playerData, error: playerError } = await supabase
+      .from("players")
+      .select("id")
+      .ilike("display_name", playerId)
+      .single();
+
+    if (playerError || !playerData) {
+      throw new Error(`Player not found: ${playerId}`);
+    }
+
+    actualPlayerId = playerData.id;
+  }
+
   const { data, error } = await supabase
     .from("cached_player_ratings")
     .select("*")
-    .eq("player_id", playerId)
+    .eq("player_id", actualPlayerId)
     .eq("config_hash", currentSeasonConfigHash)
     .single();
 
@@ -310,7 +331,7 @@ export async function fetchPlayerProfile(playerId: string): Promise<Player> {
   const { data: playerData } = await supabase
     .from("players")
     .select("display_name")
-    .eq("id", playerId)
+    .eq("id", actualPlayerId)
     .single();
 
   // Get last 10 games for mini chart
@@ -318,7 +339,7 @@ export async function fetchPlayerProfile(playerId: string): Promise<Player> {
   const { data: playerGameSeats } = await supabase
     .from("game_seats")
     .select("game_id")
-    .eq("player_id", playerId)
+    .eq("player_id", actualPlayerId)
     .limit(10);
 
   const gameIds = playerGameSeats?.map(s => s.game_id) || [];
@@ -341,7 +362,7 @@ export async function fetchPlayerProfile(playerId: string): Promise<Player> {
       .from("cached_game_results")
       .select("*")
       .eq("config_hash", currentSeasonConfigHash)
-      .eq("player_id", playerId)
+      .eq("player_id", actualPlayerId)
       .in("game_id", gameIds);
 
     if (cachedResults && games) {
@@ -464,6 +485,27 @@ export async function fetchGameHistory(
 
   // Apply player filter if specified
   if (playerId) {
+    // First, check if playerId is a UUID or a display name
+    let actualPlayerId = playerId;
+
+    // If it's not a UUID (doesn't match UUID pattern), treat it as a display name
+    const uuidPattern =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidPattern.test(playerId)) {
+      // Look up the actual UUID by display name
+      const { data: playerData, error: playerError } = await supabase
+        .from("players")
+        .select("id")
+        .ilike("display_name", playerId)
+        .single();
+
+      if (playerError || !playerData) {
+        throw new Error(`Player not found: ${playerId}`);
+      }
+
+      actualPlayerId = playerData.id;
+    }
+
     // First get game IDs for the player
     const { data: playerGames, error: playerError } = await supabase
       .from("game_seats")
@@ -477,7 +519,7 @@ export async function fetchGameHistory(
         )
       `
       )
-      .eq("player_id", playerId)
+      .eq("player_id", actualPlayerId)
       .eq("games.status", "finished");
 
     if (playerError) {
@@ -488,8 +530,14 @@ export async function fetchGameHistory(
     type GameSeatWithGame = typeof playerGames extends (infer T)[] ? T : never;
     const sortedPlayerGames = (playerGames || []).sort(
       (a: GameSeatWithGame, b: GameSeatWithGame) => {
-        const dateA = new Date((a as any).games?.finished_at || 0).getTime();
-        const dateB = new Date((b as any).games?.finished_at || 0).getTime();
+        const aGame = a as GameSeatWithGame & {
+          games?: { finished_at?: string };
+        };
+        const bGame = b as GameSeatWithGame & {
+          games?: { finished_at?: string };
+        };
+        const dateA = new Date(aGame.games?.finished_at || 0).getTime();
+        const dateB = new Date(bGame.games?.finished_at || 0).getTime();
         return dateB - dateA;
       }
     );

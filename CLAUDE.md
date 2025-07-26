@@ -223,4 +223,4 @@ npm run build           # Build all apps
 - Update when requirements change
 - Keep test alignment when updating
 
-if you are committing code, please do not do general `git add .` statements. Be explicit and deliberate on what changes you are going to be staging and committing.
+if you are committing code, please DO NOT do general `git add .` statements. Be explicit instead of implicit when staging files a bend deliberate on what changes you are going to be staging and committing.

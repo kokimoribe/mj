@@ -157,8 +157,8 @@ export function InstallPrompt() {
               strokeLinecap="round"
               strokeLinejoin="round"
             >
-              <path d="M12 2v10m0 0l4-4m-4 4l-4-4" />
-              <path d="M9 21H5a2 2 0 01-2-2V7a2 2 0 012-2h4m10 16h4a2 2 0 002-2V7a2 2 0 00-2-2h-4" />
+              <path d="M12 2v13m0-13l-4 4m4-4l4 4" />
+              <path d="M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
             </svg>
             → Add to Home Screen
           </span>

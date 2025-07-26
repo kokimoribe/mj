@@ -46,9 +46,11 @@ export const PlayerGamesList = memo(function PlayerGamesList({
   ) {
     console.log(
       "PlayerGamesList games:",
-      initialGames.slice(0, 5).map(g => ({
+      initialGames.slice(0, 10).map((g, i) => ({
+        index: i + 1,
         placement: g.placement,
         ratingChange: g.ratingChange,
+        ratingChangeSign: g.ratingChange >= 0 ? "positive" : "negative",
         date: g.date,
       }))
     );

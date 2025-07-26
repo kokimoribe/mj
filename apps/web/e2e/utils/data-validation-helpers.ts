@@ -132,7 +132,7 @@ export class DatabaseService {
 
 export class CalculationService {
   static calculateDisplayRating(mu: number, sigma: number): number {
-    return mu - 3 * sigma; // Conservative rating formula
+    return mu - 2 * sigma; // Database uses mu - 2 * sigma for display_rating
   }
 
   static calculate7DayDelta(

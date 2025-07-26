@@ -205,7 +205,7 @@ export async function fetchLeaderboardData(): Promise<LeaderboardData> {
       recentGamesByPlayer[game.player_id].push({
         gameId: game.game_id,
         date: game.games?.finished_at || "",
-        rating: game.mu_after - 3 * game.sigma_after,
+        rating: game.mu_after - 2 * game.sigma_after,
       });
     }
   });
@@ -367,7 +367,7 @@ export async function fetchPlayerProfile(playerId: string): Promise<Player> {
       ?.map(game => ({
         gameId: game.game_id,
         date: game.games?.finished_at || "",
-        rating: game.mu_after - 3 * game.sigma_after,
+        rating: game.mu_after - 2 * game.sigma_after,
       }))
       .reverse() || [];
 
@@ -569,12 +569,12 @@ export async function fetchGameHistory(
           rawScore: seat?.final_score || 0,
           scoreAdjustment:
             result.score_delta ?? calculateScoreDelta(result.placement),
-          ratingBefore: result.mu_before - 3 * result.sigma_before,
-          ratingAfter: result.mu_after - 3 * result.sigma_after,
+          ratingBefore: result.mu_before - 2 * result.sigma_before,
+          ratingAfter: result.mu_after - 2 * result.sigma_after,
           ratingChange:
             result.mu_after -
-            3 * result.sigma_after -
-            (result.mu_before - 3 * result.sigma_before),
+            2 * result.sigma_after -
+            (result.mu_before - 2 * result.sigma_before),
         };
       })
       .sort((a: GameResult, b: GameResult) => a.placement - b.placement);

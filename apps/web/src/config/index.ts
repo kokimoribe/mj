@@ -27,9 +27,9 @@ export const config = {
 
   // PWA configuration
   pwa: {
-    name: "Riichi Tracker",
-    shortName: "Riichi",
-    description: "Track Riichi Mahjong ratings and games",
+    name: "mj",
+    shortName: "mj",
+    description: "River Terrace Mahjong Parlor",
     themeColor: "#0a0a0a",
     backgroundColor: "#0a0a0a",
   },

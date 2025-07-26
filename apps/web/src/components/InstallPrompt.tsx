@@ -142,7 +142,7 @@ export function InstallPrompt() {
             <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
         </button>
-        <strong>Welcome to River Terrace Mahjong Parlor:</strong> Ready to
+        <strong>Welcome to River Terrace Mahjong Parlor</strong> Ready to
         install?
         <br />
         <span className="text-xs">
@@ -179,11 +179,9 @@ export function InstallPrompt() {
         </svg>
       </button>
       <h3 className="mb-2 font-semibold text-green-500">
-        Welcome to River Terrace Mahjong Parlor.
+        Welcome to River Terrace Mahjong Parlor
       </h3>
-      <p className="text-muted-foreground mb-3 text-sm">
-        Click to this app on your device.
-      </p>
+      <p className="text-muted-foreground mb-3 text-sm">Ready to install.</p>
       <button
         onClick={handleInstallClick}
         className="rounded bg-green-600 px-4 py-2 text-white transition-colors hover:bg-green-700"

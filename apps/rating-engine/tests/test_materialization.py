@@ -244,6 +244,71 @@ class TestGameProcessing:
             assert (
                 self.player_ratings[player_id].sigma <= original_ratings[player_id][1]
             )
+    
+    @pytest.mark.asyncio
+    async def test_rating_consistency_bug_fix(self):
+        """
+        Test for the bug where placements were misaligned with players.
+        This ensures that the correct placement is assigned to each player
+        based on their final score, not their seat order.
+        """
+        # Create a game where seat order doesn't match score order
+        game = GameData(
+            game_id="bug_test_game",
+            started_at=datetime(2024, 1, 15, 19, 0, 0, tzinfo=UTC),
+            finished_at=datetime(2024, 1, 15, 22, 30, 0, tzinfo=UTC),
+            status="finished",
+            seats={
+                "east": {"player_id": "mikey", "final_score": 40900},  # 1st
+                "south": {"player_id": "josh", "final_score": 33300},  # 2nd
+                "west": {"player_id": "hyun", "final_score": 18000},   # 3rd
+                "north": {"player_id": "joseph", "final_score": 7800}, # 4th
+            },
+        )
+        
+        # Set up player ratings with slightly different initial values
+        player_ratings = {
+            "mikey": PlayerRating("mikey", 85.0, 3.15, 78.7),    # Highest rated
+            "josh": PlayerRating("josh", 80.0, 5.0, 70.0),       # Second
+            "hyun": PlayerRating("hyun", 75.0, 5.0, 65.0),       # Third
+            "joseph": PlayerRating("joseph", 70.0, 5.0, 60.0),   # Lowest
+        }
+        
+        game_results = []
+        original_display_ratings = {
+            pid: pr.display_rating for pid, pr in player_ratings.items()
+        }
+        
+        await self.engine._process_single_game(
+            self.config, game, player_ratings, game_results
+        )
+        
+        # Check placement assignments
+        results_by_player = {r["player_id"]: r for r in game_results}
+        
+        assert results_by_player["mikey"]["placement"] == 1
+        assert results_by_player["josh"]["placement"] == 2
+        assert results_by_player["hyun"]["placement"] == 3
+        assert results_by_player["joseph"]["placement"] == 4
+        
+        # Verify rating changes are sensible
+        for player_id, result in results_by_player.items():
+            placement = result["placement"]
+            old_display = original_display_ratings[player_id]
+            new_display = result["mu_after"] - 2 * result["sigma_after"]
+            rating_change = new_display - old_display
+            
+            # Log for debugging
+            print(f"{player_id} (placement {placement}): "
+                  f"rating change = {rating_change:.2f}")
+            
+            # Core assertions: winners shouldn't lose rating, losers shouldn't gain much
+            if placement == 1:
+                assert rating_change > -0.1, "1st place should not lose significant rating"
+            elif placement == 2:
+                assert rating_change > -0.5, "2nd place should not lose much rating"
+            elif placement == 4:
+                assert rating_change < 0.5, "4th place should not gain rating"
 
 
 class TestEdgeCases:

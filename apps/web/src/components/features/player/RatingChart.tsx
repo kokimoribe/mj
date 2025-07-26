@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import React, { useMemo } from "react";
 import {
   LineChart,
   Line,
@@ -25,6 +25,12 @@ interface RatingChartProps {
 }
 
 export function RatingChart({ data }: RatingChartProps) {
+  const [tooltipData, setTooltipData] = React.useState<{
+    active: boolean;
+    payload?: Array<{
+      payload: { date: string; rating: number; change: number };
+    }>;
+  }>({ active: false });
   // Filter out invalid data points
   const validData = useMemo(() => {
     return data.filter(

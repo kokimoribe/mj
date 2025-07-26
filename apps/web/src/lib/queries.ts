@@ -75,10 +75,66 @@ export function usePlayerGames(playerId: string, limit = 10) {
   return useQuery({
     queryKey: ["player", playerId, "games", limit],
     queryFn: async () => {
+      console.log("DEBUG usePlayerGames: Starting with", { playerId, limit });
       const data = await fetchGameHistory({ playerId, offset: 0, limit });
-      return data.games
-        .map(game => {
-          const playerResult = game.results.find(r => r.playerId === playerId);
+      console.log("DEBUG usePlayerGames: fetchGameHistory returned", {
+        gamesCount: data.games.length,
+        totalGames: data.totalGames,
+        sampleGameId: data.games[0]?.id,
+        sampleResults: data.games[0]?.results.map(r => ({
+          playerId: r.playerId,
+          playerName: r.playerName,
+        })),
+      });
+
+      // Convert playerId to UUID if needed (same logic as fetchGameHistory)
+      let actualPlayerId = playerId;
+      const uuidPattern =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+      if (!uuidPattern.test(playerId)) {
+        // For display names, we need to find the UUID from the results
+        // Since fetchGameHistory already filtered to games with this player,
+        // we can look at the first game's results to find the matching UUID
+        const firstGame = data.games[0];
+        if (firstGame) {
+          const matchingResult = firstGame.results.find(
+            r =>
+              r.playerName &&
+              r.playerName.toLowerCase() === playerId.toLowerCase()
+          );
+          if (matchingResult) {
+            actualPlayerId = matchingResult.playerId;
+            console.log(
+              "DEBUG usePlayerGames: Converted display name to UUID",
+              {
+                originalPlayerId: playerId,
+                actualPlayerId,
+              }
+            );
+          }
+        }
+      }
+
+      const processedGames = data.games
+        .map((game, index) => {
+          const playerResult = game.results.find(
+            r => r.playerId === actualPlayerId
+          );
+
+          // Debug logging for playerId matching
+          if (index < 3) {
+            // Only log first 3 games to avoid spam
+            console.log(`DEBUG usePlayerGames game ${index}:`, {
+              gameId: game.id,
+              searchingForPlayerId: actualPlayerId,
+              originalPlayerId: playerId,
+              availablePlayerIds: game.results.map(r => r.playerId),
+              availablePlayerNames: game.results.map(r => r.playerName),
+              playerResultFound: !!playerResult,
+            });
+          }
+
           if (!playerResult) return null;
 
           return {
@@ -101,6 +157,14 @@ export function usePlayerGames(playerId: string, limit = 10) {
           // Note: scoreAdjustment (uma/oka) intentionally excluded from frontend
         })
         .filter((game): game is NonNullable<typeof game> => game !== null);
+
+      console.log("DEBUG usePlayerGames: Final result", {
+        originalGamesCount: data.games.length,
+        processedGamesCount: processedGames.length,
+        filteredOutCount: data.games.length - processedGames.length,
+      });
+
+      return processedGames;
     },
     enabled: !!playerId,
     staleTime: 5 * 60 * 1000,

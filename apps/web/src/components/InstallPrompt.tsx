@@ -180,10 +180,10 @@ export function InstallPrompt() {
         </svg>
       </button>
       <h3 className="mb-2 font-semibold text-green-500">
-        Install Mahjong League App
+        Welcome to River Terrace Mahjong Parlor.
       </h3>
       <p className="text-muted-foreground mb-3 text-sm">
-        Install this app on your device for quick access and offline capability.
+        Click to this app on your device.
       </p>
       <button
         onClick={handleInstallClick}

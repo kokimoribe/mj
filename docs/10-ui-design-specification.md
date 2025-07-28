@@ -230,76 +230,15 @@ _Comprehensive UI/UX design document for the Riichi Mahjong League PWA_
 │ Min Weight     [==●=====] 0.5  (0.1-1) │
 │ Max Weight     [====●===] 1.5  (1-3)   │
 ├─────────────────────────────────────────┤
-│ [Reset to Season 3] [Save Custom]       │
-│ [Preview Changes →]                     │
+│ [Reset]                      [Submit]   │
 └─────────────────────────────────────────┘
 ```
 
 **Features:**
 
-- **Real-time sliders**: Immediate value updates
 - **Parameter grouping**: Logical sections for related settings
 - **Visual feedback**: Color-coded sliders for different ranges
 - **Quick actions**: Reset, save, preview buttons
-
-### 7. Live Preview Comparison
-
-```
-┌─────────────────────────────────────────┐
-│ 📊 Live Preview                         │
-│ Official Season 3 ↔ Your Configuration  │
-├─────────────────────────────────────────┤
-│      Official  │  Custom    │  Δ       │
-│ 🥇 1. Joseph    46.26  │  48.12  │ +1.86  │
-│ 🥈 2. Josh      39.18  │  37.95  │ -1.23  │
-│ 🥉 3. Mikey     35.95  │  36.44  │ +0.49  │
-│    4. Hyun      32.22  │  31.88  │ -0.34  │
-│    5. Koki      31.89  │  32.15  │ +0.26  │
-├─────────────────────────────────────────┤
-│ 💡 Biggest change: Josh drops 1.23 pts  │
-│ 🔄 Cache hit: 0.2s (instant)           │
-│ [Export Config] [Share Results]         │
-└─────────────────────────────────────────┘
-```
-
-**Features:**
-
-- **Side-by-side comparison**: Official vs. experimental
-- **Delta highlighting**: Color-coded changes (green up, red down)
-- **Performance metrics**: Cache hit times, computation speed
-- **Export options**: Share configurations and results
-
-### 8. Configuration Templates
-
-```
-┌─────────────────────────────────────────┐
-│ 📋 Configuration Templates               │
-├─────────────────────────────────────────┤
-│ 🏆 Official Season 3 (Current)          │
-│ Conservative settings, moderate volatility│
-│ [Apply] [View Details]                   │
-├─────────────────────────────────────────┤
-│ 🎲 High Stakes                          │
-│ Increased volatility, bigger swings      │
-│ [Apply] [View Details]                   │
-├─────────────────────────────────────────┤
-│ 🎯 Beginner Friendly                    │
-│ Lower barriers, more forgiving           │
-│ [Apply] [View Details]                   │
-├─────────────────────────────────────────┤
-│ 🧪 Your Saved Configs                   │
-│ My Conservative (saved 2 days ago)      │
-│ Ultra Volatile (saved 1 week ago)       │
-│ [Load] [Delete]                         │
-└─────────────────────────────────────────┘
-```
-
-**Features:**
-
-- **Template library**: Pre-built configurations for common scenarios
-- **User saved configs**: Personal experimentation history
-- **Configuration descriptions**: Clear explanations of each template
-- **One-click apply**: Instant configuration switching
 
 ---
 
@@ -408,9 +347,6 @@ App Root
 │   └── Rating explorer
 └── Config (Phase 0.5)
     ├── Parameter playground
-    ├── Live preview
-    ├── Saved configurations
-    └── Share & export
 ```
 
 ### Progressive Disclosure Strategy

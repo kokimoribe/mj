@@ -63,15 +63,14 @@ Create a **Progressive Web App (PWA)** to track Riichi Mahjong games and ranking
 
 **Features**:
 
-- **Configuration UI**: Sliders and controls for all rating parameters
+- **Configuration UI**: Controls for all rating parameters
 - **Live Preview**: See how rule changes affect current rankings
-- **Save Configurations**: Users can save rule combinations
 
 **Key Innovation**: Source data remains season-agnostic; all rating logic is configuration-driven
 
 **Success Criteria**:
 
-- Users can experiment with rating parameters in real-time
+- Users can experiment with rating parameters
 - Cache hit rate >90% for common configurations
 - Official season ratings remain stable and performant
 - Sub-second page loads

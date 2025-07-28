@@ -185,7 +185,7 @@ When Vercel Fluid becomes generally available:
 │ Configuration System │
 │ • Hash-based config identification │
 │ • Smart cache hit/miss detection │
-│ • Real-time rating recalculation │
+│ • rating recalculation │
 └──────────────────────┬───────────────────┘
 │
 ▼

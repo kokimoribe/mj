@@ -346,7 +346,6 @@ supabase migration new "migrate_old_games_format"
 ### Phase 0.5: Configuration Playground
 
 - Add `rating_configurations` and `cached_*` tables
-- Configuration UI with sliders and live preview
 - Smart caching system with hash-based invalidation
 - User experimentation features
 

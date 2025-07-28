@@ -64,12 +64,8 @@ _Status: **BACKEND READY** ✅ - Frontend Implementation: 3-4 weeks_
 
 ### Revolutionary Features
 
-- 🎯 **Interactive Configuration UI**: Sliders and controls for all rating parameters
-- 🎯 **Live Rating Preview**: See how rule changes affect current rankings in real-time
+- 🎯 **Interactive Configuration UI** Input controls for all rating parameters
 - 🎯 **Smart Caching System**: Hash-based caching for instant configuration switching
-- 🎯 **Compare Mode**: Side-by-side comparison of official vs. experimental rankings
-- 🎯 **Save & Share Configs**: Users can save interesting rule combinations and share with others
-- 🎯 **Configuration Templates**: Pre-built configs like "High Stakes", "Beginner Friendly", etc.
 
 ### User Experience Innovation
 
@@ -91,9 +87,7 @@ _Status: **BACKEND READY** ✅ - Frontend Implementation: 3-4 weeks_
 
 - [ ] Cache hit rate >90% for common configurations
 - [ ] Average configuration switch time <500ms
-- [ ] Users experiment with configurations (>50% engagement)
 - [ ] Zero impact on official season rating performance
-- [ ] Community generates >10 interesting configuration variants
 
 ---
 

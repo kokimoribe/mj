@@ -7,7 +7,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { AlertCircle } from "lucide-react";
 import { PullToRefresh } from "@/components/ui/pull-to-refresh";
-import { LeaderboardHeader } from "./LeaderboardHeader";
+import { ConfigurableLeaderboardHeader } from "@/components/features/configuration";
 import { ExpandablePlayerCard } from "./ExpandablePlayerCard";
 import { toast } from "sonner";
 import { TEST_IDS } from "@/lib/test-ids";
@@ -92,13 +92,10 @@ function LeaderboardViewComponent() {
           </Alert>
         )}
 
-        <LeaderboardHeader
+        <ConfigurableLeaderboardHeader
           seasonName={data.seasonName}
           totalGames={safeFormatGameCount(data.totalGames)}
           totalPlayers={sortedPlayers.length}
-          lastUpdated={data.lastUpdated}
-          onRefresh={handleRefresh}
-          isRefreshing={isRefetching}
           data-testid={TEST_IDS.LEADERBOARD_HEADER}
         />
 

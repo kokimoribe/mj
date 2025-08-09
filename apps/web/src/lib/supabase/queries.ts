@@ -41,10 +41,12 @@ export interface LeaderboardData {
   seasonName: string;
 }
 
-export async function fetchLeaderboardData(): Promise<LeaderboardData> {
+export async function fetchLeaderboardData(
+  configHash?: string
+): Promise<LeaderboardData> {
   const supabase = createClient();
 
-  const currentSeasonConfigHash = config.season.hash;
+  const currentSeasonConfigHash = configHash || config.season.hash;
 
   // Fetch player ratings from cached table
   const { data: ratingsData, error: ratingsError } = await supabase
@@ -292,9 +294,12 @@ export async function fetchLeaderboardData(): Promise<LeaderboardData> {
   };
 }
 
-export async function fetchPlayerProfile(playerId: string): Promise<Player> {
+export async function fetchPlayerProfile(
+  playerId: string,
+  configHash?: string
+): Promise<Player> {
   const supabase = createClient();
-  const currentSeasonConfigHash = config.season.hash;
+  const currentSeasonConfigHash = configHash || config.season.hash;
 
   // First, check if playerId is a UUID or a display name
   let actualPlayerId = playerId;
@@ -437,10 +442,11 @@ export interface FilterOptions {
   playerId?: string; // undefined = all games
   offset?: number;
   limit?: number;
+  configHash?: string;
 }
 
 // Fetch all players for filter dropdown
-export async function fetchAllPlayers() {
+export async function fetchAllPlayers(_configHash?: string) {
   const supabase = createClient();
 
   const { data: players, error } = await supabase
@@ -460,7 +466,7 @@ export async function fetchGameHistory(
   options: FilterOptions = {}
 ): Promise<GameHistoryData> {
   const supabase = createClient();
-  const currentSeasonConfigHash = config.season.hash;
+  const currentSeasonConfigHash = options.configHash || config.season.hash;
   const { playerId, offset = 0, limit = 10 } = options;
 
   let query = supabase
@@ -544,7 +550,7 @@ export async function fetchGameHistory(
     );
 
     // Apply pagination after sorting
-    let paginatedGames: any[];
+    let paginatedGames: typeof sortedPlayerGames;
     let gameIds: string[];
 
     try {
@@ -654,9 +660,9 @@ export async function fetchGameHistory(
 }
 
 // Get game count for each player (for filter dropdown)
-export async function fetchPlayerGameCounts() {
+export async function fetchPlayerGameCounts(configHash?: string) {
   const supabase = createClient();
-  const currentSeasonConfigHash = config.season.hash;
+  const currentSeasonConfigHash = configHash || config.season.hash;
 
   const { data, error } = await supabase
     .from("cached_player_ratings")

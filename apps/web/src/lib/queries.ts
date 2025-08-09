@@ -7,6 +7,7 @@ import {
   fetchPlayerGameCounts,
 } from "./supabase/queries";
 import { config } from "@/config";
+import { useConfigStore } from "@/stores/configStore";
 
 // Re-export types from supabase queries for consistency
 export type {
@@ -19,9 +20,12 @@ export type {
 
 // Leaderboard queries - now using Supabase exclusively
 export function useLeaderboard() {
+  const activeConfig = useConfigStore(state => state.activeConfig);
+  const configHash = activeConfig?.hash || config.season.hash;
+
   return useQuery({
-    queryKey: ["leaderboard"],
-    queryFn: fetchLeaderboardData,
+    queryKey: ["leaderboard", configHash],
+    queryFn: () => fetchLeaderboardData(configHash),
     staleTime: config.query.staleTime,
     gcTime: config.query.gcTime,
     retry: config.query.retryAttempts,
@@ -31,9 +35,12 @@ export function useLeaderboard() {
 
 // Player profile queries
 export function usePlayerProfile(playerId: string) {
+  const activeConfig = useConfigStore(state => state.activeConfig);
+  const configHash = activeConfig?.hash || config.season.hash;
+
   return useQuery({
-    queryKey: ["player", playerId],
-    queryFn: () => fetchPlayerProfile(playerId),
+    queryKey: ["player", playerId, configHash],
+    queryFn: () => fetchPlayerProfile(playerId, configHash),
     staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
     enabled: !!playerId,
@@ -42,9 +49,12 @@ export function usePlayerProfile(playerId: string) {
 
 // Game history queries
 export function useGameHistory(playerId?: string, offset = 0, limit = 10) {
+  const activeConfig = useConfigStore(state => state.activeConfig);
+  const configHash = activeConfig?.hash || config.season.hash;
+
   return useQuery({
-    queryKey: ["games", playerId, offset, limit],
-    queryFn: () => fetchGameHistory({ playerId, offset, limit }),
+    queryKey: ["games", playerId, offset, limit, configHash],
+    queryFn: () => fetchGameHistory({ playerId, offset, limit, configHash }),
     staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
   });
@@ -52,9 +62,12 @@ export function useGameHistory(playerId?: string, offset = 0, limit = 10) {
 
 // Query for all players (for filter dropdown)
 export function useAllPlayers() {
+  const activeConfig = useConfigStore(state => state.activeConfig);
+  const configHash = activeConfig?.hash || config.season.hash;
+
   return useQuery({
-    queryKey: ["players", "all"],
-    queryFn: fetchAllPlayers,
+    queryKey: ["players", "all", configHash],
+    queryFn: () => fetchAllPlayers(configHash),
     staleTime: 10 * 60 * 1000, // 10 minutes for less frequently changing data
     gcTime: config.query.gcTime,
   });
@@ -62,9 +75,12 @@ export function useAllPlayers() {
 
 // Query for player game counts
 export function usePlayerGameCounts() {
+  const activeConfig = useConfigStore(state => state.activeConfig);
+  const configHash = activeConfig?.hash || config.season.hash;
+
   return useQuery({
-    queryKey: ["players", "gameCounts"],
-    queryFn: fetchPlayerGameCounts,
+    queryKey: ["players", "gameCounts", configHash],
+    queryFn: () => fetchPlayerGameCounts(configHash),
     staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
   });
@@ -72,20 +88,20 @@ export function usePlayerGameCounts() {
 
 // Query for specific player's games
 export function usePlayerGames(playerId: string, limit = 10) {
+  const activeConfig = useConfigStore(state => state.activeConfig);
+  const configHash = activeConfig?.hash || config.season.hash;
+
   return useQuery({
-    queryKey: ["player", playerId, "games", limit],
+    queryKey: ["player", playerId, "games", limit, configHash],
     queryFn: async () => {
-      console.log("DEBUG usePlayerGames: Starting with", { playerId, limit });
-      const data = await fetchGameHistory({ playerId, offset: 0, limit });
-      console.log("DEBUG usePlayerGames: fetchGameHistory returned", {
-        gamesCount: data.games.length,
-        totalGames: data.totalGames,
-        sampleGameId: data.games[0]?.id,
-        sampleResults: data.games[0]?.results.map(r => ({
-          playerId: r.playerId,
-          playerName: r.playerName,
-        })),
+      // DEBUG usePlayerGames: Starting with playerId, limit, configHash
+      const data = await fetchGameHistory({
+        playerId,
+        offset: 0,
+        limit,
+        configHash,
       });
+      // DEBUG usePlayerGames: fetchGameHistory returned data
 
       // Convert playerId to UUID if needed (same logic as fetchGameHistory)
       let actualPlayerId = playerId;
@@ -105,13 +121,7 @@ export function usePlayerGames(playerId: string, limit = 10) {
           );
           if (matchingResult) {
             actualPlayerId = matchingResult.playerId;
-            console.log(
-              "DEBUG usePlayerGames: Converted display name to UUID",
-              {
-                originalPlayerId: playerId,
-                actualPlayerId,
-              }
-            );
+            // DEBUG usePlayerGames: Converted display name to UUID
           }
         }
       }
@@ -125,14 +135,7 @@ export function usePlayerGames(playerId: string, limit = 10) {
           // Debug logging for playerId matching
           if (index < 3) {
             // Only log first 3 games to avoid spam
-            console.log(`DEBUG usePlayerGames game ${index}:`, {
-              gameId: game.id,
-              searchingForPlayerId: actualPlayerId,
-              originalPlayerId: playerId,
-              availablePlayerIds: game.results.map(r => r.playerId),
-              availablePlayerNames: game.results.map(r => r.playerName),
-              playerResultFound: !!playerResult,
-            });
+            // DEBUG usePlayerGames game info
           }
 
           if (!playerResult) return null;
@@ -158,11 +161,7 @@ export function usePlayerGames(playerId: string, limit = 10) {
         })
         .filter((game): game is NonNullable<typeof game> => game !== null);
 
-      console.log("DEBUG usePlayerGames: Final result", {
-        originalGamesCount: data.games.length,
-        processedGamesCount: processedGames.length,
-        filteredOutCount: data.games.length - processedGames.length,
-      });
+      // DEBUG usePlayerGames: Final result processed
 
       return processedGames;
     },

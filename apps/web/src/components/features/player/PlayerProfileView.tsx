@@ -6,6 +6,7 @@ import {
   usePlayerGames,
   useLeaderboard,
 } from "@/lib/queries";
+import { useConfigParams } from "@/hooks/useConfigParams";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -44,6 +45,7 @@ export const PlayerProfileView = memo(function PlayerProfileView({
   playerId,
 }: PlayerProfileViewProps) {
   const router = useRouter();
+  useConfigParams(); // Read config from URL (handled by store)
   const [selectedPeriod, setSelectedPeriod] = useState<
     "7d" | "14d" | "30d" | "all"
   >("7d");

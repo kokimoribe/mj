@@ -7,7 +7,7 @@ description: "Official Season 4 - New system era with web app integration"
 
 # Time bounds for this season
 timeRange:
-  startDate: "2025-07-23"
+  startDate: "2025-07-27"
   endDate: "2025-12-31" # Will be extended as needed
   name: "Season 4"
 

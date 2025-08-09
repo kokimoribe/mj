@@ -4,6 +4,7 @@ import { InstallPrompt } from "@/components/InstallPrompt";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { BottomNav } from "./BottomNav";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
+import { ConfigurationIndicator } from "@/components/features/configuration";
 // import { EasterEgg } from "@/components/EasterEgg";
 
 interface AppLayoutProps {
@@ -32,6 +33,9 @@ export function AppLayout({ children }: AppLayoutProps) {
             <p className="text-muted-foreground mt-2 text-sm">
               {/* Add description */}
             </p>
+            <div className="mt-2">
+              <ConfigurationIndicator />
+            </div>
           </div>
         </header>
 

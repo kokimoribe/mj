@@ -4,7 +4,7 @@ import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronUp, ChevronDown } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import type { Player } from "@/lib/queries";
@@ -37,13 +37,18 @@ function ExpandablePlayerCardComponent({
   "data-testid": dataTestId,
 }: ExpandablePlayerCardProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   // Validate player data to handle edge cases
   const player = validatePlayerData(rawPlayer);
 
   const handleProfileClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    router.push(`/player/${player.id}`);
+    const configParam = searchParams.get("config");
+    const url = configParam
+      ? `/player/${player.id}?config=${configParam}`
+      : `/player/${player.id}`;
+    router.push(url);
   };
 
   // Format 7-day delta with validation

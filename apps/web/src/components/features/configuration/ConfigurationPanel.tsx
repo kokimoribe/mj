@@ -343,7 +343,15 @@ export function ConfigurationPanel({ isExpanded }: ConfigurationPanelProps) {
                   <div className="space-y-3 border-t p-3">
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="text-sm">Initial μ</label>
+                        <label className="text-sm">
+                          Starting Rating
+                          <span
+                            className="text-muted-foreground ml-1 text-xs"
+                            title="Initial skill rating for new players (μ/mu)"
+                          >
+                            (default: 25)
+                          </span>
+                        </label>
                         <input
                           type="number"
                           className="bg-background w-full rounded-md border p-2"
@@ -359,7 +367,15 @@ export function ConfigurationPanel({ isExpanded }: ConfigurationPanelProps) {
                         />
                       </div>
                       <div>
-                        <label className="text-sm">Initial σ</label>
+                        <label className="text-sm">
+                          Rating Uncertainty
+                          <span
+                            className="text-muted-foreground ml-1 text-xs"
+                            title="How uncertain the system is about a player's skill (σ/sigma)"
+                          >
+                            (default: 8.33)
+                          </span>
+                        </label>
                         <input
                           type="number"
                           className="bg-background w-full rounded-md border p-2"
@@ -393,7 +409,15 @@ export function ConfigurationPanel({ isExpanded }: ConfigurationPanelProps) {
                         />
                       </div>
                       <div>
-                        <label className="text-sm">Decay Rate</label>
+                        <label className="text-sm">
+                          Inactivity Penalty
+                          <span
+                            className="text-muted-foreground ml-1 text-xs"
+                            title="How much rating decreases per day of inactivity"
+                          >
+                            (0 = no penalty)
+                          </span>
+                        </label>
                         <input
                           type="number"
                           className="bg-background w-full rounded-md border p-2"
@@ -431,7 +455,15 @@ export function ConfigurationPanel({ isExpanded }: ConfigurationPanelProps) {
                 {expandedSection === "scoring" && (
                   <div className="space-y-3 border-t p-3">
                     <div>
-                      <label className="text-sm">Oka</label>
+                      <label className="text-sm">
+                        Top Bonus (Oka)
+                        <span
+                          className="text-muted-foreground ml-1 text-xs"
+                          title="Bonus points awarded to the winner"
+                        >
+                          (typical: 0 or 20000)
+                        </span>
+                      </label>
                       <input
                         type="number"
                         className="bg-background w-full rounded-md border p-2"
@@ -448,8 +480,17 @@ export function ConfigurationPanel({ isExpanded }: ConfigurationPanelProps) {
                     </div>
                     <div>
                       <label className="text-sm">
-                        Uma Values (must sum to 0)
+                        Placement Points (Uma)
+                        <span className="text-muted-foreground ml-1 text-xs">
+                          - Points for 1st, 2nd, 3rd, 4th place
+                        </span>
                       </label>
+                      <div className="text-muted-foreground mb-2 text-xs">
+                        Points awarded based on final placement. Must sum to
+                        zero.
+                        <br />
+                        Example: [15, 5, -5, -15] = Winner +15pts, Last -15pts
+                      </div>
                       <div className="grid grid-cols-4 gap-2">
                         {formData.scoring.uma.map((uma, index) => (
                           <input

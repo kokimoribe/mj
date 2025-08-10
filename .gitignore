@@ -316,3 +316,9 @@ VERCEL_DEPLOYMENT_INSTRUCTIONS.md
 /apps/web/e2e/screenshots/
 /apps/web/e2e/.screenshots-temp/
 /apps/web/screenshot-review.html
+debug-*.js
+check-*.js
+verify-*.js
+analyze-*.mjs
+*.png
+!public/*.png

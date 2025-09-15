@@ -67,7 +67,7 @@ export function HandHistory({ hands, dataQuality }: HandHistoryProps) {
         <CardContent data-testid="hand-history-expanded">
           <ScrollArea className="h-[300px]">
             <div className="space-y-2">
-              {hands.map((hand, index) => (
+              {hands.map((hand, _index) => (
                 <div
                   key={hand.hand_id}
                   className="rounded-lg border p-3"

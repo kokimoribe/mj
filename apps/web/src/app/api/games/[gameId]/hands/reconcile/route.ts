@@ -79,7 +79,7 @@ export async function POST(
         return acc;
       }, {}) || {};
 
-    let currentScores = { ...startingScores };
+    const currentScores = { ...startingScores };
 
     completeHands.forEach(hand => {
       hand.hand_actions.forEach((action: any) => {

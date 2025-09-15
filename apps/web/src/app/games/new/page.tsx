@@ -5,14 +5,14 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { createClient } from "@/lib/supabase/client";
+// import {
+//   Select,
+//   SelectContent,
+//   SelectItem,
+//   SelectTrigger,
+//   SelectValue,
+// } from "@/components/ui/select";
+// import { createClient } from "@/lib/supabase/client";
 
 export default function NewGamePage() {
   const router = useRouter();
@@ -43,7 +43,7 @@ export default function NewGamePage() {
         throw new Error("Failed to create game");
       }
 
-      const game = await response.json();
+      // const game = await response.json();
       router.push("/games/active");
     } catch (error) {
       console.error("Error creating game:", error);

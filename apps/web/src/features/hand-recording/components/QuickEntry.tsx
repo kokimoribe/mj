@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+// import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 interface Player {
   id: string;
@@ -137,7 +137,7 @@ export function QuickEntry({ players, onSubmit, disabled }: QuickEntryProps) {
 
       players
         .filter(p => p.id !== winner)
-        .forEach((player, index) => {
+        .forEach((player, _index) => {
           const payment = player.isDealer
             ? selectedPoints.dealer
             : selectedPoints.nonDealer;

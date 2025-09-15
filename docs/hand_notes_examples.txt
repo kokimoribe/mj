@@ -1,0 +1,284 @@
+7/27
+
+jo 139 - 180
+mikey 215
+josh 477
+koki 139 + 180
+
+e1 josh riichi draw jo tenpai josh tenpai 1500
+e1.1 josh riichi josh ron mikey 8300
+e2 josh tsumo 500/1000 all
+e3 josh riichi josh tsumo 6000all
+e4 koki riichi koki ron jo 18000
+jo bankrupt
+
+koki 269
+mikey 337
+jo 335
+josh 59
+
+e1 koki riichi koki ron josh 5800
+e1.1 josh riichi mikey riichi mikey tsumo 3000/6000 + 100all
+e2 josh riichi koki riichi koki ron mikey 2000
+e3 koki riichi koki tsumo 1000/2000
+e4 mikey riichi mikey tsumo 1300/2600
+s1 jo riichi mikey riichi jo ron josh 2000
+s2 josh riichi josh tsumo 2000/400
+s3 jo riichi jo tsumo 6000all
+s3.1 josh riichi mikey riichi koki tsumo 2000/4000
+s4 josh ron koki 5800
+s4.1 mikey riichi mikey ron josh 8000 + 300
+
+7/28
+
+justin 217
+mikey 202
+rayshone 454
+josh 127
+
+e1 rayshone riichi rayshone tsumo 2000/400
+e2 josh riichi mikey ron justin 12000
+e2.1 rayshone riichi rayshone ron josh 3300 + 300
+e3 josh riichi josh ron justin 1300
+e4 justin riichi justin ron josh 5200
+s1 rayshone tsumo 2000/3900
+s2 josh riichi josh ron mikey 1300 justin ron mikey 12000
+s3 justin tsumo 500/1000
+s4 ray riichi ray ron justin 1300
+
+justin 285
+koki 452
+josh 247
+mikey 6
+
+e1 justin tenpai mikey tenpai josh tenpai
+e1.1 justin riichi justin tsumo 4000all + 100all
+e1.2 mikey riichi justin riichi justin 3900 + 600
+e1.3 koki riichi josh riichi koki ron josh 8000 + 900
+e2 justin riichi mikey tsumo 400/800
+e3 mikey riichi josh ron justin 5800 mikey ron justin 3900
+e3.1 mikey ron josh 2000 + 300
+e4 koki riichi koki ron mikey 8000 josh ron mikey 5200
+s1 mikey riichi koki tsumo 2000/3900
+s2 justin 300/500all
+s3 mikey riichi josh riichi josh tsumo 3900al
+s3.1  josh riichi koki riichi koki ron mikey 3900 + 300
+s4 koki riichi draw koki tenpai josh tenpai 1500, 1000 riichi stick left on table
+
+
+Aug 1 (mikey recorded)
+
+Aug 2
+
+josh 363
+mikey 192
+jo 228
+koki 217
+
+e1 josh riich jo riichi jo ron mikey 8000
+e2 mikey riichi mikey ron josh 1500
+e2.1 jo ron mikey 2000 + 300
+e3 jo riichi draw , jo koki josh tenpai 1000
+e3.1 mikey ron jo 3900 + 300
+e4 josh riichi mikey riichi draw josh mikey tenpai 1500
+s1.1 josh riichi jo riichi mikey riichi jo ron mikey 5200 + 300
+s2 mikey riichi mikey ron jo 3900
+s2.1 mikey ron koki 5800 + 300
+s2.2 jo riichi jo tsumo 500/1000 + 200
+s3 draw  jo josh mikey tenpai 3000
+s3.1 koki ron jo 7700 + 300
+s4 mikey riichi josh riichi josh tsumo 3000/6000
+
+
+mikey 379
+josh 128
+koki 383
+jo 110
+
+e1 jo riichi mikey riichi mikey ron josh 3900
+e1.2 mikey riichi josh riichi josh ron koki 16000
+e2 mikey riichi mikey ron jo 1000
+e3 koki riichi koki tsumo 12000all
+e3.1 mikey riichi mikey ron koki 8000 + 300
+e4 jo riichi draw mikey jo tenpai 1500
+e4.1 josh ron mikey 1300 + 300
+s1 mikey riichi josh riichi mikey ron josh 3900
+s1.2 koki riichi jo riichi koki ron mikey 2600 + 300 
+s2 jo ron josh 1000
+s3 jo riichi josh riichi draw jo tenpai josh tenpai 1500
+s4.1 josh riichi mikey ron josh 8000 + 300
+
+koki 569
+josh 106 - 116
+mikey 71 + 116
+jo 254 
+
+e1 jo ron mikey 2000
+e2 josh ron jo 7700
+e2.1 koki riichi koki ron mikey 6400 + 300
+e3 koki riichi koki tsumo 2000/4000
+e4 koki riichi jo riichi koki ron josh 5200
+s1 koki riichi koki ron josh 12000
+s1.2 mikey riichi josh riichi (unsure who ron'd who. need to use end game scores to infer) 2600 + 300
+s2 jo riichi jo ron mikey 5200
+s3 koki riichi mikey ron josh 11600
+josh bankrupt
+
+
+jo 150
+josh 374
+koki 280
+mikey 196
+
+e1 mikey riichi jo riichi mikey ron 2600
+e2 jo riichi josh riichi josh ron jo 5800 
+e2.1 koki riichi koki tsumo 2000/3909 + 100
+e3 mikey riichi draw josh tenpai mikey tenpai 
+e4.1 koki riichi koki ron mikey 1300 + 300
+s1 josh riichi jo tsumo 700all
+s1.1 mikey riichi koki riichi josh riichi koki ron mikey 2600 + 300
+s2 josh riichi mikey riichi draw josh mikey tenpai 1500
+s2.1 josh riich jo riichi josh ron 3900 + 300 
+paused on aug 2
+s2.2 draw mikey tenpai 3000
+s3.3 josh ron mikey 1000 + 900
+s4 josh tsumo 700/1300
+
+
+8/3
+hyun 316 + 80
+jo 35 - 80
+koki 327
+mikey 322
+
+e1 draw, hyun koki mikey tenpai 3000
+e1.2 hyun riichi koki tsumo 2000/4000 + 100all
+e2 koki ron jo 5200
+e3 hyun riichi hyun ron jo 8000
+e4 jo ron mikey 3900
+s1 jo riichi mikey ron hyun 5200
+s2 jo ron koki 3900
+s2.1 mikey riichi josh 7700 + 300
+s3 hyun riichi hyun tsumo 2000/3900 
+s4 hyun riichi hyun ron jo 8000
+
+
+josh 147
+mikey 401
+koki 240
+hyun 172
+
+e1 mikey riichi mikey tsumo 3000/6000
+e2 koki riichi josh ron mikey 7700
+e3 josh riichi josh ron hyun 5200
+e4 josh riichi josh ron hyun 2600
+s1 mikey riichi josh riichi josh ron mikey 5800
+s2 mikey riichi mikey ron josh 8000
+s3 josh riichi josh chombo reverse mangan -2000/-4000
+s3 josh riichi mikey ron josh 8000
+s4 mikey chombo
+s4 mikey riichi draw josh mikey koki tenpai 1000x3
+riichi remains in pot
+
+josh 4 - 20
+justin 427 + 20
+mikey 317
+jo 252
+
+e1 mikey riichi mikey tsumo 4000/8000all
+e2 justin tsumo 3900/all
+e2.1 josh riichi josh ron mikey 8000
+e3 jo ron mikey 2000
+e4 jo riichi jo ron josh 12000
+e4.1 justin riichi justin ron josh 7700 + 300
+s1 jo riichi mikey ron jo 3900
+s2 mikey riichi justin ron josh 2000
+josh bankrupt
+
+
+justin 170 
+koki 9 - 22
+jo 706 + 22
+mikey 115
+
+e1 jo ron koki 3900
+e2 koki riichi jo riichi jo ron koki 8000
+e3 jo riichi mikey riichi jo tsumo 3900/all
+e3.1 koki riichi jo riichi koki ron jo 8000 + 300
+e4 koki riichi jo ron mikey 3900
+s1 koki riichi jo riichi jo ron koki 1300
+s2 jo ron justin 3900
+s3 jo ron koki 2900
+s3.1 jo ron koki 9600 + 300
+s3.2 mikey riichi jo riichi jo ron justin 5800 + 600
+s3.3 justin riichi justin ron jo 8000 + 900
+s4 mikey riichi draw mikey justin koki tenpai 1000
+s4.1 mikey riichi draw mikey jo tenpai 1500
+s4.2 jo tsumo 2000/4000 + 200
+
+justin 3 - 10
+hyun 396
+koki 179
+josh 422 + 10
+
+e1 josh riichi draw josh tenpai 1000
+e2 justin riichi justin chombo
+e2 koki riichi koki tsumo 2000/4000
+e3 josh riichi josh tsumo 4000/8000
+e4 hyun riichi josh ron hyun 5800
+e4.1 hyun riichi hyun tsumo 8000/16000 suuankou yakuman
+s1 justin riichi justin ron hyun 3900
+s1.1 josh riichi josh ron justin 5200 + 300
+s2 josh tsumo 1000/2000
+
+(mikey is also recording this one)
+mikey 214
+josh 182
+rayshone 594 + 39
+justin 10 - 39
+
+e1 rayshone tsumo 4000/8000
+e2 mikey riichi mikey tsumo 2000/4000
+e2.1 mikey riichi rayshone 1000all + 100all
+e3 draw josh tenpai justin tenpai 1500
+e4.1 rayshone tsumo 2000/4000 + 100
+s1 josh tsumo 700all
+s2 josh tsumo 1000all
+s2.1 rayshone ron josh 12000 + 300
+s3 mikey tsumo 700/1300
+s4 rayshone ron justin 3900
+
+justin 122
+mikey 370
+koki 239
+josh 269
+
+e1 josh tsumo 1000/2000
+e2 koki riichi koki tsumo 3000/6000
+e3 mikey tsumo 1000/2000
+e4 josh riichi koki riichi justin riichi josh ron mikey 3900
+e4.1 justin riichi justin tsumo 2000/3900 + 100all
+s1 mikey riichi mikey ron justin 8000
+s2 mikey riichi josh riichi mikey tsumo 6000all
+s2.1 mikey riichi josh riichi josh ron mikey 12000 + 300
+s3 josh riichi draw josh tenpai 3000
+s4.1 mikey riichi mikey ron josh 8000 + 300
+
+mikey 478
+justin 101
+josh 281
+koki 140
+
+e1 josh ron koki 2600
+e2 josh riichi draw josh tenpai 3000
+e3 mikey riichu josh chombo
+e3 josh riichi josh ron mikey 3900
+e3.1 justin ron josh 2000 + 300
+e4 justin riichi justin ron koki 2600
+s1 mikey riichi draw mikey justin tenpai 1500
+s1.1 mikey riichi mikey ron justin 12000 + 300
+s1.2 mikey riichi koki riichi josh tsumo 3000/6000 + 200
+s2 mikey riichi josh riichi mikey ron josh 12000
+s3 josh riichi koki riichi josh ron justin 7700
+s3.1 josh riichi mikey riichi mikey tsumo 2000/4000 + 100
+s4 josh riichi josh ron mikey 5200

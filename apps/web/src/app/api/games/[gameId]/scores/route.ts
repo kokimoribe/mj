@@ -1,15 +1,31 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import {
+  withApiHandler,
+  createSuccessResponse,
+  createErrorResponse,
+  ErrorCode,
+  HttpStatus,
+} from "@/core/lib/api-handler";
 
 // PUT /api/games/[gameId]/scores - Update player scores (for testing)
 export async function PUT(
   request: NextRequest,
   { params }: { params: { gameId: string } }
 ) {
-  try {
+  return withApiHandler(async req => {
     const supabase = await createClient();
     const { gameId } = params;
-    const scores = await request.json();
+    const scores = await req.json();
+
+    // Validate scores array
+    if (!Array.isArray(scores) || scores.length !== 4) {
+      return createErrorResponse(
+        ErrorCode.VALIDATION_ERROR,
+        "Scores must be an array of 4 numbers",
+        HttpStatus.BAD_REQUEST
+      );
+    }
 
     // Get the last hand or create initial state
     const { data: lastHand } = await supabase
@@ -28,7 +44,11 @@ export async function PUT(
         .eq("id", lastHand.id);
 
       if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return createErrorResponse(
+          ErrorCode.DATABASE_ERROR,
+          error.message,
+          HttpStatus.INTERNAL_SERVER_ERROR
+        );
       }
     } else {
       // No hands yet, store in game metadata or first hand
@@ -36,17 +56,11 @@ export async function PUT(
       // In a real implementation, you might want to store this differently
     }
 
-    return NextResponse.json({
-      success: true,
+    return createSuccessResponse({
       scores,
+      gameId,
     });
-  } catch (error) {
-    console.error("Unexpected error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
-  }
+  })(request);
 }
 
 // GET /api/games/[gameId] - Get game details

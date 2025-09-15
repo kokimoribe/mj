@@ -7,7 +7,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { AlertCircle } from "lucide-react";
 import { PullToRefresh } from "@/components/ui/pull-to-refresh";
-import { ConfigurableLeaderboardHeader } from "@/components/features/configuration";
+import { ConfigurableLeaderboardHeader } from "@/features/configuration/components";
 import { ExpandablePlayerCard } from "./ExpandablePlayerCard";
 import { toast } from "sonner";
 import { TEST_IDS } from "@/lib/test-ids";

@@ -4,7 +4,7 @@ import { InstallPrompt } from "@/components/InstallPrompt";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { BottomNav } from "./BottomNav";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
-import { ConfigurationIndicator } from "@/components/features/configuration";
+import { ConfigurationIndicator } from "@/features/configuration/components";
 // import { EasterEgg } from "@/components/EasterEgg";
 
 interface AppLayoutProps {

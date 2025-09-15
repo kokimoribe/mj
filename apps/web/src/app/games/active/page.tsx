@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense } from "react";
-import { HandRecordingView } from "@/components/features/hand-recording/HandRecordingView";
+import { HandRecordingView } from "@/features/hand-recording/components/HandRecordingView";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ActiveGamePage() {

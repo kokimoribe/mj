@@ -6,6 +6,7 @@ import { useConfigParams } from "@/hooks/useConfigParams";
 import { ChevronRight, ChevronDown, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { validateUmaValues } from "@/core/validation";
 import type { RatingConfiguration } from "@/stores/configStore";
 
 interface ConfigurationPanelProps {
@@ -52,11 +53,6 @@ export function ConfigurationPanel({ isExpanded }: ConfigurationPanelProps) {
 
   const toggleSection = (section: string) => {
     setExpandedSection(expandedSection === section ? null : section);
-  };
-
-  const validateUmaValues = (uma: number[]): boolean => {
-    const sum = uma.reduce((acc, val) => acc + val, 0);
-    return sum === 0;
   };
 
   const handleFormChange = (section: string, field: string, value: unknown) => {

@@ -1,5 +1,5 @@
 import { AppLayout } from "@/components/layout/AppLayout";
-import { PlayerProfileView } from "@/components/features/player/PlayerProfileView";
+import { PlayerProfileView } from "@/features/players/components/PlayerProfileView";
 import { Suspense } from "react";
 import { Metadata } from "next";
 import { fetchPlayerProfile } from "@/lib/supabase/queries";

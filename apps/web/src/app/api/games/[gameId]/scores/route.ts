@@ -1,7 +1,6 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import {
-  withApiHandler,
   createSuccessResponse,
   createErrorResponse,
   ErrorCode,
@@ -11,12 +10,12 @@ import {
 // PUT /api/games/[gameId]/scores - Update player scores (for testing)
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { gameId: string } }
+  { params }: { params: Promise<{ gameId: string }> }
 ) {
-  return withApiHandler(async req => {
+  const { gameId } = await params;
+  try {
     const supabase = await createClient();
-    const { gameId } = params;
-    const scores = await req.json();
+    const scores = await request.json();
 
     // Validate scores array
     if (!Array.isArray(scores) || scores.length !== 4) {
@@ -60,17 +59,24 @@ export async function PUT(
       scores,
       gameId,
     });
-  })(request);
+  } catch (error) {
+    console.error("Error updating scores:", error);
+    return createErrorResponse(
+      ErrorCode.UNKNOWN_ERROR,
+      "Failed to update scores",
+      HttpStatus.INTERNAL_SERVER_ERROR
+    );
+  }
 }
 
 // GET /api/games/[gameId] - Get game details
 export async function GET(
   request: NextRequest,
-  { params }: { params: { gameId: string } }
+  { params }: { params: Promise<{ gameId: string }> }
 ) {
+  const { gameId } = await params;
   try {
     const supabase = await createClient();
-    const { gameId } = params;
 
     const { data: game, error } = await supabase
       .from("games")

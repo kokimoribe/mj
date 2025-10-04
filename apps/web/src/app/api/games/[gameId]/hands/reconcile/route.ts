@@ -4,11 +4,11 @@ import { createClient } from "@/lib/supabase/server";
 // POST /api/games/[gameId]/hands/reconcile - Reconcile incomplete hands with final scores
 export async function POST(
   request: NextRequest,
-  { params }: { params: { gameId: string } }
+  { params }: { params: Promise<{ gameId: string }> }
 ) {
+  const { gameId } = await params;
   try {
     const supabase = await createClient();
-    const { gameId } = params;
     const body = await request.json();
     const { finalScores } = body;
 

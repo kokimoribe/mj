@@ -4,11 +4,11 @@ import { createClient } from "@/lib/supabase/server";
 // GET /api/games/[gameId]/hands - Get all hands for a game
 export async function GET(
   request: NextRequest,
-  { params }: { params: { gameId: string } }
+  { params }: { params: Promise<{ gameId: string }> }
 ) {
+  const { gameId } = await params;
   try {
     const supabase = await createClient();
-    const { gameId } = params;
 
     // Fetch hands with actions
     const { data: hands, error } = await supabase
@@ -74,11 +74,11 @@ export async function GET(
 // POST /api/games/[gameId]/hands - Record a new hand
 export async function POST(
   request: NextRequest,
-  { params }: { params: { gameId: string } }
+  { params }: { params: Promise<{ gameId: string }> }
 ) {
+  const { gameId } = await params;
   try {
     const supabase = await createClient();
-    const { gameId } = params;
     const body = await request.json();
 
     const {

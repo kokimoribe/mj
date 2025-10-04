@@ -304,7 +304,7 @@ class TestGameProcessing:
             
             # Core assertions: winners shouldn't lose rating, losers shouldn't gain much
             if placement == 1:
-                assert rating_change > -0.1, "1st place should not lose significant rating"
+                assert rating_change > -0.1, "1st place should not lose rating"
             elif placement == 2:
                 assert rating_change > -0.5, "2nd place should not lose much rating"
             elif placement == 4:

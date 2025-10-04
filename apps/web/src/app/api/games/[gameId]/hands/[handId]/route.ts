@@ -4,11 +4,11 @@ import { createClient } from "@/lib/supabase/server";
 // PUT /api/games/[gameId]/hands/[handId] - Update a hand
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { gameId: string; handId: string } }
+  { params }: { params: Promise<{ gameId: string; handId: string }> }
 ) {
+  const { gameId, handId } = await params;
   try {
     const supabase = await createClient();
-    const { gameId, handId } = params;
     const body = await request.json();
 
     // Check if correction window expired (for testing, can be overridden)
@@ -139,11 +139,11 @@ export async function PUT(
 // DELETE /api/games/[gameId]/hands/[handId] - Delete a hand
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { gameId: string; handId: string } }
+  { params }: { params: Promise<{ gameId: string; handId: string }> }
 ) {
+  const { gameId, handId } = await params;
   try {
     const supabase = await createClient();
-    const { gameId, handId } = params;
 
     // Check if hand exists
     const { data: hand, error: handError } = await supabase

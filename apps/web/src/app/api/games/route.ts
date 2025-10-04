@@ -54,9 +54,11 @@ export const POST = withApiHandler(async (request: NextRequest) => {
 
   // Return success with proper status
   return {
-    data: result.data,
+    data: result.data!,
     meta: {
       message: "Game created successfully",
+      timestamp: new Date().toISOString(),
+      version: "1.0.0",
     },
   };
 });

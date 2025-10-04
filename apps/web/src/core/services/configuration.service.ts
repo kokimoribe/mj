@@ -20,6 +20,10 @@ export interface ConfigurationWithHash {
 }
 
 export class ConfigurationService extends BaseService {
+  constructor() {
+    super("ConfigurationService");
+  }
+
   /**
    * Generate hash for a configuration
    */
@@ -59,7 +63,7 @@ export class ConfigurationService extends BaseService {
         .order("created_at", { ascending: false });
 
       if (error) {
-        this.logError("Failed to fetch official configurations", error);
+        console.error("Failed to fetch official configurations", error);
         return [];
       }
 
@@ -74,7 +78,7 @@ export class ConfigurationService extends BaseService {
         })) || []
       );
     } catch (error) {
-      this.logError("Error in getOfficialConfigurations", error);
+      console.error("Error in getOfficialConfigurations", error);
       return [];
     }
   }
@@ -102,7 +106,7 @@ export class ConfigurationService extends BaseService {
       const { data, error } = await query;
 
       if (error) {
-        this.logError("Failed to fetch custom configurations", error);
+        console.error("Failed to fetch custom configurations", error);
         return [];
       }
 
@@ -117,7 +121,7 @@ export class ConfigurationService extends BaseService {
         })) || []
       );
     } catch (error) {
-      this.logError("Error in getCustomConfigurations", error);
+      console.error("Error in getCustomConfigurations", error);
       return [];
     }
   }
@@ -134,7 +138,7 @@ export class ConfigurationService extends BaseService {
       // Validate configuration first
       const validation = this.validateConfiguration(config);
       if (!validation.isValid) {
-        this.logError("Invalid configuration", validation.errors);
+        console.error("Invalid configuration", validation.errors);
         return null;
       }
 
@@ -173,7 +177,7 @@ export class ConfigurationService extends BaseService {
         .single();
 
       if (error) {
-        this.logError("Failed to save configuration", error);
+        console.error("Failed to save configuration", error);
         return null;
       }
 
@@ -186,7 +190,7 @@ export class ConfigurationService extends BaseService {
         is_active: false,
       };
     } catch (error) {
-      this.logError("Error in saveConfiguration", error);
+      console.error("Error in saveConfiguration", error);
       return null;
     }
   }
@@ -212,13 +216,13 @@ export class ConfigurationService extends BaseService {
       });
 
       if (!response.ok) {
-        this.logError("Materialization failed", await response.text());
+        console.error("Materialization failed", await response.text());
         return false;
       }
 
       return true;
     } catch (error) {
-      this.logError("Error triggering materialization", error);
+      console.error("Error triggering materialization", error);
       return false;
     }
   }
@@ -239,7 +243,7 @@ export class ConfigurationService extends BaseService {
 
       return !error && !!data;
     } catch (error) {
-      this.logError("Error checking data availability", error);
+      console.error("Error checking data availability", error);
       return false;
     }
   }
@@ -270,7 +274,7 @@ export class ConfigurationService extends BaseService {
         is_active: true,
       };
     } catch (error) {
-      this.logError("Error getting active configuration", error);
+      console.error("Error getting active configuration", error);
       return null;
     }
   }

@@ -84,9 +84,9 @@ export const GET = withApiHandler(async (request: NextRequest) => {
   // Set defaults for pagination
   const filters = {
     status: params.status as any,
-    playerId: params.playerId,
-    limit: params.limit || API_CONFIG.DEFAULT_PAGE_SIZE,
-    offset: params.offset || 0,
+    playerId: params.playerId as string | undefined,
+    limit: (params.limit || API_CONFIG.DEFAULT_PAGE_SIZE) as number,
+    offset: (params.offset || 0) as number,
   };
 
   // Use service to get games
@@ -98,16 +98,16 @@ export const GET = withApiHandler(async (request: NextRequest) => {
 
   // Return success with metadata
   return {
-    data: {
-      games: result.data || [],
+    data: result.data || [],
+    meta: {
+      timestamp: new Date().toISOString(),
+      version: "1.0.0",
+      filters,
       pagination: {
         limit: filters.limit,
         offset: filters.offset,
         total: result.data?.length || 0,
       },
-    },
-    meta: {
-      filters,
     },
   };
 });

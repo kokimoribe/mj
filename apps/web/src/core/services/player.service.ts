@@ -30,6 +30,10 @@ export interface PlayerGame {
 }
 
 export class PlayerService extends BaseService {
+  constructor() {
+    super("PlayerService");
+  }
+
   /**
    * Get player profile with statistics
    */
@@ -45,7 +49,7 @@ export class PlayerService extends BaseService {
         .single();
 
       if (error || !player) {
-        this.logError("Failed to fetch player profile", error);
+        console.error("Failed to fetch player profile", error);
         return null;
       }
 
@@ -63,7 +67,7 @@ export class PlayerService extends BaseService {
         ...(stats || {}),
       };
     } catch (error) {
-      this.logError("Error in getPlayerProfile", error);
+      console.error("Error in getPlayerProfile", error);
       return null;
     }
   }
@@ -96,13 +100,13 @@ export class PlayerService extends BaseService {
         .range(offset, offset + limit - 1);
 
       if (error) {
-        this.logError("Failed to fetch player games", error);
+        console.error("Failed to fetch player games", error);
         return [];
       }
 
       return data || [];
     } catch (error) {
-      this.logError("Error in getPlayerGames", error);
+      console.error("Error in getPlayerGames", error);
       return [];
     }
   }
@@ -121,13 +125,13 @@ export class PlayerService extends BaseService {
         .limit(10);
 
       if (error) {
-        this.logError("Failed to search players", error);
+        console.error("Failed to search players", error);
         return [];
       }
 
       return data || [];
     } catch (error) {
-      this.logError("Error in searchPlayers", error);
+      console.error("Error in searchPlayers", error);
       return [];
     }
   }
@@ -168,7 +172,7 @@ export class PlayerService extends BaseService {
       const { data, error } = await query;
 
       if (error) {
-        this.logError("Failed to fetch player rankings", error);
+        console.error("Failed to fetch player rankings", error);
         return [];
       }
 
@@ -184,7 +188,7 @@ export class PlayerService extends BaseService {
         })) || []
       );
     } catch (error) {
-      this.logError("Error in getPlayerRankings", error);
+      console.error("Error in getPlayerRankings", error);
       return [];
     }
   }

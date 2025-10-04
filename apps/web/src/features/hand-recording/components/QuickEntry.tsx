@@ -61,8 +61,6 @@ export function QuickEntry({ players, onSubmit, disabled }: QuickEntryProps) {
         player_id: winner,
         action_type: "win",
         action_order: riichiPlayers.length + 1,
-        points_delta:
-          points + (riichiPlayers.find(p => p.id === winner) ? 1000 : 0),
         riichi_stick_delta: riichiPlayers.find(p => p.id === winner) ? 1000 : 0,
       },
       // Loser
@@ -70,7 +68,6 @@ export function QuickEntry({ players, onSubmit, disabled }: QuickEntryProps) {
         player_id: loser,
         action_type: "deal_in",
         action_order: riichiPlayers.length + 2,
-        points_delta: -points,
         target_player_id: winner,
       },
     ];
@@ -113,8 +110,6 @@ export function QuickEntry({ players, onSubmit, disabled }: QuickEntryProps) {
         player_id: winner,
         action_type: "win",
         action_order: riichiPlayers.length + 1,
-        points_delta:
-          totalWin + (riichiPlayers.find(p => p.id === winner) ? 1000 : 0),
         riichi_stick_delta: riichiPlayers.find(p => p.id === winner) ? 1000 : 0,
       });
 
@@ -126,7 +121,7 @@ export function QuickEntry({ players, onSubmit, disabled }: QuickEntryProps) {
             player_id: player.id,
             action_type: "payment",
             action_order: orderIndex++,
-            points_delta: -paymentPerPlayer,
+            riichi_stick_delta: 0,
           });
         });
     } else {
@@ -148,8 +143,6 @@ export function QuickEntry({ players, onSubmit, disabled }: QuickEntryProps) {
         player_id: winner,
         action_type: "win",
         action_order: riichiPlayers.length + 1,
-        points_delta:
-          totalWin + (riichiPlayers.find(p => p.id === winner) ? 1000 : 0),
         riichi_stick_delta: riichiPlayers.find(p => p.id === winner) ? 1000 : 0,
       });
 
@@ -157,14 +150,11 @@ export function QuickEntry({ players, onSubmit, disabled }: QuickEntryProps) {
       players
         .filter(p => p.id !== winner)
         .forEach(player => {
-          const payment = player.isDealer
-            ? selectedPoints.dealer
-            : selectedPoints.nonDealer;
           actions.push({
             player_id: player.id,
             action_type: "payment",
             action_order: orderIndex++,
-            points_delta: -payment,
+            riichi_stick_delta: 0,
           });
         });
     }
@@ -183,7 +173,6 @@ export function QuickEntry({ players, onSubmit, disabled }: QuickEntryProps) {
   const handleDraw = () => {
     const riichiPlayers = players.filter(p => p.hasRiichi);
     const tenpaiCount = tenpaiPlayers.length;
-    const notTenpaiCount = 4 - tenpaiCount;
 
     if (tenpaiCount === 0 || tenpaiCount === 4) {
       // No payments
@@ -198,10 +187,6 @@ export function QuickEntry({ players, onSubmit, disabled }: QuickEntryProps) {
         description: "Draw - no tenpai payments",
       });
     } else {
-      // Calculate tenpai payments
-      const paymentPerNotTenpai = 3000 / notTenpaiCount;
-      const paymentPerTenpai = 3000 / tenpaiCount;
-
       const actions = [
         ...riichiPlayers.map((p, i) => ({
           player_id: p.id,
@@ -213,7 +198,6 @@ export function QuickEntry({ players, onSubmit, disabled }: QuickEntryProps) {
           player_id: playerId,
           action_type: "tenpai",
           action_order: riichiPlayers.length + i + 1,
-          points_delta: paymentPerTenpai,
         })),
         ...players
           .filter(p => !tenpaiPlayers.includes(p.id))
@@ -221,7 +205,6 @@ export function QuickEntry({ players, onSubmit, disabled }: QuickEntryProps) {
             player_id: player.id,
             action_type: "not_tenpai",
             action_order: riichiPlayers.length + tenpaiCount + i + 1,
-            points_delta: -paymentPerNotTenpai,
           })),
       ];
 

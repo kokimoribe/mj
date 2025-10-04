@@ -37,34 +37,36 @@ export function validateRatingConfiguration(config: RatingConfiguration): {
 
   // Validate time range
   if (config.timeRange) {
-    const start = new Date(config.timeRange.start);
-    const end = new Date(config.timeRange.end);
+    if (config.timeRange.startDate && config.timeRange.endDate) {
+      const start = new Date(config.timeRange.startDate);
+      const end = new Date(config.timeRange.endDate);
 
-    if (start >= end) {
-      errors.push("Start date must be before end date");
+      if (start >= end) {
+        errors.push("Start date must be before end date");
+      }
     }
   }
 
   // Validate rating settings
   if (config.rating) {
-    if (config.rating.initialRating < 0) {
-      errors.push("Initial rating must be non-negative");
+    if (config.rating.initialMu < 0) {
+      errors.push("Initial Mu must be non-negative");
+    }
+    if (config.rating.initialSigma < 0) {
+      errors.push("Initial Sigma must be non-negative");
     }
     if (
-      config.rating.minRating !== undefined &&
-      config.rating.initialRating < config.rating.minRating
+      config.rating.confidenceFactor < 0 ||
+      config.rating.confidenceFactor > 1
     ) {
-      errors.push("Initial rating cannot be below minimum rating");
+      errors.push("Confidence factor must be between 0 and 1");
     }
   }
 
   // Validate scoring settings
   if (config.scoring) {
-    if (config.scoring.startingScore < 0) {
-      errors.push("Starting score must be non-negative");
-    }
-    if (config.scoring.returnScore < 0) {
-      errors.push("Return score must be non-negative");
+    if (config.scoring.oka < 0) {
+      errors.push("Oka must be non-negative");
     }
   }
 

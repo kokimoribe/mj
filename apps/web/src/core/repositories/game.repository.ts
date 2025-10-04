@@ -31,7 +31,11 @@ export class GameRepository extends BaseRepository {
     };
 
     return this.executeQuery(
-      this.supabase.from("games").insert(game).select().single(),
+      this.supabase
+        .from("games")
+        .insert(game)
+        .select()
+        .single() as unknown as Promise<{ data: Game | null; error: any }>,
       "createGame"
     );
   }
@@ -43,7 +47,11 @@ export class GameRepository extends BaseRepository {
     seatData: Omit<GameSeat, "placement" | "plus_minus">
   ): Promise<GameSeat> {
     return this.executeQuery(
-      this.supabase.from("game_seats").insert(seatData).select().single(),
+      this.supabase
+        .from("game_seats")
+        .insert(seatData)
+        .select()
+        .single() as unknown as Promise<{ data: GameSeat | null; error: any }>,
       "createGameSeat"
     );
   }
@@ -63,7 +71,7 @@ export class GameRepository extends BaseRepository {
         .eq("game_id", gameId)
         .eq("player_id", playerId)
         .select()
-        .single(),
+        .single() as unknown as Promise<{ data: GameSeat | null; error: any }>,
       "updateGameSeatScore"
     );
   }
@@ -84,7 +92,7 @@ export class GameRepository extends BaseRepository {
         .update(updates)
         .eq("id", gameId)
         .select()
-        .single(),
+        .single() as unknown as Promise<{ data: Game | null; error: any }>,
       "updateGameStatus"
     );
   }
@@ -94,12 +102,22 @@ export class GameRepository extends BaseRepository {
    */
   async getGameWithSeats(gameId: UUID): Promise<GameWithSeats> {
     const game = await this.executeQuery(
-      this.supabase.from("games").select("*").eq("id", gameId).single(),
+      this.supabase
+        .from("games")
+        .select("*")
+        .eq("id", gameId)
+        .single() as unknown as Promise<{ data: Game | null; error: any }>,
       "getGame"
     );
 
     const seats = await this.executeQuery(
-      this.supabase.from("game_seats").select("*").eq("game_id", gameId),
+      this.supabase
+        .from("game_seats")
+        .select("*")
+        .eq("game_id", gameId) as unknown as Promise<{
+        data: GameSeat[] | null;
+        error: any;
+      }>,
       "getGameSeats"
     );
 
@@ -126,7 +144,10 @@ export class GameRepository extends BaseRepository {
         `
         )
         .eq("id", gameId)
-        .single(),
+        .single() as unknown as Promise<{
+        data: GameWithPlayers | null;
+        error: any;
+      }>,
       "getGameWithPlayers"
     );
 
@@ -170,7 +191,13 @@ export class GameRepository extends BaseRepository {
       });
     }
 
-    const result = await this.executeQuery(query, "getGames");
+    const result = await this.executeQuery(
+      query as unknown as Promise<{
+        data: GameWithPlayers[] | null;
+        error: any;
+      }>,
+      "getGames"
+    );
     return result as GameWithPlayers[];
   }
 
@@ -197,7 +224,13 @@ export class GameRepository extends BaseRepository {
 
     const limitedQuery = limit ? query.limit(limit) : query;
 
-    const result = await this.executeQuery(limitedQuery, "getPlayerGames");
+    const result = await this.executeQuery(
+      limitedQuery as unknown as Promise<{
+        data: GameWithPlayers[] | null;
+        error: any;
+      }>,
+      "getPlayerGames"
+    );
     return result as GameWithPlayers[];
   }
 

@@ -120,6 +120,21 @@ _Status: **IN PLANNING** - Target: 4-6 weeks_
 - 🎯 **Data Validation**: Comprehensive game state validation
 - 🎯 **Performance Optimization**: Fast queries for large datasets
 
+### Future Enhancements (TODO)
+
+- 📝 **Automatic Cleanup Script**: Automated cleanup of old abandoned games
+  - Script to identify and delete games with `status: "ongoing"` that are older than X days with no recent hand events
+  - Prevents database bloat from abandoned games
+  - Should run periodically (e.g., daily cron job)
+  - Consider configurable retention period (e.g., 30 days)
+
+- 📝 **Save & Resume Game Functionality**: Allow games to be paused and resumed later
+  - Add "Save & Exit" option to exit confirmation dialog
+  - Store game state (current scores, round, kyoku, honba, etc.) for resumption
+  - Add game status: "paused" to complement "ongoing" and "finished"
+  - UI to list paused games and allow resumption
+  - Integrate with exit confirmation dialog as alternative to discarding
+
 ### Success Metrics
 
 - [ ] Average hand entry time < 30 seconds

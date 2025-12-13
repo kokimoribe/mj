@@ -286,6 +286,10 @@ create table cached_game_results (
 create index idx_cached_game_results_player on cached_game_results(config_hash, player_id, computed_at);
 ```
 
+**Note on Game History Display:**
+
+The game history feature queries `cached_game_results` for rating changes and configuration-specific data. However, when cached results are not yet available (e.g., after finishing a game but before materialization runs), the application falls back to querying raw data from `game_seats` and `games` tables. This ensures game history is always viewable with basic information (player names, scores, calculated placement), even when materialization hasn't completed yet.
+
 ### Current Leaderboard (Dynamic View)
 
 ```sql

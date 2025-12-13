@@ -230,6 +230,11 @@ UPDATE players SET time_zone = 'America/Los_Angeles' WHERE time_zone IS NULL;
 - Caches results in `cached_player_ratings` and `cached_game_results`
 - Enables fast leaderboard queries and configuration experimentation
 
+**Important Notes:**
+
+- ⚠️ **Materialization is manual only** - there is no automatic triggering when games finish
+- ⚠️ **Game history fallback** - The game history view will display basic game information (player names, scores, placement) even when materialization hasn't run yet, using raw data from `game_seats`. Rating changes will show as "↑0.0" until materialization completes.
+
 **When to run materialization:**
 
 - ✅ After adding new games to the database
@@ -320,6 +325,14 @@ LIMIT 20;
 ### Materialization Troubleshooting
 
 **Common Issues:**
+
+**"Game history shows games but rating changes are '↑0.0'"**
+
+This is expected behavior when materialization hasn't run yet. The game history view falls back to raw `game_seats` data to display basic game information immediately. To see actual rating changes:
+
+1. Run materialization for the current season configuration
+2. Refresh the game history page
+3. Rating changes will now display correctly
 
 **"No games found for configuration"**
 

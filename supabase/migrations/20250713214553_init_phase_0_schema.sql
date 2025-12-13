@@ -354,13 +354,6 @@ INSERT INTO rating_configurations (
   true
 );
 
--- Create sample players for testing
-INSERT INTO players (display_name, email) VALUES
-  ('Alice', 'alice@example.com'),
-  ('Bob', 'bob@example.com'),
-  ('Charlie', 'charlie@example.com'),
-  ('Diana', 'diana@example.com');
-
 -- ============================================================================
 -- COMMENTS FOR DOCUMENTATION
 -- ============================================================================

@@ -143,3 +143,198 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+/* Tier badge animations */
+@keyframes flame-flicker {
+  0%, 100% {
+    text-shadow: 
+      0 0 5px #ff6b35,
+      0 0 10px #ff6b35,
+      0 0 15px #ff6b35,
+      0 0 20px #ff4500,
+      0 0 35px #ff4500,
+      0 0 40px #ff4500;
+  }
+  25% {
+    text-shadow: 
+      0 0 2px #ff6b35,
+      0 0 5px #ff6b35,
+      0 0 8px #ff6b35,
+      0 0 12px #ff4500,
+      0 0 18px #ff4500,
+      0 0 25px #ff4500;
+  }
+  50% {
+    text-shadow: 
+      0 0 8px #ff6b35,
+      0 0 15px #ff6b35,
+      0 0 20px #ff6b35,
+      0 0 25px #ff4500,
+      0 0 40px #ff4500,
+      0 0 50px #ff4500;
+  }
+  75% {
+    text-shadow: 
+      0 0 3px #ff6b35,
+      0 0 7px #ff6b35,
+      0 0 12px #ff6b35,
+      0 0 18px #ff4500,
+      0 0 28px #ff4500,
+      0 0 35px #ff4500;
+  }
+}
+
+@keyframes explosive-pulse {
+  0%, 100% {
+    text-shadow: 
+      0 0 8px #ffd700,
+      0 0 15px #ff8c00,
+      0 0 25px #ff6347,
+      0 0 35px #ff4500;
+    transform: scale(1);
+  }
+  50% {
+    text-shadow: 
+      0 0 12px #ffd700,
+      0 0 20px #ff8c00,
+      0 0 35px #ff6347,
+      0 0 50px #ff4500;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes volcanic-eruption {
+  0%, 100% {
+    text-shadow: 
+      0 0 10px #ff4500,
+      0 0 20px #ff6347,
+      0 0 30px #ff0000,
+      0 0 40px #dc143c,
+      0 0 60px #8b0000;
+    transform: scale(1);
+  }
+  25% {
+    text-shadow: 
+      0 0 15px #ff4500,
+      0 0 25px #ff6347,
+      0 0 40px #ff0000,
+      0 0 55px #dc143c,
+      0 0 75px #8b0000;
+    transform: scale(1.03);
+  }
+  50% {
+    text-shadow: 
+      0 0 12px #ff4500,
+      0 0 22px #ff6347,
+      0 0 35px #ff0000,
+      0 0 50px #dc143c,
+      0 0 70px #8b0000;
+    transform: scale(1.06);
+  }
+  75% {
+    text-shadow: 
+      0 0 18px #ff4500,
+      0 0 28px #ff6347,
+      0 0 45px #ff0000,
+      0 0 60px #dc143c,
+      0 0 85px #8b0000;
+    transform: scale(1.02);
+  }
+}
+
+@keyframes bomb-explosion {
+  0%, 100% {
+    text-shadow: 
+      0 0 15px #8b0000,
+      0 0 25px #dc143c,
+      0 0 40px #ff0000,
+      0 0 60px #ff4500,
+      0 0 80px #ff6347;
+    transform: scale(1);
+  }
+  20% {
+    text-shadow: 
+      0 0 20px #8b0000,
+      0 0 35px #dc143c,
+      0 0 55px #ff0000,
+      0 0 75px #ff4500,
+      0 0 100px #ff6347;
+    transform: scale(1.08);
+  }
+  40% {
+    text-shadow: 
+      0 0 12px #8b0000,
+      0 0 20px #dc143c,
+      0 0 35px #ff0000,
+      0 0 50px #ff4500,
+      0 0 70px #ff6347;
+    transform: scale(1.04);
+  }
+  60% {
+    text-shadow: 
+      0 0 25px #8b0000,
+      0 0 40px #dc143c,
+      0 0 60px #ff0000,
+      0 0 85px #ff4500,
+      0 0 110px #ff6347;
+    transform: scale(1.1);
+  }
+  80% {
+    text-shadow: 
+      0 0 18px #8b0000,
+      0 0 30px #dc143c,
+      0 0 50px #ff0000,
+      0 0 70px #ff4500,
+      0 0 95px #ff6347;
+    transform: scale(1.06);
+  }
+}
+
+/* Tier badge styles */
+.tier-haneman {
+  background: linear-gradient(135deg, #ff6b35 0%, #ff4500 50%, #ff8c00 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: flame-flicker 1.5s ease-in-out infinite;
+  font-weight: 700;
+  filter: brightness(1.2);
+  display: inline-block;
+  padding: 0.125rem 0;
+}
+
+.tier-baiman {
+  background: linear-gradient(135deg, #ffd700 0%, #ff8c00 50%, #ff6347 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: explosive-pulse 2s ease-in-out infinite;
+  font-weight: 700;
+  filter: brightness(1.3);
+  display: inline-block;
+  padding: 0.125rem 0;
+}
+
+.tier-sanbaiman {
+  background: linear-gradient(135deg, #ff4500 0%, #ff0000 50%, #dc143c 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: volcanic-eruption 2.5s ease-in-out infinite;
+  font-weight: 800;
+  filter: brightness(1.4);
+  display: inline-block;
+  padding: 0.125rem 0;
+}
+
+.tier-yakuman {
+  background: linear-gradient(135deg, #8b0000 0%, #dc143c 50%, #ff0000 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: bomb-explosion 3s ease-in-out infinite;
+  font-weight: 900;
+  filter: brightness(1.5);
+  display: inline-block;
+  padding: 0.125rem 0;
+}

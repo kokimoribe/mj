@@ -203,7 +203,7 @@ export function PlayerSelector({
               onClick={() => togglePlayer(player.id)}
               disabled={isDisabled}
               className={cn(
-                "relative flex items-center justify-between rounded-lg border p-3 text-left transition-all",
+                "relative flex items-center justify-between rounded-lg border px-3 py-2 text-left text-sm transition-all",
                 isSelected
                   ? "border-primary bg-primary/10"
                   : "border-border hover:border-primary/50 hover:bg-muted/50",
@@ -212,8 +212,8 @@ export function PlayerSelector({
             >
               <span className="font-medium">{player.display_name}</span>
               {isSelected && (
-                <div className="bg-primary text-primary-foreground flex h-5 w-5 items-center justify-center rounded-full">
-                  <Check className="h-3 w-3" />
+                <div className="bg-primary text-primary-foreground ml-2 flex h-4 w-4 shrink-0 items-center justify-center rounded-full">
+                  <Check className="h-2.5 w-2.5" />
                 </div>
               )}
             </button>

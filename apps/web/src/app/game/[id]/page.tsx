@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -84,6 +85,7 @@ interface GameData {
 
 export default function LiveGamePage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const params = useParams();
   const gameId = params.id as string;
 
@@ -465,6 +467,11 @@ export default function LiveGamePage() {
         throw new Error("Failed to finish game");
       }
 
+      // Invalidate games queries to trigger refresh on games page
+      queryClient.invalidateQueries({ queryKey: ["games"] });
+      queryClient.invalidateQueries({ queryKey: ["players", "gameCounts"] });
+      queryClient.invalidateQueries({ queryKey: ["leaderboard"] });
+
       setShowEndDialog(false);
       router.push("/games");
     } catch (err) {
@@ -594,7 +601,31 @@ export default function LiveGamePage() {
                       onClick={async e => {
                         e.preventDefault();
                         try {
-                          await navigator.clipboard.writeText(game.id);
+                          // Try modern clipboard API first
+                          if (
+                            navigator.clipboard &&
+                            navigator.clipboard.writeText
+                          ) {
+                            await navigator.clipboard.writeText(game.id);
+                          } else {
+                            // Fallback for iOS Safari and older browsers
+                            const textArea = document.createElement("textarea");
+                            textArea.value = game.id;
+                            textArea.style.position = "fixed";
+                            textArea.style.left = "-999999px";
+                            textArea.style.top = "-999999px";
+                            document.body.appendChild(textArea);
+                            textArea.focus();
+                            textArea.select();
+
+                            const successful = document.execCommand("copy");
+                            document.body.removeChild(textArea);
+
+                            if (!successful) {
+                              throw new Error("Copy command failed");
+                            }
+                          }
+
                           setGameIdCopied(true);
                           toast.success("Game ID copied to clipboard");
                           // Reset the copied state after 2 seconds

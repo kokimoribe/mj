@@ -126,7 +126,7 @@ export function ScoreBoard({
       </div>
 
       {/* Score Cards - Grid Layout */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-2">
         {orderedScores.map(playerScore => {
           const isDealer = playerScore.seat === dealerSeat;
           const isWinning = playerScore.score > STARTING_POINTS;
@@ -137,14 +137,14 @@ export function ScoreBoard({
             <Card
               key={playerScore.seat}
               className={cn(
-                "border-2 transition-all",
+                "gap-2 border-2 py-2 transition-all",
                 SEAT_COLORS[playerScore.seat],
                 isDealer && "ring-2 ring-yellow-500 ring-offset-2",
                 isBusted && "bg-red-500/5 ring-2 ring-red-500 ring-offset-2"
               )}
             >
-              <CardContent className="flex flex-col items-center justify-center p-3 text-center">
-                <div className="mb-2 flex h-5 gap-1">
+              <CardContent className="flex flex-col items-center justify-center px-2 py-1 text-center">
+                <div className="mb-0.5 flex h-5 gap-1">
                   {isDealer && (
                     <Badge
                       variant="outline"
@@ -179,7 +179,7 @@ export function ScoreBoard({
                 </div>
                 <div
                   className={cn(
-                    "mt-1 text-xl font-bold tabular-nums",
+                    "text-xl font-bold tabular-nums",
                     isWinning && "text-green-500",
                     isLosing && !isBusted && "text-red-500",
                     isBusted && "font-extrabold text-red-600"

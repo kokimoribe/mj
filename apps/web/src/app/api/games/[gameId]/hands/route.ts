@@ -252,9 +252,21 @@ export async function POST(request: NextRequest, context: RouteContext) {
       case "draw":
       case "abortive_draw": {
         // In a draw, riichi sticks stay on the table
-        // The riichi declarations were already subtracted above
-        // Handle tenpai payments if tenpai players are specified
+        // The riichi declarations were already subtracted above (lines 192-194)
+        // Handle tenpai payments ONLY if not all players are in tenpai
+        // If all 4 players are in tenpai, no no-ten payments are made
         const tenpaiSeats = body.tenpaiSeats || [];
+
+        // Explicitly check: if all 4 players are in tenpai, skip tenpai payments
+        // Only riichi declarations affect points in this case
+        if (tenpaiSeats.length === 4) {
+          // All players in tenpai: no no-ten payments
+          // Only riichi declarations (already handled above) affect points
+          break;
+        }
+
+        // Only process tenpai payments if there are non-tenpai players
+        // (i.e., when tenpaiSeats.length is 1, 2, or 3)
         if (tenpaiSeats.length > 0 && tenpaiSeats.length < 4) {
           const nonTenpaiSeats = seats.filter(
             seat => !tenpaiSeats.includes(seat)

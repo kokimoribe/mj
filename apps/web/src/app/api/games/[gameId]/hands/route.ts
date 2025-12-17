@@ -301,7 +301,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
           if (isOffenderDealer) {
             // Dealer chombo: pays 4000 to each non-dealer (total 12,000)
-            deltas[body.loserSeat] = -12000;
+            deltas[body.loserSeat] -= 12000;
             for (const seat of seats) {
               if (seat !== body.loserSeat) {
                 deltas[seat] += 4000;
@@ -309,7 +309,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
             }
           } else {
             // Non-dealer chombo: pays 4000 to dealer and 2000 to each other non-dealer (total 8,000)
-            deltas[body.loserSeat] = -8000;
+            deltas[body.loserSeat] -= 8000;
             for (const seat of seats) {
               if (seat !== body.loserSeat) {
                 if (seat === body.dealerSeat) {

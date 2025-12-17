@@ -151,12 +151,25 @@ export const useConfigStore = create<ConfigState>()(
           if (error) throw error;
 
           const configs =
-            data?.map(item => ({
-              hash: item.config_hash,
-              name: item.name,
-              isOfficial: true,
-              data: JSON.parse(item.config_data) as RatingConfiguration,
-            })) || [];
+            data?.map(item => {
+              // Supabase returns JSONB columns as objects, not strings
+              // But handle both cases for safety
+              let configData: RatingConfiguration;
+              if (typeof item.config_data === "string") {
+                configData = JSON.parse(
+                  item.config_data
+                ) as RatingConfiguration;
+              } else {
+                configData = item.config_data as RatingConfiguration;
+              }
+
+              return {
+                hash: item.config_hash,
+                name: item.name,
+                isOfficial: true,
+                data: configData,
+              };
+            }) || [];
 
           set({ officialConfigs: configs, isLoading: false });
         } catch (error) {

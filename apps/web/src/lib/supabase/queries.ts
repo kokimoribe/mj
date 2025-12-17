@@ -276,10 +276,11 @@ export async function fetchLeaderboardData(
   // Get season metadata
   // REQUIREMENT: Total Games Calculation
   // The total games count MUST represent unique games played, not the sum of individual player games
-  // Get the actual count of games from the database
+  // Get the actual count of finished games from the database (matching the games page filter)
   const { count: gameCount, error: gameCountError } = await supabase
     .from("games")
-    .select("*", { count: "exact", head: true });
+    .select("*", { count: "exact", head: true })
+    .eq("status", "finished");
 
   const totalGames = gameCountError ? 0 : gameCount || 0;
   const lastUpdated = players?.[0]?.materialized_at || new Date().toISOString();

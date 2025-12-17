@@ -309,7 +309,7 @@ export function HandEntryForm({
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="h-[85vh] overflow-y-auto">
-        <SheetHeader>
+        <SheetHeader className="px-6">
           <SheetTitle>Record Hand Result</SheetTitle>
           <SheetDescription>
             {ROUND_DISPLAY[round]?.name ?? round} (
@@ -319,7 +319,7 @@ export function HandEntryForm({
           </SheetDescription>
         </SheetHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="space-y-6 px-6 py-4">
           {/* Event Type Selection */}
           <div className="space-y-2">
             <Label>Result Type</Label>
@@ -338,7 +338,7 @@ export function HandEntryForm({
                   <Button
                     key={type.value}
                     variant={eventType === type.value ? "default" : "outline"}
-                    className="flex items-center gap-1 px-2 py-2"
+                    className="flex h-11 items-center justify-center gap-1 px-2"
                     onClick={() => {
                       if (!isDisabled) {
                         setEventType(type.value);
@@ -383,7 +383,7 @@ export function HandEntryForm({
                     <Button
                       key={type.value}
                       variant={isSelected ? "default" : "outline"}
-                      className="flex h-auto justify-start px-4 py-3"
+                      className="flex h-auto min-h-11 items-center justify-start px-4 py-3"
                       onClick={() => {
                         setAbortiveDrawType(type.value);
                         // If selecting suucha_riichi, ensure we have 4 riichi
@@ -422,10 +422,7 @@ export function HandEntryForm({
                     <Button
                       key={seat}
                       variant={winnerSeat === seat ? "default" : "outline"}
-                      className={cn(
-                        "flex h-auto items-center justify-between gap-2 px-3 py-2",
-                        isDealer && "ring-2 ring-yellow-500"
-                      )}
+                      className="flex h-11 items-center justify-between gap-2 px-3"
                       onClick={() => setWinnerSeat(seat)}
                     >
                       <span className="truncate text-sm font-medium">
@@ -454,15 +451,19 @@ export function HandEntryForm({
                 {SEATS.map(seat => {
                   const player = getPlayerBySeat(seat);
                   if (!player) return null;
-                  // Can't deal into yourself
-                  if (eventType === "ron" && seat === winnerSeat) return null;
+                  // Can't deal into yourself - disable instead of hiding
+                  const isDisabled = eventType === "ron" && seat === winnerSeat;
 
                   return (
                     <Button
                       key={seat}
                       variant={loserSeat === seat ? "destructive" : "outline"}
-                      className="flex h-auto px-2 py-3"
+                      className="flex h-11 items-center justify-center px-2"
                       onClick={() => setLoserSeat(seat)}
+                      disabled={isDisabled}
+                      title={
+                        isDisabled ? "Cannot deal into yourself" : undefined
+                      }
                     >
                       <span className="max-w-full truncate text-sm font-medium">
                         {player.playerName}
@@ -476,7 +477,13 @@ export function HandEntryForm({
 
           {/* Han/Fu Selection (for wins) */}
           {isWinEvent && (
-            <Card>
+            <Card
+              className={cn(
+                !winnerSeat || (eventType === "ron" && !loserSeat)
+                  ? "pointer-events-none opacity-50"
+                  : ""
+              )}
+            >
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center justify-between text-sm">
                   <span>Hand Value</span>
@@ -485,6 +492,19 @@ export function HandEntryForm({
                   )}
                 </CardTitle>
               </CardHeader>
+              {(!winnerSeat || (eventType === "ron" && !loserSeat)) && (
+                <div className="px-6 pb-4">
+                  <div className="rounded-md border border-amber-500/50 bg-amber-500/10 p-3 text-sm">
+                    <span className="text-amber-700 dark:text-amber-400">
+                      {!winnerSeat && eventType === "ron" && !loserSeat
+                        ? "⚠️ Please select Winner and Deal-in first"
+                        : !winnerSeat
+                          ? "⚠️ Please select Winner first"
+                          : "⚠️ Please select Deal-in first"}
+                    </span>
+                  </div>
+                </div>
+              )}
               <CardContent className="space-y-4">
                 {/* Han Selection */}
                 <div className="space-y-2">
@@ -613,7 +633,7 @@ export function HandEntryForm({
                   <div
                     key={seat}
                     className={cn(
-                      "flex items-center gap-2 rounded-lg border p-2",
+                      "flex h-11 items-center gap-2 rounded-lg border px-3",
                       riichiDeclarations.includes(seat) &&
                         "border-primary bg-primary/10"
                     )}
@@ -653,7 +673,7 @@ export function HandEntryForm({
                     <div
                       key={seat}
                       className={cn(
-                        "flex items-center gap-2 rounded-lg border p-2",
+                        "flex h-11 items-center gap-2 rounded-lg border px-3",
                         isTenpai && "border-green-500 bg-green-500/10",
                         isDisabled && "opacity-75"
                       )}
@@ -688,7 +708,7 @@ export function HandEntryForm({
           )}
         </div>
 
-        <SheetFooter className="flex-row gap-2">
+        <SheetFooter className="flex-row gap-2 px-6 pt-6 pb-8">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}

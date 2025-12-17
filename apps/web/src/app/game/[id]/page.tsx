@@ -238,9 +238,9 @@ export default function LiveGamePage() {
       );
 
       if (lastEvent.event_type === "chombo") {
-        // Chombo: honba does not increase, dealer does not rotate
-        // Keep same honba, same kyoku, same round
-        nextHonba = lastEvent.honba;
+        // Chombo: honba increases by +1 (like a draw), dealer does not rotate
+        // Keep same kyoku, same round
+        nextHonba = lastEvent.honba + 1;
         // nextKyoku and nextRound remain unchanged
       } else if (dealerWon) {
         // Dealer won - honba increases, same kyoku

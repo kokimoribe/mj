@@ -673,7 +673,8 @@ export function HandEntryForm({
                     <div
                       key={seat}
                       className={cn(
-                        "flex h-11 items-center gap-2 rounded-lg border px-3",
+                        "flex gap-2 rounded-lg border px-3 py-2",
+                        hasRiichi ? "min-h-[3.5rem]" : "h-11 items-center",
                         isTenpai && "border-green-500 bg-green-500/10",
                         isDisabled && "opacity-75"
                       )}
@@ -683,11 +684,12 @@ export function HandEntryForm({
                         checked={isTenpai}
                         disabled={isDisabled}
                         onCheckedChange={() => toggleTenpai(seat)}
+                        className={hasRiichi ? "mt-1" : ""}
                       />
                       <label
                         htmlFor={`tenpai-${seat}`}
                         className={cn(
-                          "flex flex-1 cursor-pointer items-center",
+                          "flex flex-1 cursor-pointer flex-col justify-center",
                           isDisabled && "cursor-not-allowed"
                         )}
                       >
@@ -695,7 +697,7 @@ export function HandEntryForm({
                           {player.playerName}
                         </span>
                         {hasRiichi && (
-                          <span className="text-muted-foreground ml-1 text-xs">
+                          <span className="text-muted-foreground text-xs">
                             (Riichi)
                           </span>
                         )}

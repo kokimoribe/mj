@@ -290,11 +290,26 @@ function HandHistoryItem({ hand, playerNames }: HandHistoryItemProps) {
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-green-500">
+                    <span
+                      className={cn(
+                        "font-bold",
+                        event.pointsDelta >= 0
+                          ? "text-green-500"
+                          : "text-red-500"
+                      )}
+                    >
                       {event.playerName}
                     </span>
-                    <span className="text-green-500">
-                      +{formatPoints(event.pointsDelta)}
+                    <span
+                      className={
+                        event.pointsDelta >= 0
+                          ? "text-green-500"
+                          : "text-red-500"
+                      }
+                    >
+                      {event.pointsDelta >= 0
+                        ? `+${formatPoints(event.pointsDelta)}`
+                        : formatPoints(event.pointsDelta)}
                     </span>
                     <Badge variant="outline" className="text-xs">
                       Tenpai (聴牌)

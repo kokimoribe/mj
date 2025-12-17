@@ -103,7 +103,10 @@ interface HandHistoryItemProps {
   playerNames: Record<Seat, string>;
 }
 
-function HandHistoryItem({ hand, playerNames }: HandHistoryItemProps) {
+function HandHistoryItem({
+  hand,
+  playerNames: _playerNames,
+}: HandHistoryItemProps) {
   const eventInfo = EVENT_LABELS[hand.eventType] || {
     label: hand.eventType,
     icon: "❓",
@@ -141,13 +144,13 @@ function HandHistoryItem({ hand, playerNames }: HandHistoryItemProps) {
 
     const honbaBonus = hand.honba * 300;
     // Riichi sticks collected = sticks on table + newly declared riichi this hand
-    const existingRiichiSticks = hand.details.riichiSticks || 0;
+    const existingRiichiSticks = hand.details?.riichiSticks || 0;
     const newRiichiSticks = riichiEvents.length;
     const totalRiichiSticks = existingRiichiSticks + newRiichiSticks;
     const riichiValue = totalRiichiSticks * 1000;
 
     // Base points = pointsWon (which includes honba) - honba bonus
-    const basePoints = hand.details.pointsWon - honbaBonus;
+    const basePoints = (hand.details?.pointsWon || 0) - honbaBonus;
 
     return {
       basePoints,
@@ -200,7 +203,7 @@ function HandHistoryItem({ hand, playerNames }: HandHistoryItemProps) {
                 <span className="text-green-500">
                   +{formatPoints(event.pointsDelta)}
                 </span>
-                {!isChombo && hand.details.tier && (
+                {!isChombo && hand.details?.tier && (
                   <Badge
                     variant="secondary"
                     className={cn(
@@ -219,7 +222,7 @@ function HandHistoryItem({ hand, playerNames }: HandHistoryItemProps) {
           ))}
 
           {/* Han/Fu info (only for wins, not chombo) */}
-          {!isChombo && hand.details.han && (
+          {!isChombo && hand.details?.han && (
             <div className="text-muted-foreground pl-12 text-xs">
               {hand.details.han} Han (翻){" "}
               {hand.details.fu &&

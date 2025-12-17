@@ -180,7 +180,7 @@ export default function LiveGamePage() {
     }
 
     return sticks;
-  }, [game?.handEvents]);
+  }, [game]);
 
   // Get game format (default to hanchan for backwards compatibility)
   const gameFormat: GameFormat = game?.game_format || "hanchan";
@@ -632,7 +632,7 @@ export default function LiveGamePage() {
                           setTimeout(() => {
                             setGameIdCopied(false);
                           }, 2000);
-                        } catch (err) {
+                        } catch {
                           toast.error("Failed to copy Game ID");
                         }
                       }}

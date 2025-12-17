@@ -122,7 +122,7 @@ export function SeatAssignmentComponent({
     return players.find(p => p.id === playerId)?.display_name || "";
   };
 
-  const getAvailablePlayers = (currentSeat: Seat) => {
+  const getAvailablePlayers = (_currentSeat: Seat) => {
     // All players are available - we'll swap if needed
     return players;
   };
@@ -231,7 +231,7 @@ interface SeatSelectProps {
 }
 
 function SeatSelect({
-  seat,
+  seat: _seat,
   label,
   value,
   players,

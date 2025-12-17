@@ -41,7 +41,7 @@ export default function NewGamePage() {
   const [error, setError] = useState<string | null>(null);
 
   // Handle new player creation - refresh the player list
-  const handlePlayerCreated = (newPlayer: Player) => {
+  const handlePlayerCreated = (_newPlayer: Player) => {
     // Invalidate and refetch the players query to include the new player
     queryClient.invalidateQueries({
       queryKey: ["players", "all", configHash],

@@ -238,7 +238,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     const supabase = await createClient();
 
     // Check if game exists
-    const { data: game, error: fetchError } = await supabase
+    const { error: fetchError } = await supabase
       .from("games")
       .select("id, status")
       .eq("id", gameId)

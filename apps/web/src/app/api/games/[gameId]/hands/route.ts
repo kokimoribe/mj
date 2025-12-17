@@ -175,7 +175,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
     // Calculate point deltas based on event type
     const seats: Seat[] = ["east", "south", "west", "north"];
-    let deltas: Record<string, number> = {
+    const deltas: Record<string, number> = {
       east: 0,
       south: 0,
       west: 0,

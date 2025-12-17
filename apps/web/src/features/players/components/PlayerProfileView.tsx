@@ -28,7 +28,7 @@ interface PlayerGame {
   score: number;
   ratingBefore: number;
   ratingAfter: number;
-  ratingChange: number;
+  ratingChange: number | null;
   opponents: Array<{
     name: string;
     placement: number;
@@ -133,7 +133,9 @@ export const PlayerProfileView = memo(function PlayerProfileView({
         rating: game.ratingAfter,
         gameId: game.id,
         change:
-          isFinite(game.ratingChange) && !isNaN(game.ratingChange)
+          game.ratingChange !== null &&
+          isFinite(game.ratingChange) &&
+          !isNaN(game.ratingChange)
             ? game.ratingChange
             : 0,
       }))

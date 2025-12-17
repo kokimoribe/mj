@@ -188,7 +188,6 @@ export function checkGameEnd(
 
   // 4. Sudden death check - if we're actually in enchousen (have played hands) and someone reaches 30k+, game ends immediately
   if (actuallyInEnchousen && leaderScore >= ENCHOUSEN_THRESHOLD) {
-    const formatName = gameFormat === "hanchan" ? "Hanchan" : "Tonpuusen";
     return {
       shouldEnd: true,
       reason: "enchousen_end",
@@ -350,17 +349,7 @@ export function checkGameEnd(
 export function useGameEndDetection(
   params: GameEndDetectionParams
 ): GameEndDetectionResult {
-  return useMemo(
-    () => checkGameEnd(params),
-    [
-      params.scores,
-      params.round,
-      params.kyoku,
-      params.gameFormat,
-      params.lastEventWasDealerWin,
-      params.playerNames,
-    ]
-  );
+  return useMemo(() => checkGameEnd(params), [params]);
 }
 
 /**

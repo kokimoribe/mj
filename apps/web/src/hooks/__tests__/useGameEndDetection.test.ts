@@ -3,7 +3,7 @@ import {
   checkGameEnd,
   type GameEndDetectionParams,
 } from "../useGameEndDetection";
-import type { Seat, Round } from "@/lib/mahjong";
+import type { Seat } from "@/lib/mahjong";
 
 describe("Game End Detection", () => {
   const defaultPlayerNames = {

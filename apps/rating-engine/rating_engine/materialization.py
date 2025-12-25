@@ -45,7 +45,7 @@ class MaterializationConfig:
 
     # Scoring system
     oka: int = 20000
-    uma: list[int] = None  # [10000, 5000, -5000, -10000]
+    uma: list[int] | None = None  # [10000, 5000, -5000, -10000]
 
     # Weight calculation
     weight_divisor: float = 40.0
@@ -56,7 +56,7 @@ class MaterializationConfig:
     min_games: int = 8
     drop_worst: int = 2
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate configuration after initialization."""
         if self.uma is None:
             self.uma = [10000, 5000, -5000, -10000]
@@ -315,7 +315,7 @@ class MaterializationEngine:
         if not result.data:
             return False
 
-        return result.data[0]["source_data_hash"] == source_data_hash
+        return bool(result.data[0]["source_data_hash"] == source_data_hash)
 
     async def _calculate_ratings(
         self, config: MaterializationConfig, games: list[GameData]

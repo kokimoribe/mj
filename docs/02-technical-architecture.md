@@ -287,12 +287,36 @@ When Vercel Fluid becomes generally available:
 
 ## 🎯 Rating Calculation Pipeline
 
-### Trigger
+### Current Implementation: Manual Materialization
 
-```sql
--- Supabase webhook fires when game is completed
-UPDATE games SET status = 'finished' WHERE id = ?;
+**Note:** Materialization is currently **manual only**. There are no automatic triggers (webhooks or database triggers) that run materialization when games finish. Materialization must be run manually via command line script or API endpoint.
+
+### Trigger (Manual)
+
+Materialization is triggered manually by running:
+
+```bash
+# Command line
+cd apps/rating-engine
+uv run python scripts/materialize_data.py
+
+# Or via API (if Python service is running)
+curl -X POST http://localhost:8000/materialize \
+  -H "Content-Type: application/json" \
+  -d '{"config_hash": "...", "force_refresh": false}'
 ```
+
+### Game History Display Behavior
+
+The game history view has a **fallback mechanism**:
+
+- **When cached results exist**: Shows full data including rating changes, plus-minus scores, and placement
+- **When cached results are missing**: Falls back to raw `game_seats` data, showing:
+  - Player names and final scores
+  - Calculated placement (sorted by score)
+  - Rating changes show as "↑0.0" (placeholder until materialization runs)
+
+This ensures game history is always viewable immediately after finishing a game, even before materialization completes.
 
 ### Python Function Workflow
 

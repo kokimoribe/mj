@@ -14,7 +14,7 @@ interface PlayerGame {
   score: number;
   ratingBefore: number;
   ratingAfter: number;
-  ratingChange: number;
+  ratingChange: number | null;
   opponents: Array<{
     id: string;
     name: string;
@@ -95,14 +95,18 @@ export const PlayerGamesList = memo(function PlayerGamesList({
             {" • "}
             <span
               className={cn(
-                isFinite(game.ratingChange) && !isNaN(game.ratingChange)
+                game.ratingChange !== null &&
+                  isFinite(game.ratingChange) &&
+                  !isNaN(game.ratingChange)
                   ? game.ratingChange >= 0
                     ? "text-green-600"
                     : "text-red-600"
                   : "text-muted-foreground"
               )}
             >
-              {isFinite(game.ratingChange) && !isNaN(game.ratingChange) ? (
+              {game.ratingChange !== null &&
+              isFinite(game.ratingChange) &&
+              !isNaN(game.ratingChange) ? (
                 <>
                   {game.ratingChange >= 0 ? "↑" : "↓"}
                   {Math.abs(game.ratingChange).toFixed(1)}

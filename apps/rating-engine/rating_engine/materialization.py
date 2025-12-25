@@ -45,7 +45,7 @@ class MaterializationConfig:
 
     # Scoring system
     oka: int = 20000
-    uma: list[int] = None  # [10000, 5000, -5000, -10000]
+    uma: list[int] | None = None  # [10000, 5000, -5000, -10000]
 
     # Weight calculation
     weight_divisor: float = 40.0
@@ -56,7 +56,7 @@ class MaterializationConfig:
     min_games: int = 8
     drop_worst: int = 2
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate configuration after initialization."""
         if self.uma is None:
             self.uma = [10000, 5000, -5000, -10000]
@@ -315,7 +315,7 @@ class MaterializationEngine:
         if not result.data:
             return False
 
-        return result.data[0]["source_data_hash"] == source_data_hash
+        return bool(result.data[0]["source_data_hash"] == source_data_hash)
 
     async def _calculate_ratings(
         self, config: MaterializationConfig, games: list[GameData]
@@ -390,6 +390,8 @@ class MaterializationEngine:
         placements_data.sort(key=lambda x: x["final_score"], reverse=True)
 
         # Assign placements and calculate plus-minus with uma
+        # uma is guaranteed to be set in __post_init__
+        assert config.uma is not None, "uma must be initialized"
         for i, player_data in enumerate(placements_data):
             placement = i + 1
             final_score = player_data["final_score"]
@@ -401,14 +403,14 @@ class MaterializationEngine:
             player_data["weight"] = self._calculate_weight(plus_minus, config)
 
         # Update OpenSkill ratings based on placements
-        # IMPORTANT: We need to match the order of teams (which was created in seat order)
+        # IMPORTANT: Match the order of teams (created in seat order)
         # Create a mapping from player_id to placement/weight
         player_to_data = {p["player_id"]: p for p in placements_data}
-        
+
         # Build ranks and weights in the same order as teams/players_in_game
         ranks = []
         weights = []
-        for seat, player_id in players_in_game:
+        for _seat, player_id in players_in_game:
             player_data = player_to_data[player_id]
             ranks.append(player_data["placement"])
             weights.append([player_data["weight"]])

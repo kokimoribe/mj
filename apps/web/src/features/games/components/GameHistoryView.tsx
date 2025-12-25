@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { format } from "date-fns";
-import { Calendar } from "lucide-react";
+import { Calendar, Plus } from "lucide-react";
 import { safeFormatNumber } from "@/lib/utils/data-validation";
 
 interface Player {
@@ -110,11 +110,19 @@ export const GameHistoryView = memo(function GameHistoryView() {
   return (
     <div className="space-y-4" data-testid="game-history-view">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold">🎮 Game History</h1>
-        <p className="text-muted-foreground text-sm">
-          Season 3 • {totalGames} games
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">🎮 Game History</h1>
+          <p className="text-muted-foreground text-sm">
+            Season 3 • {totalGames} games
+          </p>
+        </div>
+        <Link href="/game/new">
+          <Button size="sm" data-testid="new-game-button">
+            <Plus className="mr-1 h-4 w-4" />
+            New Game
+          </Button>
+        </Link>
       </div>
 
       {/* Filter Controls */}

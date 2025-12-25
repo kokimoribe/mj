@@ -276,10 +276,11 @@ export async function fetchLeaderboardData(
   // Get season metadata
   // REQUIREMENT: Total Games Calculation
   // The total games count MUST represent unique games played, not the sum of individual player games
-  // Get the actual count of games from the database
+  // Get the actual count of finished games from the database (matching the games page filter)
   const { count: gameCount, error: gameCountError } = await supabase
     .from("games")
-    .select("*", { count: "exact", head: true });
+    .select("*", { count: "exact", head: true })
+    .eq("status", "finished");
 
   const totalGames = gameCountError ? 0 : gameCount || 0;
   const lastUpdated = players?.[0]?.materialized_at || new Date().toISOString();
@@ -421,7 +422,7 @@ export interface GameResult {
   scoreAdjustment: number; // Plus/minus with uma/oka
   ratingBefore: number;
   ratingAfter: number;
-  ratingChange: number;
+  ratingChange: number | null; // null when materialization hasn't run yet
 }
 
 export interface Game {
@@ -616,32 +617,69 @@ export async function fetchGameHistory(
   const transformedGames: Game[] = (games || []).map(game => {
     const gameResults = resultsByGame[game.id] || [];
 
-    // Map results to our format
-    const formattedResults: GameResult[] = gameResults
-      .map(result => {
-        const seat = game.game_seats.find(
-          (seat: GameSeat) => seat.player_id === result.player_id
+    let formattedResults: GameResult[];
+
+    // If we have cached results, use them
+    if (gameResults.length > 0) {
+      formattedResults = gameResults
+        .map(result => {
+          const seat = game.game_seats.find(
+            (seat: GameSeat) => seat.player_id === result.player_id
+          );
+          return {
+            playerId: result.player_id,
+            playerName:
+              (Array.isArray(seat?.players)
+                ? seat?.players[0]?.display_name
+                : (seat?.players as { display_name: string } | undefined)
+                    ?.display_name) || "Unknown",
+            placement: result.placement,
+            rawScore: seat?.final_score || 0,
+            scoreAdjustment:
+              result.score_delta ?? calculateScoreDelta(result.placement),
+            ratingBefore: result.mu_before - 2 * result.sigma_before,
+            ratingAfter: result.mu_after - 2 * result.sigma_after,
+            ratingChange:
+              result.mu_after -
+              2 * result.sigma_after -
+              (result.mu_before - 2 * result.sigma_before),
+          };
+        })
+        .sort((a: GameResult, b: GameResult) => a.placement - b.placement);
+    } else {
+      // Fallback: Use raw game_seats data when cached results aren't available yet
+      // This happens when a game was just finished but materialization hasn't run
+      const seatsWithScores = (game.game_seats || [])
+        .map((seat: GameSeat) => {
+          const playerName = Array.isArray(seat?.players)
+            ? seat?.players[0]?.display_name
+            : (seat?.players as { display_name: string } | undefined)
+                ?.display_name || "Unknown";
+          return {
+            playerId: seat.player_id,
+            playerName,
+            finalScore: seat.final_score || 0,
+          };
+        })
+        .filter(
+          seat => seat.finalScore !== null && seat.finalScore !== undefined
         );
-        return {
-          playerId: result.player_id,
-          playerName:
-            (Array.isArray(seat?.players)
-              ? seat?.players[0]?.display_name
-              : (seat?.players as { display_name: string } | undefined)
-                  ?.display_name) || "Unknown",
-          placement: result.placement,
-          rawScore: seat?.final_score || 0,
-          scoreAdjustment:
-            result.score_delta ?? calculateScoreDelta(result.placement),
-          ratingBefore: result.mu_before - 2 * result.sigma_before,
-          ratingAfter: result.mu_after - 2 * result.sigma_after,
-          ratingChange:
-            result.mu_after -
-            2 * result.sigma_after -
-            (result.mu_before - 2 * result.sigma_before),
-        };
-      })
-      .sort((a: GameResult, b: GameResult) => a.placement - b.placement);
+
+      // Sort by final score descending to determine placement
+      seatsWithScores.sort((a, b) => b.finalScore - a.finalScore);
+
+      // Create results with calculated placement
+      formattedResults = seatsWithScores.map((seat, index) => ({
+        playerId: seat.playerId,
+        playerName: seat.playerName,
+        placement: index + 1,
+        rawScore: seat.finalScore,
+        scoreAdjustment: 0, // Will be calculated when materialized
+        ratingBefore: 0, // Not available until materialized
+        ratingAfter: 0, // Not available until materialized
+        ratingChange: null, // Not available until materialized
+      }));
+    }
 
     return {
       id: game.id,

@@ -6,3 +6,4 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export * from "./utils/format-time";
+export * from "./utils/string-utils";

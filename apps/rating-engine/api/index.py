@@ -128,8 +128,19 @@ async def materialize_ratings(
         return MaterializationResponse(
             status="error",
             config_hash=request.config_hash,
-            error=f"Internal server error: {str(e)}",
+            error="Internal server error - check logs",
         )
+
+
+@app.post("/materialize")
+async def materialize_ratings_endpoint(
+    request: MaterializationRequest,
+) -> MaterializationResponse:
+    """
+    Materialize ratings for a given configuration.
+    Alias for the root POST endpoint.
+    """
+    return await materialize_ratings(request)
 
 
 @app.get("/leaderboard")

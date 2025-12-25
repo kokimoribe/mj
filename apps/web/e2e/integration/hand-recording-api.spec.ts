@@ -1,5 +1,13 @@
 import { test, expect } from "@playwright/test";
 
+// Extend Window interface for test-specific properties
+declare global {
+  interface Window {
+    handUpdates: any[];
+    supabase: any;
+  }
+}
+
 /**
  * Hand Recording API Integration Tests
  * Based on Hand Recording Feature Specification v3.2

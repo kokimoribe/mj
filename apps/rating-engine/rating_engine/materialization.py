@@ -401,14 +401,14 @@ class MaterializationEngine:
             player_data["weight"] = self._calculate_weight(plus_minus, config)
 
         # Update OpenSkill ratings based on placements
-        # IMPORTANT: We need to match the order of teams (which was created in seat order)
+        # IMPORTANT: Match the order of teams (created in seat order)
         # Create a mapping from player_id to placement/weight
         player_to_data = {p["player_id"]: p for p in placements_data}
         
         # Build ranks and weights in the same order as teams/players_in_game
         ranks = []
         weights = []
-        for seat, player_id in players_in_game:
+        for _seat, player_id in players_in_game:
             player_data = player_to_data[player_id]
             ranks.append(player_data["placement"])
             weights.append([player_data["weight"]])

@@ -48,6 +48,49 @@ export async function fetchLeaderboardData(
 
   const currentSeasonConfigHash = configHash || config.season.hash;
 
+  // BUG FIX: Fetch config metadata from database instead of using hardcoded values
+  // This fixes Bug 1 (season name not updating) and enables Bug 2 fix (time range filtering)
+  interface ConfigDataParsed {
+    timeRange?: {
+      startDate?: string;
+      endDate?: string;
+    };
+  }
+
+  interface RatingConfigurationRaw {
+    config_hash: string;
+    name: string;
+    config_data: string | ConfigDataParsed; // Can be JSON string or parsed object
+  }
+
+  const { data: configData, error: configError } = await supabase
+    .from("rating_configurations")
+    .select("config_hash, name, config_data")
+    .eq("config_hash", currentSeasonConfigHash)
+    .single();
+
+  if (configError) {
+    console.error("Failed to fetch config metadata:", configError);
+  }
+
+  const ratingConfig = configData as RatingConfigurationRaw | null;
+  const fetchedSeasonName = ratingConfig?.name || config.season.name;
+
+  // Parse config_data - it may be stored as a JSON string or as a parsed object
+  let parsedConfigData: ConfigDataParsed | null = null;
+  if (ratingConfig?.config_data) {
+    if (typeof ratingConfig.config_data === "string") {
+      try {
+        parsedConfigData = JSON.parse(ratingConfig.config_data);
+      } catch (e) {
+        console.error("Failed to parse config_data:", e);
+      }
+    } else {
+      parsedConfigData = ratingConfig.config_data;
+    }
+  }
+  const timeRange = parsedConfigData?.timeRange;
+
   // Fetch player ratings from cached table
   const { data: ratingsData, error: ratingsError } = await supabase
     .from("cached_player_ratings")
@@ -277,15 +320,27 @@ export async function fetchLeaderboardData(
   // REQUIREMENT: Total Games Calculation
   // The total games count MUST represent unique games played, not the sum of individual player games
   // Get the actual count of finished games from the database (matching the games page filter)
-  const { count: gameCount, error: gameCountError } = await supabase
+  // BUG FIX: Filter by season's time range to show accurate count for the selected config
+  let gameCountQuery = supabase
     .from("games")
     .select("*", { count: "exact", head: true })
     .eq("status", "finished");
 
+  // Apply time range filter if available from config
+  if (timeRange?.startDate) {
+    gameCountQuery = gameCountQuery.gte("started_at", timeRange.startDate);
+  }
+  if (timeRange?.endDate) {
+    gameCountQuery = gameCountQuery.lte("started_at", timeRange.endDate);
+  }
+
+  const { count: gameCount, error: gameCountError } = await gameCountQuery;
+
   const totalGames = gameCountError ? 0 : gameCount || 0;
   const lastUpdated = players?.[0]?.materialized_at || new Date().toISOString();
 
-  const seasonName = config.season.name;
+  // BUG FIX: Use fetched season name from database instead of hardcoded config
+  const seasonName = fetchedSeasonName;
 
   return {
     players: transformedPlayers,

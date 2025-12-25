@@ -45,6 +45,7 @@ logger = logging.getLogger(__name__)
 # Constants - CSV is at workspace root, configs in rating-engine
 CSV_PATH = Path(__file__).parent.parent.parent.parent / "legacy_logs.csv"
 SEASON_3_CONFIG_PATH = Path(__file__).parent.parent / "configs" / "season-3.yaml"
+SEASON_4_CONFIG_PATH = Path(__file__).parent.parent / "configs" / "season-4.yaml"
 
 
 class SupabaseLegacyDataMigrator:
@@ -52,17 +53,19 @@ class SupabaseLegacyDataMigrator:
 
     def __init__(self):
         self.supabase: Client | None = None
-        self.season_3_config_id: str | None = None
+        self.season_3_config_hash: str | None = None
+        self.season_4_config_hash: str | None = None
 
     def connect_to_supabase(self) -> None:
         """Establish connection to Supabase."""
         url = os.getenv("SUPABASE_URL")
-        # Use secret key for admin operations
-        key = os.getenv("SUPABASE_SECRET_KEY")
+        # Use service role key for admin operations
+        key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_SECRET_KEY")
 
         if not url or not key:
             raise ValueError(
-                "SUPABASE_URL and SUPABASE_SECRET_KEY environment variables must be set"
+                "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY "
+                "(or SUPABASE_SECRET_KEY) must be set"
             )
 
         self.supabase = create_client(url, key)
@@ -123,22 +126,20 @@ class SupabaseLegacyDataMigrator:
 
         logger.info("✅ Table truncation complete")
 
-    def load_season_3_config(self) -> dict[str, any]:
-        """Load Season 3 configuration from YAML file."""
-        if not SEASON_3_CONFIG_PATH.exists():
-            raise FileNotFoundError(
-                f"Season 3 config not found: {SEASON_3_CONFIG_PATH}"
-            )
+    def load_season_config(self, config_path: Path) -> dict[str, any]:
+        """Load season configuration from YAML file."""
+        if not config_path.exists():
+            raise FileNotFoundError(f"Season config not found: {config_path}")
 
-        with open(SEASON_3_CONFIG_PATH) as file:
+        with open(config_path) as file:
             config = yaml.safe_load(file)
 
-        logger.info(f"📋 Loaded Season 3 config: {config['name']}")
+        logger.info(f"📋 Loaded config: {config['name']}")
         return config
 
-    def ensure_season_3_config_in_db(self) -> str:
-        """Ensure Season 3 configuration exists in database and return its hash."""
-        config = self.load_season_3_config()
+    def ensure_season_config_in_db(self, config_path: Path) -> str:
+        """Ensure season configuration exists in database and return its hash."""
+        config = self.load_season_config(config_path)
 
         # Convert to database format (remove metadata)
         db_config = {
@@ -166,7 +167,7 @@ class SupabaseLegacyDataMigrator:
             record, on_conflict="config_hash"
         ).execute()
 
-        logger.info(f"✅ Season 3 config ready with hash {config_hash[:8]}...")
+        logger.info(f"✅ Config '{config['name']}' ready: {config_hash[:8]}...")
         return config_hash
 
     def generate_deterministic_uuid(self, namespace: str, name: str) -> str:
@@ -240,7 +241,7 @@ class SupabaseLegacyDataMigrator:
         positions = ["East", "South", "West", "North"]
 
         for i, position in enumerate(positions):
-            player_name = row[f"{position} player"]
+            player_name = row[f"{position} player"].strip()  # Strip whitespace
             points_str = row[f"{position} points"]
 
             try:
@@ -343,8 +344,13 @@ class SupabaseLegacyDataMigrator:
         # Truncate tables for clean migration
         self.truncate_tables(keep_players=keep_players)
 
-        # Ensure Season 3 configuration exists
-        self.season_3_config_id = self.ensure_season_3_config_in_db()
+        # Ensure both Season 3 and Season 4 configurations exist
+        self.season_3_config_hash = self.ensure_season_config_in_db(
+            SEASON_3_CONFIG_PATH
+        )
+        self.season_4_config_hash = self.ensure_season_config_in_db(
+            SEASON_4_CONFIG_PATH
+        )
 
         # Migrate CSV data
         self.migrate_csv_data()

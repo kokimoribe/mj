@@ -59,13 +59,13 @@ class SupabaseLegacyDataMigrator:
     def connect_to_supabase(self) -> None:
         """Establish connection to Supabase."""
         url = os.getenv("SUPABASE_URL")
-        # Use service role key for admin operations
-        key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_SECRET_KEY")
+        # Use new secret key (not legacy service_role key)
+        key = os.getenv("SUPABASE_SECRET_KEY") or os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 
         if not url or not key:
             raise ValueError(
-                "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY "
-                "(or SUPABASE_SECRET_KEY) must be set"
+                "SUPABASE_URL and SUPABASE_SECRET_KEY "
+                "(or SUPABASE_SERVICE_ROLE_KEY) must be set"
             )
 
         self.supabase = create_client(url, key)

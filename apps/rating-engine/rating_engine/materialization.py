@@ -404,7 +404,7 @@ class MaterializationEngine:
         # IMPORTANT: Match the order of teams (created in seat order)
         # Create a mapping from player_id to placement/weight
         player_to_data = {p["player_id"]: p for p in placements_data}
-        
+
         # Build ranks and weights in the same order as teams/players_in_game
         ranks = []
         weights = []

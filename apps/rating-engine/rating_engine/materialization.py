@@ -390,6 +390,8 @@ class MaterializationEngine:
         placements_data.sort(key=lambda x: x["final_score"], reverse=True)
 
         # Assign placements and calculate plus-minus with uma
+        # uma is guaranteed to be set in __post_init__
+        assert config.uma is not None, "uma must be initialized"
         for i, player_data in enumerate(placements_data):
             placement = i + 1
             final_score = player_data["final_score"]

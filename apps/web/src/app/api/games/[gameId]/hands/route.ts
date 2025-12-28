@@ -305,7 +305,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
         // Chombo penalty (JPML / EMA-style rules):
         // - Dealer chombo: pays 4000 to each non-dealer (total 12,000)
         // - Non-dealer chombo: pays 4000 to dealer and 2000 to each other non-dealer (total 8,000)
-        // - Honba increases by +1 (like a draw)
+        // - Honba does NOT increase (stays the same)
         // - Dealer does not rotate
         // - Riichi sticks stay on the table (from current hand and previous hands)
         if (body.loserSeat) {

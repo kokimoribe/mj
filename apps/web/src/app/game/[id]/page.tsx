@@ -245,12 +245,30 @@ export default function LiveGamePage() {
       } else if (dealerWon) {
         // Dealer won - honba increases, same kyoku
         nextHonba = lastEvent.honba + 1;
-      } else if (
-        lastEvent.event_type === "draw" ||
-        lastEvent.event_type === "abortive_draw"
-      ) {
-        // Draw - honba increases
+      } else if (lastEvent.event_type === "abortive_draw") {
+        // Abortive draw - dealer stays, honba increases
         nextHonba = lastEvent.honba + 1;
+      } else if (lastEvent.event_type === "draw") {
+        // Exhaustive draw - check if dealer was tenpai
+        // Dealer stays if tenpai (positive points_delta), rotates if noten
+        const dealerWasTenpai = dealerEvent && dealerEvent.points_delta > 0;
+        nextHonba = lastEvent.honba + 1;
+
+        if (!dealerWasTenpai) {
+          // Dealer was noten - rotate dealer
+          if (nextKyoku >= 4) {
+            // Move to next round
+            const rounds: Round[] = ["E", "S", "W", "N"];
+            const currentRoundIndex = rounds.indexOf(nextRound);
+            if (currentRoundIndex < rounds.length - 1) {
+              nextRound = rounds[currentRoundIndex + 1];
+              nextKyoku = 1;
+            }
+          } else {
+            nextKyoku = nextKyoku + 1;
+          }
+        }
+        // If dealer was tenpai, kyoku stays the same (dealer repeat)
       } else {
         // Dealer rotation
         nextHonba = 0;

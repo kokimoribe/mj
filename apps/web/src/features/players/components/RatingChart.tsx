@@ -30,7 +30,7 @@ export function RatingChart({ data }: RatingChartProps) {
     null
   );
   const [isTouchActive, setIsTouchActive] = useState(false);
-  const tooltipTimeoutRef = useRef<NodeJS.Timeout>();
+  const tooltipTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   // Detect touch device on client side only (avoid hydration mismatch)
   useEffect(() => {
@@ -245,13 +245,19 @@ export function RatingChart({ data }: RatingChartProps) {
           onClick={e => {
             // On touch devices, set the active tooltip index
             if (e && e.activeTooltipIndex !== undefined && isTouchDevice) {
-              setActiveTooltipIndex(e.activeTooltipIndex);
+              const index = e.activeTooltipIndex;
+              if (typeof index === "number") {
+                setActiveTooltipIndex(index);
+              }
             }
           }}
           onMouseMove={e => {
             // On desktop, track active index for tooltip
             if (!isTouchDevice && e && e.activeTooltipIndex !== undefined) {
-              setActiveTooltipIndex(e.activeTooltipIndex);
+              const index = e.activeTooltipIndex;
+              if (typeof index === "number") {
+                setActiveTooltipIndex(index);
+              }
             }
           }}
           onMouseLeave={() => {

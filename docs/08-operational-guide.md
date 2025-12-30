@@ -4,14 +4,16 @@ _Essential procedures for developers and LLM coding agents working with the Riic
 
 ## 🎯 Quick Reference
 
-| **Need to...**               | **Use this command/approach**                   |
-| ---------------------------- | ----------------------------------------------- |
-| **Connect to production DB** | `psql $POSTGRES_URL_NON_POOLING`                |
-| **Run local development**    | `npm run dev` (from project root)               |
-| **Generate migration**       | `supabase db diff -f new_migration_name`        |
-| **Run materialization**      | `uv run python scripts/materialize_data.py`     |
-| **Check test coverage**      | `uv run pytest tests/ -v` (from rating-engine/) |
-| **Deploy to production**     | `git push origin main` (auto-deploy)            |
+| **Need to...**                | **Use this command/approach**                                          |
+| ----------------------------- | ---------------------------------------------------------------------- |
+| **Connect to production DB**  | `psql $POSTGRES_URL_NON_POOLING`                                       |
+| **Run local development**     | `npm run dev` (from project root)                                      |
+| **Generate migration**        | `supabase db diff -f new_migration_name`                               |
+| **Sync local data from prod** | `supabase db dump --data-only -f production_data.sql` then import      |
+| **Import data to local DB**   | `docker exec -i supabase_db_mj psql -U postgres < production_data.sql` |
+| **Run materialization**       | `uv run python scripts/materialize_data.py`                            |
+| **Check test coverage**       | `uv run pytest tests/ -v` (from rating-engine/)                        |
+| **Deploy to production**      | `git push origin main` (auto-deploy)                                   |
 
 ---
 
@@ -119,10 +121,11 @@ const supabaseAdmin = createClient(
 
 ### Understanding Our Migration System
 
-**Current Migration Files:**
+**Current Migration State (Baselined December 2024):**
 
-- `20250713214553_init_phase_0_schema.sql` - Complete Phase 0 schema
-- `20250714201537_revert_unnecessary_materialization_tables.sql` - Cleanup
+- `20251228193722_remote_schema.sql` - **Authoritative baseline** from production
+
+> ⚠️ **Important Context**: Our migration history was baselined from production in December 2024. All prior historical migrations were discarded and replaced with a single authoritative snapshot. See [Migration Baseline Strategy](#migration-baseline-strategy) below for details.
 
 **Migration Principles:**
 
@@ -130,6 +133,7 @@ const supabaseAdmin = createClient(
 - ✅ **Idempotent** - Safe to run multiple times
 - ✅ **Reversible** - Include cleanup in separate migration if needed
 - ✅ **Tested** - Test locally before deploying
+- ✅ **CLI-only** - Never modify schema via Supabase Dashboard
 
 ### Step-by-Step Migration Process
 
@@ -216,6 +220,127 @@ ADD COLUMN IF NOT EXISTS time_zone TEXT DEFAULT 'America/Los_Angeles';
 -- Update existing data if needed
 UPDATE players SET time_zone = 'America/Los_Angeles' WHERE time_zone IS NULL;
 ```
+
+---
+
+## 🔄 Syncing Local Database with Production Data
+
+### Overview
+
+When you need fresh production data in your local development environment (e.g., after pulling schema changes or starting work on a new feature), follow this process to sync data from production to local Supabase.
+
+### Prerequisites
+
+- Local Supabase running (`supabase start`)
+- Linked to production project (`supabase link --project-ref YOUR_PROJECT_REF`)
+- Docker running (required for local Supabase)
+
+### Step-by-Step Sync Process
+
+**1. Dump Production Data**
+
+```bash
+# From project root
+supabase db dump --data-only -f production_data.sql
+```
+
+This creates a SQL file with all production data (INSERT statements only, no schema).
+
+**2. Reset Local Database with Schema**
+
+```bash
+# Reset local database and apply migrations (skip seed data)
+supabase db reset --no-seed
+```
+
+This ensures your local schema matches your migration files.
+
+**3. Import Production Data**
+
+⚠️ **Important**: The `supabase db execute` command does NOT accept piped input. Use Docker instead:
+
+```bash
+# Import data using Docker
+docker exec -i supabase_db_mj psql -U postgres < production_data.sql
+```
+
+> **Note**: The container name `supabase_db_mj` is project-specific. Find yours with `docker ps --format "{{.Names}}" | grep supabase`
+
+**4. Verify Import**
+
+```bash
+# Check data was imported
+docker exec supabase_db_mj psql -U postgres -c "
+SELECT 'games' as table_name, COUNT(*) FROM public.games
+UNION ALL SELECT 'players', COUNT(*) FROM public.players
+UNION ALL SELECT 'game_seats', COUNT(*) FROM public.game_seats;
+"
+```
+
+### Quick Reference Commands
+
+```bash
+# Full sync in one go (copy-paste friendly)
+supabase db dump --data-only -f production_data.sql && \
+supabase db reset --no-seed && \
+docker exec -i supabase_db_mj psql -U postgres < production_data.sql
+```
+
+### Common Issues and Solutions
+
+**"command not found: psql"**
+
+You don't need psql installed locally. Use Docker instead:
+
+```bash
+# ❌ Won't work without psql installed
+psql "postgresql://postgres:postgres@localhost:54322/postgres" < production_data.sql
+
+# ✅ Use Docker instead
+docker exec -i supabase_db_mj psql -U postgres < production_data.sql
+```
+
+**"supabase db execute" shows help instead of running SQL**
+
+The `supabase db execute` command doesn't accept piped input well. Always use Docker:
+
+```bash
+# ❌ Doesn't work as expected
+cat production_data.sql | supabase db execute
+
+# ✅ Use Docker instead
+docker exec -i supabase_db_mj psql -U postgres < production_data.sql
+```
+
+**Finding your Docker container name**
+
+```bash
+# List all Supabase containers
+docker ps --format "{{.Names}}" | grep supabase
+
+# Common naming pattern: supabase_db_{project_name}
+```
+
+**Data shows in database but not in app**
+
+After importing data, you may need to:
+
+1. **Restart your dev server** - Next.js may have cached empty state
+2. **Clear browser cache** - React Query may have cached empty responses
+3. **Run materialization** - Some views require computed data (see Materialization Operations below)
+
+### When to Sync
+
+- ✅ After pulling schema changes from production (`supabase db pull`)
+- ✅ Starting work on a feature that needs realistic data
+- ✅ Debugging a production issue locally
+- ✅ After `supabase db reset` clears your local data
+
+### Security Notes
+
+- `production_data.sql` contains real production data - don't commit it to git
+- The file is already in `.gitignore`
+- Delete after use if working with sensitive data
 
 ---
 
@@ -365,6 +490,140 @@ echo ${SUPABASE_SECRET_KEY:0:20}...  # Should start with "sb_secret_"
 # Test connection
 psql $POSTGRES_URL_NON_POOLING -c "SELECT NOW();"
 ```
+
+---
+
+## 🔄 Migration Baseline Strategy
+
+### Background
+
+In December 2024, we encountered a migration sync issue between local Supabase and production:
+
+- Local repo contained many historical migration files
+- Production database only had one recorded migration
+- Despite **schema parity**, Supabase CLI commands (`db pull`, `db push`) failed due to migration history mismatch
+
+### Root Cause
+
+Production schema was created or modified outside of Supabase CLI migrations (e.g., dashboard SQL, initial bootstrap). As a result:
+
+- The schema existed ✅
+- But migration history did not reflect how it was created ❌
+
+**Key insight**: Supabase does not infer migration history from schema. This created **schema parity without migration parity**, which the CLI correctly refuses to reconcile automatically.
+
+### Key Supabase Concepts
+
+**Migration Tracking Table:**
+
+Supabase CLI uses this table to track applied migrations:
+
+```sql
+supabase_migrations.schema_migrations
+```
+
+⚠️ **NOT** `supabase_migrations.migrations` - only migrations recorded in `schema_migrations` are considered "applied" by the CLI.
+
+### Resolution Strategy (Baseline from Production)
+
+We intentionally discarded historical migration history and created a single authoritative baseline migration from production. **This is the recommended and safest approach when production is already live.**
+
+#### Step-by-Step Fix (What We Did)
+
+**1. Backed up local migrations**
+
+```bash
+mkdir /tmp/supabase_old_migrations
+mv supabase/migrations/* /tmp/supabase_old_migrations/
+```
+
+**2. Reverted the only applied prod migration**
+
+```bash
+supabase migration repair --status reverted 20251226080041
+```
+
+> This only updates migration history - ❌ No schema changes, ❌ No data changes
+
+**3. Pulled production schema**
+
+```bash
+supabase db pull
+```
+
+This generated a new baseline migration: `supabase/migrations/20251228193722_remote_schema.sql`
+
+**4. Confirmed and accepted baseline**
+
+When prompted: `Update remote migration history table? [Y/n]` → Answered `Y`
+
+This:
+
+- Recorded the baseline as applied ✅
+- Did not re-execute SQL on production ✅
+
+### Final State After Baseline
+
+**Production:**
+
+- Schema unchanged
+- Data untouched
+- Migration history: `20251228193722_remote_schema` (applied)
+
+**Local:**
+
+- One baseline migration
+- No historical drift
+- CLI commands work normally
+
+### Verification Commands
+
+```bash
+# Check migration sync status
+supabase migration list
+
+# Check for schema drift
+supabase db diff --linked
+```
+
+**Expected output:**
+
+- One applied migration
+- No schema diff
+
+### Rules Going Forward
+
+#### ✅ DO
+
+- Use `supabase migration new <name>` to create migrations
+- Apply changes with `supabase db push`
+- Commit migrations to git
+- Treat migrations as the **only** schema change mechanism
+
+#### ❌ DO NOT
+
+- Run schema SQL via Supabase Dashboard
+- Manually alter production schema
+- Edit `schema_migrations` by hand
+- Reintroduce old migrations from backup
+
+### Why This Approach Was Chosen
+
+- **Zero risk** to production data
+- **Clean, future-proof** migration graph
+- **Aligns** with Supabase CLI expectations
+- **Prevents** repeat drift issues
+- **Industry-standard** solution for live DBs
+
+### When to Use This Pattern Again
+
+Use this baseline strategy if:
+
+- Production schema exists but migrations are missing
+- Migration history is corrupted or incomplete
+- Early development didn't use migrations consistently
+
+> **TL;DR**: Production schema is the source of truth. Migrations must reflect reality exactly. When they don't, baseline from production.
 
 ---
 
@@ -718,5 +977,5 @@ supabase status             # Check Supabase connection
 
 ---
 
-_Last updated: July 14, 2025_
+_Last updated: December 28, 2025_
 _For questions or improvements to this guide, update this file and submit a PR._

@@ -309,6 +309,10 @@ PROJECT_STATUS.md
 RATING_ENGINE_ANALYSIS.md
 VERCEL_DEPLOYMENT_INSTRUCTIONS.md
 
+# Local database dumps (contains production data - never commit)
+production_data.sql
+*_data_dump.sql
+
 # Playwright
 /apps/web/test-results/
 /apps/web/playwright-report/

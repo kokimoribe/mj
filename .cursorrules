@@ -1,0 +1,71 @@
+# .cursorrules
+# SYNC CONTRACT: This file MUST be kept in sync with CLAUDE.md.
+# Any change to either file requires updating the other.
+# Divergence between these files is a bug.
+
+## Development Process
+
+- Follow requirements-driven and test-driven development.
+- Development cycle: Requirements → Tests → Implementation → Verification.
+- Write specifications in `/docs/specs/` before writing code.
+- Write tests BEFORE implementation.
+- Ask clarifying questions until specifications are clear.
+
+## Testing
+
+- E2E tests: Playwright in `/apps/web/e2e/`
+- Component tests: React Testing Library (`*.test.tsx`)
+- User story tests: Playwright in `/apps/web/e2e/user-stories/`
+- Tests must map to user stories in specifications.
+- Focus tests on functionality and user experience.
+- Do not test implementation details unless specified.
+- Run tests to verify they fail before implementation.
+
+## Build Verification
+
+- Run `npm run verify:web` before committing changes.
+- This runs ESLint, TypeScript type checking, and Next.js build.
+- Fix all ESLint errors and TypeScript issues before committing.
+
+## Common Build Issues
+
+- Remove unused imports.
+- Ensure React hooks are called unconditionally at the top level.
+- Address TypeScript 'any' warnings when possible.
+
+## Git Workflow
+
+- DO NOT use `git add .` for commits.
+- Be explicit and deliberate when staging files.
+- Stage only the files relevant to the change.
+
+## Key Commands
+
+- `npm run dev:web` - Start web dev server
+- `npm run test:e2e` - Run Playwright E2E tests
+- `npm run test:stories` - Run user story tests only
+- `npm run verify:web` - Lint, type-check, and build
+- `npm run build` - Build all apps
+
+## Feature Development
+
+1. Write specification in `/docs/specs/`
+2. Get user feedback on specification
+3. Write tests encoding the specification
+4. Implement to make tests pass
+5. Run verification
+6. Commit with explicit staging
+
+## Bug Fixes
+
+1. Write a failing test that demonstrates the bug
+2. Implement the fix
+3. Verify test passes with no regressions
+4. Include test in the commit
+
+## Specifications
+
+- All specifications live in `/docs/specs/`
+- Specs are living documents; update when requirements change
+- Keep tests aligned with specification updates
+

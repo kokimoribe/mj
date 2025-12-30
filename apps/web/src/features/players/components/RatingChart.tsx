@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, {
+  useMemo,
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+} from "react";
 import {
   LineChart,
   Line,
@@ -25,6 +31,46 @@ interface RatingChartProps {
 }
 
 export function RatingChart({ data }: RatingChartProps) {
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
+  const [activeTooltipIndex, setActiveTooltipIndex] = useState<number | null>(
+    null
+  );
+  const [isTouchActive, setIsTouchActive] = useState(false);
+  const tooltipTimeoutRef = useRef<NodeJS.Timeout>();
+
+  // Detect touch device on client side only (avoid hydration mismatch)
+  useEffect(() => {
+    setIsTouchDevice("ontouchstart" in window || navigator.maxTouchPoints > 0);
+  }, []);
+
+  // Handle auto-dismiss when tooltip becomes active on touch devices
+  useEffect(() => {
+    if (activeTooltipIndex !== null && isTouchDevice && !isTouchActive) {
+      // Clear any existing timeout
+      if (tooltipTimeoutRef.current) {
+        clearTimeout(tooltipTimeoutRef.current);
+      }
+
+      // Dismiss tooltip at 1200ms to sync with hand history fade-out (300ms duration)
+      // Hand history: 200ms fade-in + 1000ms visible + 300ms fade-out = 1500ms total
+      // Tooltip: shows until 1200ms, then fades for 300ms, completes at 1500ms
+      tooltipTimeoutRef.current = setTimeout(() => {
+        setActiveTooltipIndex(null);
+      }, 1200);
+    }
+
+    // If touch is held, cancel the timer
+    if (isTouchActive && tooltipTimeoutRef.current) {
+      clearTimeout(tooltipTimeoutRef.current);
+    }
+
+    return () => {
+      if (tooltipTimeoutRef.current) {
+        clearTimeout(tooltipTimeoutRef.current);
+      }
+    };
+  }, [activeTooltipIndex, isTouchDevice, isTouchActive]);
+
   // Filter out invalid data points
   const validData = useMemo(() => {
     return data.filter(
@@ -58,6 +104,7 @@ export function RatingChart({ data }: RatingChartProps) {
 
       return {
         ...point,
+        dataIndex: index,
         displayDate: format(new Date(point.date), "MMM d"),
         // Add time suffix for multiple games on same day
         chartKey:
@@ -121,15 +168,25 @@ export function RatingChart({ data }: RatingChartProps) {
         date: string;
         rating: number;
         change: number;
+        dataIndex?: number;
         gamesOnSameDay?: number;
         gameIndexOnDay?: number;
       };
     }>;
   }) => {
-    if (active && payload && payload[0]) {
+    // On touch devices, only show if activeTooltipIndex matches
+    // On desktop, show normally when active
+    const dataIndex = payload?.[0]?.payload?.dataIndex;
+    const shouldShow =
+      active &&
+      payload &&
+      payload[0] &&
+      (!isTouchDevice || (isTouchDevice && activeTooltipIndex === dataIndex));
+
+    if (shouldShow) {
       const data = payload[0].payload;
       return (
-        <div className="bg-background rounded border p-2 shadow-lg">
+        <div className="bg-background rounded border p-2 shadow-lg transition-opacity duration-[300ms]">
           <p className="text-sm font-medium">
             {format(new Date(data.date), "PPP")}
           </p>
@@ -162,11 +219,53 @@ export function RatingChart({ data }: RatingChartProps) {
   };
 
   return (
-    <div className="h-48 w-full" data-testid="rating-chart">
+    <div
+      className="h-48 w-full select-none"
+      data-testid="rating-chart"
+      style={{
+        WebkitUserSelect: "none",
+        WebkitTouchCallout: "none",
+        userSelect: "none",
+        touchAction: "manipulation",
+      }}
+      onTouchStart={() => {
+        if (isTouchDevice) {
+          setIsTouchActive(true);
+        }
+      }}
+      onTouchEnd={() => {
+        if (isTouchDevice) {
+          setIsTouchActive(false);
+        }
+      }}
+      onTouchCancel={() => {
+        if (isTouchDevice) {
+          setIsTouchActive(false);
+        }
+      }}
+    >
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
           data={chartData}
           margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
+          onClick={e => {
+            // On touch devices, set the active tooltip index
+            if (e && e.activeTooltipIndex !== undefined && isTouchDevice) {
+              setActiveTooltipIndex(e.activeTooltipIndex);
+            }
+          }}
+          onMouseMove={e => {
+            // On desktop, track active index for tooltip
+            if (!isTouchDevice && e && e.activeTooltipIndex !== undefined) {
+              setActiveTooltipIndex(e.activeTooltipIndex);
+            }
+          }}
+          onMouseLeave={() => {
+            // On desktop, clear tooltip when mouse leaves
+            if (!isTouchDevice) {
+              setActiveTooltipIndex(null);
+            }
+          }}
         >
           <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
           <XAxis

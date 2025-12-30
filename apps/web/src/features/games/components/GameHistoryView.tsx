@@ -223,6 +223,12 @@ interface GameCardProps {
 }
 
 const GameCard = memo(function GameCard({ game }: GameCardProps) {
+  const router = useRouter();
+
+  const handleCardClick = () => {
+    router.push(`/games/${game.id}`);
+  };
+
   const getPlacementMedal = (placement: number) => {
     switch (placement) {
       case 1:
@@ -264,64 +270,68 @@ const GameCard = memo(function GameCard({ game }: GameCardProps) {
   };
 
   return (
-    <Card
-      data-testid="game-card"
-      aria-label={`Game played on ${format(new Date(game.date), "MMM d, yyyy")}`}
-    >
-      <CardHeader className="pb-3">
-        <div className="text-muted-foreground flex items-center gap-2 text-sm">
-          <Calendar className="h-4 w-4" />
-          <span data-testid="game-date">
-            {format(new Date(game.date), "MMM d, yyyy")} •{" "}
-            {format(new Date(game.date), "h:mm a")}
-          </span>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-2">
-          {game.results.map(result => (
-            <div
-              key={`${game.id}-${result.playerId}`}
-              className="flex items-center justify-between text-sm"
-              data-testid="player-result"
-            >
-              <div className="flex items-center gap-2">
-                <span className="text-lg" data-testid="placement">
-                  {getPlacementMedal(result.placement)}
-                </span>
-                <Link
-                  href={`/player/${result.playerId}`}
-                  className="font-medium hover:underline"
-                  data-testid="player-name"
-                >
-                  {result.playerName}
-                </Link>
+    <div onClick={handleCardClick} className="block">
+      <Card
+        data-testid="game-card"
+        aria-label={`Game played on ${format(new Date(game.date), "MMM d, yyyy")}`}
+        className="hover:bg-accent/50 cursor-pointer transition-colors"
+      >
+        <CardHeader className="pb-3">
+          <div className="text-muted-foreground flex items-center gap-2 text-sm">
+            <Calendar className="h-4 w-4" />
+            <span data-testid="game-date">
+              {format(new Date(game.date), "MMM d, yyyy")} •{" "}
+              {format(new Date(game.date), "h:mm a")}
+            </span>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            {game.results.map(result => (
+              <div
+                key={`${game.id}-${result.playerId}`}
+                className="flex items-center justify-between text-sm"
+                data-testid="player-result"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-lg" data-testid="placement">
+                    {getPlacementMedal(result.placement)}
+                  </span>
+                  <Link
+                    href={`/player/${result.playerId}`}
+                    className="font-medium hover:underline"
+                    data-testid="player-name"
+                    onClick={e => e.stopPropagation()}
+                  >
+                    {result.playerName}
+                  </Link>
+                </div>
+                <div className="flex items-center gap-3 text-xs">
+                  <span data-testid="final-score">
+                    {formatScore(result.rawScore)}
+                  </span>
+                  <Badge
+                    variant="outline"
+                    className="text-xs"
+                    style={{
+                      color:
+                        result.ratingChange === null ||
+                        result.ratingChange === undefined ||
+                        result.ratingChange >= 0
+                          ? "rgb(34, 197, 94)"
+                          : "rgb(239, 68, 68)",
+                    }}
+                    data-testid="rating-change"
+                  >
+                    {formatRatingChange(result.ratingChange)}
+                  </Badge>
+                </div>
               </div>
-              <div className="flex items-center gap-3 text-xs">
-                <span data-testid="final-score">
-                  {formatScore(result.rawScore)}
-                </span>
-                <Badge
-                  variant="outline"
-                  className="text-xs"
-                  style={{
-                    color:
-                      result.ratingChange === null ||
-                      result.ratingChange === undefined ||
-                      result.ratingChange >= 0
-                        ? "rgb(34, 197, 94)"
-                        : "rgb(239, 68, 68)",
-                  }}
-                  data-testid="rating-change"
-                >
-                  {formatRatingChange(result.ratingChange)}
-                </Badge>
-              </div>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 });
 

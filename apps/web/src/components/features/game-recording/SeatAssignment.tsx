@@ -148,26 +148,26 @@ export function SeatAssignmentComponent({
       <CardContent className="space-y-4">
         {/* Seat Assignment Grid - Visual Table Layout */}
         <div className="mx-auto grid max-w-sm grid-cols-3 gap-2">
-          {/* Top row - West */}
+          {/* Top row - North */}
           <div className="col-start-2">
-            <SeatSelect
-              seat="west"
-              label={SEAT_LABELS.west}
-              value={localAssignments.west}
-              players={getAvailablePlayers("west")}
-              onChange={playerId => handleSeatChange("west", playerId)}
-              getPlayerName={getPlayerName}
-            />
-          </div>
-
-          {/* Middle row - North and South */}
-          <div className="col-start-1 row-start-2">
             <SeatSelect
               seat="north"
               label={SEAT_LABELS.north}
               value={localAssignments.north}
               players={getAvailablePlayers("north")}
               onChange={playerId => handleSeatChange("north", playerId)}
+              getPlayerName={getPlayerName}
+            />
+          </div>
+
+          {/* Middle row - West and East */}
+          <div className="col-start-1 row-start-2">
+            <SeatSelect
+              seat="west"
+              label={SEAT_LABELS.west}
+              value={localAssignments.west}
+              players={getAvailablePlayers("west")}
+              onChange={playerId => handleSeatChange("west", playerId)}
               getPlayerName={getPlayerName}
             />
           </div>
@@ -178,23 +178,23 @@ export function SeatAssignmentComponent({
           </div>
           <div className="col-start-3 row-start-2">
             <SeatSelect
-              seat="south"
-              label={SEAT_LABELS.south}
-              value={localAssignments.south}
-              players={getAvailablePlayers("south")}
-              onChange={playerId => handleSeatChange("south", playerId)}
-              getPlayerName={getPlayerName}
-            />
-          </div>
-
-          {/* Bottom row - East */}
-          <div className="col-start-2 row-start-3">
-            <SeatSelect
               seat="east"
               label={SEAT_LABELS.east}
               value={localAssignments.east}
               players={getAvailablePlayers("east")}
               onChange={playerId => handleSeatChange("east", playerId)}
+              getPlayerName={getPlayerName}
+            />
+          </div>
+
+          {/* Bottom row - South */}
+          <div className="col-start-2 row-start-3">
+            <SeatSelect
+              seat="south"
+              label={SEAT_LABELS.south}
+              value={localAssignments.south}
+              players={getAvailablePlayers("south")}
+              onChange={playerId => handleSeatChange("south", playerId)}
               getPlayerName={getPlayerName}
             />
           </div>

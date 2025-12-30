@@ -11,19 +11,12 @@ import {
   CheckCircle,
   Loader2,
   AlertCircle,
-  Info,
-  Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { GameIdTooltip } from "@/components/ui/game-id-tooltip";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -98,7 +91,6 @@ export default function LiveGamePage() {
   const [showEndDialog, setShowEndDialog] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
   const [endDialogDismissed, setEndDialogDismissed] = useState(false);
-  const [gameIdCopied, setGameIdCopied] = useState(false);
   const [showExitConfirmation, setShowExitConfirmation] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -609,77 +601,7 @@ export default function LiveGamePage() {
               <p className="text-muted-foreground text-sm">
                 {new Date(game.started_at).toLocaleDateString()}
               </p>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      className="text-muted-foreground hover:text-foreground transition-colors"
-                      aria-label="Game ID"
-                      onClick={async e => {
-                        e.preventDefault();
-                        try {
-                          // Try modern clipboard API first
-                          if (
-                            navigator.clipboard &&
-                            navigator.clipboard.writeText
-                          ) {
-                            await navigator.clipboard.writeText(game.id);
-                          } else {
-                            // Fallback for iOS Safari and older browsers
-                            const textArea = document.createElement("textarea");
-                            textArea.value = game.id;
-                            textArea.style.position = "fixed";
-                            textArea.style.left = "-999999px";
-                            textArea.style.top = "-999999px";
-                            document.body.appendChild(textArea);
-                            textArea.focus();
-                            textArea.select();
-
-                            const successful = document.execCommand("copy");
-                            document.body.removeChild(textArea);
-
-                            if (!successful) {
-                              throw new Error("Copy command failed");
-                            }
-                          }
-
-                          setGameIdCopied(true);
-                          toast.success("Game ID copied to clipboard");
-                          // Reset the copied state after 2 seconds
-                          setTimeout(() => {
-                            setGameIdCopied(false);
-                          }, 2000);
-                        } catch {
-                          toast.error("Failed to copy Game ID");
-                        }
-                      }}
-                    >
-                      <Info className="h-3.5 w-3.5" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent className="border-slate-700 bg-slate-900 text-white dark:border-slate-800 dark:bg-slate-950">
-                    <div className="flex flex-col gap-1.5">
-                      <span className="text-xs font-semibold text-white">
-                        Game ID
-                      </span>
-                      <span className="rounded border border-slate-700 bg-slate-800 px-2 py-1 font-mono text-xs text-white dark:border-slate-800 dark:bg-slate-900">
-                        {game.id}
-                      </span>
-                      {gameIdCopied ? (
-                        <div className="mt-0.5 flex items-center gap-1.5 text-xs text-green-400">
-                          <Check className="h-3 w-3" />
-                          <span className="font-medium">Copied!</span>
-                        </div>
-                      ) : (
-                        <span className="mt-0.5 text-xs text-slate-300 dark:text-slate-400">
-                          Click to copy
-                        </span>
-                      )}
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <GameIdTooltip gameId={game.id} />
             </div>
           </div>
         </div>

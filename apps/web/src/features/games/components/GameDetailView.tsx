@@ -14,7 +14,6 @@ import { format } from "date-fns";
 import { type Seat, STARTING_POINTS } from "@/lib/mahjong";
 import { PointsProgressionChart } from "./PointsProgressionChart";
 import {
-  HandHistory,
   HandHistoryItem,
   type HandEvent as HandHistoryEvent,
 } from "@/components/features/game-recording";

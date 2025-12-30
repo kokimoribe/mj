@@ -461,10 +461,10 @@ export function GameDetailView({ gameId }: GameDetailViewProps) {
             </div>
 
             {/* Hand History Section - Scrollable */}
-            <div>
+            <div className="-mx-6">
               <div
                 id="hand-history-scroll-container"
-                className="max-h-[400px] overflow-y-auto rounded-md border"
+                className="max-h-[400px] overflow-y-auto rounded-none border-x-0 border-t border-b-0"
               >
                 <div className="divide-y">
                   {handHistory.length === 0 ? (

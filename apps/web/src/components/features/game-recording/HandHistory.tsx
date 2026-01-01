@@ -26,6 +26,7 @@ export interface HandEvent {
     tier?: string;
     riichiSticks?: number; // Sticks on table before this hand
     tenpaiSeats?: Seat[]; // Players in tenpai for draw hands
+    abortiveDrawType?: string; // Type of abortive draw
   };
 }
 
@@ -63,6 +64,18 @@ const DEALER_BY_KYOKU: Record<number, Seat> = {
   2: "south",
   3: "west",
   4: "north",
+};
+
+// Abortive draw type labels
+const ABORTIVE_DRAW_TYPE_LABELS: Record<
+  string,
+  { label: string; japanese: string }
+> = {
+  kyuushu_kyuuhai: { label: "Nine Terminals", japanese: "九種九牌" },
+  suufon_renda: { label: "Four Wind Discards", japanese: "四風連打" },
+  suucha_riichi: { label: "Four Riichi", japanese: "四家立直" },
+  suukan_sanra: { label: "Four Kans", japanese: "四槓散了" },
+  sanchahou: { label: "Triple Ron", japanese: "三家和" },
 };
 
 export function HandHistory({ hands, playerNames }: HandHistoryProps) {
@@ -114,8 +127,14 @@ export function HandHistoryItem({
 
   const dealerSeat = DEALER_BY_KYOKU[hand.kyoku] || "east";
   const isChombo = hand.eventType === "chombo";
+  const isAbortiveDraw = hand.eventType === "abortive_draw";
   const isDraw =
     hand.eventType === "draw" || hand.eventType === "abortive_draw";
+  const abortiveDrawType = hand.details?.abortiveDrawType;
+  const abortiveDrawInfo =
+    isAbortiveDraw && abortiveDrawType
+      ? ABORTIVE_DRAW_TYPE_LABELS[abortiveDrawType]
+      : null;
   const winnerEvent = hand.events.find(e => e.pointsDelta > 0);
   const winnerEvents = isChombo
     ? hand.events.filter(e => e.pointsDelta > 0)
@@ -203,6 +222,18 @@ export function HandHistoryItem({
           <span className="text-base leading-none">{eventInfo.icon}</span>
         </div>
       </div>
+
+      {/* Abortive draw type */}
+      {isAbortiveDraw && abortiveDrawInfo && (
+        <div className="mt-2 text-sm">
+          <div className="flex items-center gap-2">
+            <div className="w-[42px] flex-shrink-0"></div>
+            <div className="text-muted-foreground">
+              {abortiveDrawInfo.label} ({abortiveDrawInfo.japanese})
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Win details (or chombo recipients) - exclude draws, they use tenpai section */}
       {!isDraw && winnerEvents.length > 0 && hand.details && (

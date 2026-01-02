@@ -773,3 +773,60 @@ export async function fetchPlayerGameCounts(configHash?: string) {
 
   return gameCounts;
 }
+
+// Fetch the most recent ongoing game
+export interface OngoingGameData {
+  id: string;
+  started_at: string;
+  status: string;
+  game_format: string | null;
+  game_seats: Array<{
+    seat: string;
+    player_id: string;
+    players: {
+      id: string;
+      display_name: string;
+    };
+  }>;
+}
+
+export async function fetchOngoingGame(): Promise<OngoingGameData | null> {
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from("games")
+    .select(
+      `
+      id,
+      started_at,
+      status,
+      game_format,
+      game_seats (
+        seat,
+        player_id,
+        players (
+          id,
+          display_name
+        )
+      )
+    `
+    )
+    .eq("status", "ongoing")
+    .order("started_at", { ascending: false })
+    .limit(1)
+    .single();
+
+  if (error || !data) {
+    // PGRST116 is "not found" error code, which is expected when no ongoing game
+    if (error?.code === "PGRST116") {
+      return null;
+    }
+    // For other errors, log and return null
+    if (error) {
+      console.error("Error fetching ongoing game:", error);
+    }
+    return null;
+  }
+
+  return data;
+}

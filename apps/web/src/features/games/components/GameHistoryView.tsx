@@ -8,6 +8,8 @@ import {
   useAllPlayers,
   usePlayerGameCounts,
 } from "@/lib/queries";
+import { useQuery } from "@tanstack/react-query";
+import { fetchOngoingGame } from "@/lib/supabase/queries";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -21,8 +23,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { format } from "date-fns";
-import { Calendar, Plus } from "lucide-react";
+import { Calendar, Plus, Circle } from "lucide-react";
 import { safeFormatNumber } from "@/lib/utils/data-validation";
+import { LiveGameCard } from "./LiveGameCard";
 
 interface Player {
   id: string;
@@ -77,6 +80,13 @@ export const GameHistoryView = memo(function GameHistoryView() {
   const { data: players, isLoading: playersLoading } = useAllPlayers();
   const { data: gameCounts } = usePlayerGameCounts();
 
+  // Check if there's an ongoing game
+  const { data: ongoingGame } = useQuery({
+    queryKey: ["ongoing-game"],
+    queryFn: fetchOngoingGame,
+    staleTime: 30 * 1000, // 30 seconds
+  });
+
   // Calculate visible games based on showingAll state
   const visibleGames = useMemo(() => {
     if (!gameData?.games) return [];
@@ -109,6 +119,22 @@ export const GameHistoryView = memo(function GameHistoryView() {
 
   return (
     <div className="space-y-4" data-testid="game-history-view">
+      {/* Live Game Section */}
+      {ongoingGame && (
+        <div>
+          <div className="mb-3">
+            <Badge
+              variant="destructive"
+              className="animate-pulse px-3 py-1.5 text-base"
+            >
+              <Circle className="mr-1.5 h-4 w-4 fill-current" />
+              LIVE GAME
+            </Badge>
+          </div>
+          <LiveGameCard />
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>

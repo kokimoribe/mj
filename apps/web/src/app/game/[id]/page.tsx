@@ -518,6 +518,11 @@ export default function LiveGamePage() {
         throw new Error(errorData.error || "Failed to delete game");
       }
 
+      // Invalidate games queries to trigger refresh on games page
+      queryClient.invalidateQueries({ queryKey: ["games"] });
+      queryClient.invalidateQueries({ queryKey: ["ongoing-game"] });
+      queryClient.invalidateQueries({ queryKey: ["players", "gameCounts"] });
+
       setShowExitConfirmation(false);
       toast.success("Game discarded");
       router.push("/games");

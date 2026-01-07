@@ -309,6 +309,10 @@ npm run test:config
 
 ## Database Migrations
 
+### Current Migration State
+
+> ⚠️ **Important**: Our migration history was baselined from production in December 2024. The single authoritative migration is `20251228193722_remote_schema.sql`. See [Migration Baseline Strategy](./08-operational-guide.md#migration-baseline-strategy) for full context.
+
 ### Schema Changes
 
 ```bash
@@ -332,6 +336,14 @@ supabase migration new "migrate_old_games_format"
 # Include both schema and data changes
 # Test thoroughly before production
 ```
+
+### Migration Rules
+
+- **Always use CLI**: Never modify schema via Supabase Dashboard
+- **Forward-only**: Never edit existing migration files
+- **CLI is source of truth**: All schema changes must go through `supabase migration new`
+
+If you encounter migration sync issues, see the [Migration Baseline Strategy](./08-operational-guide.md#migration-baseline-strategy) for recovery procedures.
 
 ---
 

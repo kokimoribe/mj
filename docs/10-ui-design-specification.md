@@ -265,7 +265,25 @@ Muted:     #64748b (Slate 500)
 - **Subheaders**: Inter 18px/24px Semibold
 - **Body**: Inter 14px/20px Regular
 - **Captions**: Inter 12px/16px Regular
-- **Monospace**: JetBrains Mono (for ratings, scores)
+- **Monospace**: JetBrains Mono (use sparingly - see guidelines below)
+
+#### Font Usage Guidelines
+
+**Default Font (Inter)**: Use the standard Inter font for all text by default, including:
+
+- Player names
+- Point values and scores (e.g., 32,800, +8,000)
+- Rating values
+- Statistics and numerical data
+- Labels and descriptions
+
+**Monospace Font**: Only use monospace (`font-mono` / JetBrains Mono) when explicitly required for:
+
+- Code snippets or technical identifiers
+- Fixed-width formatting requirements (e.g., alignment in tables)
+- User-entered technical values
+
+**Important**: Do not use monospace for general numerical displays like scores, points, or ratings. Consistent typography improves visual cohesion across the application.
 
 ### Spacing System
 

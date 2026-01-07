@@ -15,8 +15,8 @@ export type {
   AbortiveDrawType,
 } from "./HandEntryForm";
 
-export { HandHistory } from "./HandHistory";
-export type { HandEvent } from "./HandHistory";
+export { HandHistory, HandHistoryItem } from "./HandHistory";
+export type { HandEvent, HandHistoryItemProps } from "./HandHistory";
 
 export { GameEndDialog } from "./GameEndDialog";
 export type { GameEndPlayerScore } from "./GameEndDialog";

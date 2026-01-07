@@ -26,6 +26,7 @@ export interface HandEvent {
     tier?: string;
     riichiSticks?: number; // Sticks on table before this hand
     tenpaiSeats?: Seat[]; // Players in tenpai for draw hands
+    abortiveDrawType?: string; // Type of abortive draw
   };
 }
 
@@ -65,6 +66,18 @@ const DEALER_BY_KYOKU: Record<number, Seat> = {
   4: "north",
 };
 
+// Abortive draw type labels
+const ABORTIVE_DRAW_TYPE_LABELS: Record<
+  string,
+  { label: string; japanese: string }
+> = {
+  kyuushu_kyuuhai: { label: "Nine Terminals", japanese: "九種九牌" },
+  suufon_renda: { label: "Four Wind Discards", japanese: "四風連打" },
+  suucha_riichi: { label: "Four Riichi", japanese: "四家立直" },
+  suukan_sanra: { label: "Four Kans", japanese: "四槓散了" },
+  sanchahou: { label: "Triple Ron", japanese: "三家和" },
+};
+
 export function HandHistory({ hands, playerNames }: HandHistoryProps) {
   if (hands.length === 0) {
     return (
@@ -78,8 +91,8 @@ export function HandHistory({ hands, playerNames }: HandHistoryProps) {
 
   return (
     <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm">Hand History</CardTitle>
+      <CardHeader className="pb-0">
+        <CardTitle className="text-base">Hand History</CardTitle>
       </CardHeader>
       <CardContent className="p-0">
         <div className="max-h-[300px] overflow-y-auto">
@@ -98,12 +111,12 @@ export function HandHistory({ hands, playerNames }: HandHistoryProps) {
   );
 }
 
-interface HandHistoryItemProps {
+export interface HandHistoryItemProps {
   hand: HandEvent;
   playerNames: Record<Seat, string>;
 }
 
-function HandHistoryItem({
+export function HandHistoryItem({
   hand,
   playerNames: _playerNames,
 }: HandHistoryItemProps) {
@@ -114,8 +127,14 @@ function HandHistoryItem({
 
   const dealerSeat = DEALER_BY_KYOKU[hand.kyoku] || "east";
   const isChombo = hand.eventType === "chombo";
+  const isAbortiveDraw = hand.eventType === "abortive_draw";
   const isDraw =
     hand.eventType === "draw" || hand.eventType === "abortive_draw";
+  const abortiveDrawType = hand.details?.abortiveDrawType;
+  const abortiveDrawInfo =
+    isAbortiveDraw && abortiveDrawType
+      ? ABORTIVE_DRAW_TYPE_LABELS[abortiveDrawType]
+      : null;
   const winnerEvent = hand.events.find(e => e.pointsDelta > 0);
   const winnerEvents = isChombo
     ? hand.events.filter(e => e.pointsDelta > 0)
@@ -164,29 +183,64 @@ function HandHistoryItem({
   const breakdown = getPointBreakdown();
 
   return (
-    <div className="p-3">
-      <div className="flex items-start justify-between">
+    <div
+      className="border-l-8 border-l-transparent p-2 pr-8"
+      id={`hand-${hand.handSeq}`}
+      data-hand-seq={hand.handSeq}
+    >
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="px-2 text-base">
-            #{hand.handSeq}
-          </Badge>
-          <span className="text-muted-foreground text-base">
-            {ROUND_DISPLAY[hand.round] || hand.round} {hand.kyoku}
-            {hand.honba > 0 && ` • ${hand.honba} Honba`}
+          <div className="flex w-[42px] flex-shrink-0 items-center justify-center">
+            <Badge variant="outline" className="px-2 text-sm">
+              #{hand.handSeq}
+            </Badge>
+          </div>
+          <span className="flex items-center justify-center gap-[3px] text-base">
+            <span className="text-primary">
+              {ROUND_DISPLAY[hand.round] || hand.round} {hand.kyoku}
+            </span>
+            {hand.honba > 0 && (
+              <>
+                <span className="text-muted-foreground"> • </span>
+                <span className="text-foreground text-xs">
+                  {hand.honba} Honba
+                </span>
+              </>
+            )}
+            {(hand.details?.riichiSticks ?? 0) > 0 && (
+              <>
+                <span className="text-muted-foreground"> • </span>
+                <span className="text-xs text-blue-500">
+                  {hand.details?.riichiSticks} Riichi
+                </span>
+              </>
+            )}
           </span>
         </div>
         <div className="flex items-center gap-1.5">
+          <span className="text-base font-medium">{eventInfo.label}</span>
           <span className="text-base leading-none">{eventInfo.icon}</span>
-          <span className="text-xs font-medium">{eventInfo.label}</span>
         </div>
       </div>
+
+      {/* Abortive draw type */}
+      {isAbortiveDraw && abortiveDrawInfo && (
+        <div className="mt-2 text-sm">
+          <div className="flex items-center gap-2">
+            <div className="w-[42px] flex-shrink-0"></div>
+            <div className="text-muted-foreground">
+              {abortiveDrawInfo.label} ({abortiveDrawInfo.japanese})
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Win details (or chombo recipients) - exclude draws, they use tenpai section */}
       {!isDraw && winnerEvents.length > 0 && hand.details && (
         <div className="mt-2 space-y-1 text-sm">
           {winnerEvents.map(event => (
-            <div key={event.seat} className="flex items-center">
-              <div className="w-12 flex-shrink-0">
+            <div key={event.seat} className="flex items-center gap-2">
+              <div className="flex w-[42px] flex-shrink-0 items-center justify-center">
                 {event.seat === dealerSeat && (
                   <Badge
                     variant="outline"
@@ -203,13 +257,21 @@ function HandHistoryItem({
                 <span className="text-green-500">
                   +{formatPoints(event.pointsDelta)}
                 </span>
+                {!isChombo && hand.details?.han && (
+                  <span className="text-muted-foreground text-xs">
+                    {hand.details.han} Han (翻){" "}
+                    {hand.details.fu &&
+                      hand.details.han < 5 &&
+                      `${hand.details.fu} Fu (符)`}
+                  </span>
+                )}
                 {!isChombo && hand.details?.tier && (
                   <Badge
                     variant="secondary"
                     className={cn(
                       "text-xs",
                       TIER_CLASSES[hand.details.tier] &&
-                        "m-1 !overflow-visible border-0 bg-transparent px-4 py-2"
+                        "!overflow-visible border-0 bg-transparent px-2 py-0"
                     )}
                   >
                     <span className={TIER_CLASSES[hand.details.tier] || ""}>
@@ -221,37 +283,30 @@ function HandHistoryItem({
             </div>
           ))}
 
-          {/* Han/Fu info (only for wins, not chombo) */}
-          {!isChombo && hand.details?.han && (
-            <div className="text-muted-foreground pl-12 text-xs">
-              {hand.details.han} Han (翻){" "}
-              {hand.details.fu &&
-                hand.details.han < 5 &&
-                `${hand.details.fu} Fu (符)`}
-            </div>
-          )}
-
           {/* Point breakdown (only for wins, not chombo) */}
           {!isChombo &&
             breakdown &&
             (breakdown.honbaBonus > 0 || breakdown.riichiValue > 0) && (
-              <div className="bg-muted/50 mt-1.5 ml-12 rounded px-2 py-1 text-xs">
-                <span className="text-amber-500">
-                  {formatPoints(breakdown.basePoints)} base
-                </span>
-                {breakdown.honbaBonus > 0 && (
-                  <span className="text-foreground">
-                    {" "}
-                    + {formatPoints(breakdown.honbaBonus)} honba
+              <div className="mt-1.5 flex items-center gap-2">
+                <div className="w-[42px] flex-shrink-0"></div>
+                <div className="bg-muted/50 flex-1 rounded px-0 py-1 text-xs">
+                  <span className="text-amber-500">
+                    + {formatPoints(breakdown.basePoints)} base
                   </span>
-                )}
-                {breakdown.riichiValue > 0 && (
-                  <span className="text-blue-500">
-                    {" "}
-                    + {formatPoints(breakdown.riichiValue)} riichi (
-                    {breakdown.riichiSticksCollected}本)
-                  </span>
-                )}
+                  {breakdown.honbaBonus > 0 && (
+                    <span className="text-foreground">
+                      {" "}
+                      + {formatPoints(breakdown.honbaBonus)} honba
+                    </span>
+                  )}
+                  {breakdown.riichiValue > 0 && (
+                    <span className="text-blue-500">
+                      {" "}
+                      + {formatPoints(breakdown.riichiValue)} riichi (
+                      {breakdown.riichiSticksCollected}本)
+                    </span>
+                  )}
+                </div>
               </div>
             )}
         </div>
@@ -281,8 +336,8 @@ function HandHistoryItem({
 
             return (
               <div key={event.seat}>
-                <div className="flex items-center">
-                  <div className="w-12 flex-shrink-0">
+                <div className="flex items-center gap-2">
+                  <div className="flex w-[42px] flex-shrink-0 items-center justify-center">
                     {event.seat === dealerSeat && (
                       <Badge
                         variant="outline"
@@ -322,20 +377,23 @@ function HandHistoryItem({
 
                 {/* Tenpai payment breakdown with riichi deduction */}
                 {tenpaiPayment > 0 && (
-                  <div className="bg-muted/50 mt-1.5 ml-12 rounded px-2 py-1 text-xs">
-                    <span className="text-green-500">
-                      +{formatPoints(tenpaiPayment)} Tenpai
-                    </span>
-                    <span className="text-muted-foreground">
-                      {" "}
-                      ({paymentDescription})
-                    </span>
-                    {riichiDeduction > 0 && (
-                      <span className="text-red-500">
-                        {" "}
-                        - {formatPoints(riichiDeduction)} riichi
+                  <div className="mt-1.5 flex items-center gap-2">
+                    <div className="w-[42px] flex-shrink-0"></div>
+                    <div className="bg-muted/50 flex-1 rounded px-0 py-1 text-xs">
+                      <span className="text-green-500">
+                        +{formatPoints(tenpaiPayment)} Tenpai
                       </span>
-                    )}
+                      <span className="text-muted-foreground">
+                        {" "}
+                        ({paymentDescription})
+                      </span>
+                      {riichiDeduction > 0 && (
+                        <span className="text-red-500">
+                          {" "}
+                          - {formatPoints(riichiDeduction)} riichi
+                        </span>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -348,8 +406,8 @@ function HandHistoryItem({
       {isDraw && nonTenpaiEvents.length > 0 && (
         <div className="mt-2 space-y-1 text-sm">
           {nonTenpaiEvents.map(event => (
-            <div key={event.seat} className="flex items-center">
-              <div className="w-12 flex-shrink-0">
+            <div key={event.seat} className="flex items-center gap-2">
+              <div className="flex w-[42px] flex-shrink-0 items-center justify-center">
                 {event.seat === dealerSeat && (
                   <Badge
                     variant="outline"
@@ -374,8 +432,8 @@ function HandHistoryItem({
       {!isDraw && loserEvents.length > 0 && (
         <div className="mt-2 space-y-1 text-sm">
           {loserEvents.map(loser => (
-            <div key={loser.seat} className="flex items-center">
-              <div className="w-12 flex-shrink-0">
+            <div key={loser.seat} className="flex items-center gap-2">
+              <div className="flex w-[42px] flex-shrink-0 items-center justify-center">
                 {loser.seat === dealerSeat && (
                   <Badge
                     variant="outline"
@@ -398,8 +456,11 @@ function HandHistoryItem({
 
       {/* Riichi declarations */}
       {riichiEvents.length > 0 && (
-        <div className="text-muted-foreground mt-1 pl-12 text-xs">
-          Riichi: {riichiEvents.map(e => e.playerName).join(", ")}
+        <div className="mt-1 flex items-center gap-2">
+          <div className="w-[42px] flex-shrink-0"></div>
+          <div className="text-muted-foreground text-xs">
+            Riichi: {riichiEvents.map(e => e.playerName).join(", ")}
+          </div>
         </div>
       )}
     </div>

@@ -8,6 +8,8 @@ import {
   useAllPlayers,
   usePlayerGameCounts,
 } from "@/lib/queries";
+import { useQuery } from "@tanstack/react-query";
+import { fetchOngoingGames } from "@/lib/supabase/queries";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -20,9 +22,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { format } from "date-fns";
-import { Calendar, Plus } from "lucide-react";
+import { differenceInMinutes, format } from "date-fns";
+import { Calendar, Plus, Circle } from "lucide-react";
 import { safeFormatNumber } from "@/lib/utils/data-validation";
+import { LiveGameCard } from "./LiveGameCard";
 
 interface Player {
   id: string;
@@ -77,6 +80,13 @@ export const GameHistoryView = memo(function GameHistoryView() {
   const { data: players, isLoading: playersLoading } = useAllPlayers();
   const { data: gameCounts } = usePlayerGameCounts();
 
+  // Check if there's an ongoing game
+  const { data: ongoingGames } = useQuery({
+    queryKey: ["ongoing-games"],
+    queryFn: fetchOngoingGames,
+    staleTime: 30 * 1000, // 30 seconds
+  });
+
   // Calculate visible games based on showingAll state
   const visibleGames = useMemo(() => {
     if (!gameData?.games) return [];
@@ -109,6 +119,26 @@ export const GameHistoryView = memo(function GameHistoryView() {
 
   return (
     <div className="space-y-4" data-testid="game-history-view">
+      {/* Live Game Section */}
+      {ongoingGames && ongoingGames.length > 0 && (
+        <div>
+          <div className="mb-3">
+            <Badge
+              variant="destructive"
+              className="animate-pulse px-3 py-1.5 text-base"
+            >
+              <Circle className="mr-1.5 h-4 w-4 fill-current" />
+              LIVE GAMES
+            </Badge>
+          </div>
+          <div className="space-y-3">
+            {ongoingGames.map(game => (
+              <LiveGameCard key={game.id} game={game} />
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
@@ -211,6 +241,8 @@ interface GameCardProps {
   game: {
     id: string;
     date: string;
+    startedAt?: string;
+    finishedAt?: string;
     results: Array<{
       playerId: string;
       playerName: string;
@@ -269,19 +301,47 @@ const GameCard = memo(function GameCard({ game }: GameCardProps) {
     return parseInt(formatted).toLocaleString();
   };
 
+  const startedAt = game.startedAt ? new Date(game.startedAt) : null;
+  const finishedAt = game.finishedAt
+    ? new Date(game.finishedAt)
+    : new Date(game.date);
+
+  const dateForDisplay = startedAt ?? finishedAt;
+  const dayLabel = format(dateForDisplay, "MMM d, yyyy");
+
+  const timeRangeLabel = (() => {
+    if (!startedAt || !game.finishedAt) {
+      // Fallback to the legacy single timestamp display
+      return format(finishedAt, "h:mm a");
+    }
+
+    const startTime = format(startedAt, "h:mm a");
+    const endTime = format(finishedAt, "h:mm a");
+
+    const totalMinutes = Math.max(
+      0,
+      differenceInMinutes(finishedAt, startedAt)
+    );
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    const duration = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+
+    return `${startTime} - ${endTime} (${duration})`;
+  })();
+
   return (
     <div onClick={handleCardClick} className="block">
       <Card
         data-testid="game-card"
-        aria-label={`Game played on ${format(new Date(game.date), "MMM d, yyyy")}`}
-        className="hover:bg-accent/50 cursor-pointer transition-colors"
+        aria-label={`Game played on ${dayLabel}`}
+        className="hover:bg-accent/50 cursor-pointer gap-0 transition-colors"
       >
         <CardHeader className="pb-3">
           <div className="text-muted-foreground flex items-center gap-2 text-sm">
             <Calendar className="h-4 w-4" />
             <span data-testid="game-date">
-              {format(new Date(game.date), "MMM d, yyyy")} •{" "}
-              {format(new Date(game.date), "h:mm a")}
+              {dayLabel} • {timeRangeLabel}
             </span>
           </div>
         </CardHeader>
@@ -337,7 +397,7 @@ const GameCard = memo(function GameCard({ game }: GameCardProps) {
 
 function GameHistorySkeleton() {
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-testid="game-history-loading">
       <Skeleton className="h-20 w-full" />
       <Skeleton className="h-10 w-[200px]" />
       <div className="space-y-3">

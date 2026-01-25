@@ -10,9 +10,10 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GameIdTooltip } from "@/components/ui/game-id-tooltip";
-import { format } from "date-fns";
+import { differenceInMinutes, format } from "date-fns";
 import { type Seat, STARTING_POINTS } from "@/lib/mahjong";
 import { PointsProgressionChart } from "./PointsProgressionChart";
+import { CompletedGameBadge } from "./CompletedGameBadge";
 import {
   HandHistoryItem,
   type HandEvent as HandHistoryEvent,
@@ -355,6 +356,45 @@ export function GameDetailView({ gameId }: GameDetailViewProps) {
     }
   };
 
+  const startedAt = game.started_at ? new Date(game.started_at) : null;
+  const finishedAt = game.finished_at ? new Date(game.finished_at) : null;
+
+  const dateForDisplay = startedAt ?? finishedAt;
+  const dayLabel = dateForDisplay
+    ? format(dateForDisplay, "MMM d, yyyy")
+    : null;
+
+  const timeRangeLabel = (() => {
+    if (!startedAt && !finishedAt) {
+      return "";
+    }
+
+    const startTime = startedAt ? format(startedAt, "h:mm a") : null;
+    const endTime = finishedAt ? format(finishedAt, "h:mm a") : null;
+
+    if (!startTime || !endTime || !startedAt || !finishedAt) {
+      return startTime ?? endTime ?? "";
+    }
+
+    const totalMinutes = Math.max(
+      0,
+      differenceInMinutes(finishedAt, startedAt)
+    );
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    const duration = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+
+    return `${startTime} - ${endTime} (${duration})`;
+  })();
+
+  const headerDateLabel =
+    dayLabel && timeRangeLabel
+      ? `${dayLabel} • ${timeRangeLabel}`
+      : dayLabel
+        ? dayLabel
+        : "Date unknown";
+
   return (
     <div className="space-y-2" data-testid="game-detail-view">
       {/* Back Button */}
@@ -368,30 +408,19 @@ export function GameDetailView({ gameId }: GameDetailViewProps) {
       </Button>
 
       {/* Game Header */}
-      <Card>
+      <Card className="gap-0">
         <CardHeader className="pb-0">
           <div className="flex items-center justify-between">
             <CardTitle className="text-base">Game Details</CardTitle>
             {game.status === "finished" ? (
-              <Badge
-                variant="outline"
-                className="border-green-500 text-green-500"
-              >
-                Completed ✅
-              </Badge>
+              <CompletedGameBadge />
             ) : (
               <Badge variant="secondary">{game.status}</Badge>
             )}
           </div>
           <div className="text-muted-foreground flex items-center gap-2 text-sm">
             <Calendar className="h-4 w-4" />
-            <span data-testid="game-date">
-              {game.finished_at
-                ? format(new Date(game.finished_at), "MMMM d, yyyy • h:mm a")
-                : game.started_at
-                  ? format(new Date(game.started_at), "MMMM d, yyyy • h:mm a")
-                  : "Date unknown"}
-            </span>
+            <span data-testid="game-date">{headerDateLabel}</span>
             <GameIdTooltip gameId={game.id} />
           </div>
         </CardHeader>

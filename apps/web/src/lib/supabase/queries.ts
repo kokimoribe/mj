@@ -483,6 +483,8 @@ export interface GameResult {
 export interface Game {
   id: string;
   date: string; // ISO 8601 format
+  startedAt?: string; // ISO 8601 format (when available)
+  finishedAt?: string; // ISO 8601 format (when available)
   seasonId: string;
   results: GameResult[]; // Always 4 players
 }
@@ -530,6 +532,7 @@ export async function fetchGameHistory(
     .select(
       `
       id,
+      started_at,
       finished_at,
       game_seats!inner(
         seat,
@@ -739,6 +742,8 @@ export async function fetchGameHistory(
     return {
       id: game.id,
       date: game.finished_at,
+      startedAt: (game as unknown as { started_at?: string }).started_at,
+      finishedAt: game.finished_at,
       seasonId: currentSeasonConfigHash,
       results: formattedResults,
     };
@@ -790,6 +795,71 @@ export interface OngoingGameData {
   }>;
 }
 
+type OngoingGamePlayer = { id: string; display_name: string };
+type OngoingGameSeatRaw = {
+  seat: string;
+  player_id: string;
+  // Supabase generated types sometimes model many-to-one as arrays.
+  // Normalize to a single player object for consistent UI usage.
+  players: OngoingGamePlayer | OngoingGamePlayer[] | null;
+};
+type OngoingGameRaw = Omit<OngoingGameData, "game_seats"> & {
+  game_seats: OngoingGameSeatRaw[];
+};
+
+function normalizeOngoingGame(raw: OngoingGameRaw): OngoingGameData {
+  return {
+    id: raw.id,
+    started_at: raw.started_at,
+    status: raw.status,
+    game_format: raw.game_format,
+    game_seats: (raw.game_seats || []).map(seat => {
+      const player = Array.isArray(seat.players)
+        ? seat.players[0]
+        : seat.players;
+
+      return {
+        seat: seat.seat,
+        player_id: seat.player_id,
+        players: player ?? { id: seat.player_id, display_name: "Unknown" },
+      };
+    }),
+  };
+}
+
+// Fetch all ongoing games (most recent first)
+export async function fetchOngoingGames(): Promise<OngoingGameData[]> {
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from("games")
+    .select(
+      `
+      id,
+      started_at,
+      status,
+      game_format,
+      game_seats (
+        seat,
+        player_id,
+        players (
+          id,
+          display_name
+        )
+      )
+    `
+    )
+    .eq("status", "ongoing")
+    .order("started_at", { ascending: false });
+
+  if (error) {
+    throw new Error(`Failed to fetch ongoing games: ${error.message}`);
+  }
+
+  const rawGames = (data || []) as unknown as OngoingGameRaw[];
+  return rawGames.map(normalizeOngoingGame);
+}
+
 export async function fetchOngoingGame(): Promise<OngoingGameData | null> {
   const supabase = createClient();
 
@@ -828,5 +898,5 @@ export async function fetchOngoingGame(): Promise<OngoingGameData | null> {
     return null;
   }
 
-  return data;
+  return normalizeOngoingGame(data as unknown as OngoingGameRaw);
 }

@@ -4,19 +4,13 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import {
-  ArrowLeft,
-  Plus,
-  Undo2,
-  CheckCircle,
-  Loader2,
-  AlertCircle,
-} from "lucide-react";
+import { ArrowLeft, Plus, Undo2, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GameIdTooltip } from "@/components/ui/game-id-tooltip";
+import { GamePageHeader } from "@/components/layout/GamePageHeader";
+import { CompletedGameBadge } from "@/features/games/components/CompletedGameBadge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -580,7 +574,7 @@ export default function LiveGamePage() {
   return (
     <div className="container mx-auto max-w-2xl space-y-4 p-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <GamePageHeader>
         <div className="flex items-center gap-4">
           {isFinished || handHistory.length === 0 ? (
             <Link href="/games">
@@ -610,13 +604,8 @@ export default function LiveGamePage() {
             </div>
           </div>
         </div>
-        {isFinished && (
-          <Badge variant="secondary" className="text-green-500">
-            <CheckCircle className="mr-1 h-3 w-3" />
-            Finished
-          </Badge>
-        )}
-      </div>
+        {isFinished && <CompletedGameBadge />}
+      </GamePageHeader>
 
       {/* Error Alert */}
       {error && (
@@ -643,7 +632,7 @@ export default function LiveGamePage() {
         <div className="flex gap-2">
           <Button
             onClick={() => setShowHandEntry(true)}
-            className="flex-1"
+            className="flex-1 text-base"
             size="lg"
           >
             <Plus className="mr-2 h-5 w-5" />
@@ -652,6 +641,7 @@ export default function LiveGamePage() {
           <Button
             variant="outline"
             size="lg"
+            className="text-base"
             onClick={handleUndo}
             disabled={handHistory.length === 0 || isUndoing}
             title="Undo the most recent hand entry"

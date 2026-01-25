@@ -1,12 +1,11 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { format } from "date-fns";
 import {
   Tooltip,
   TooltipContent,
@@ -14,10 +13,10 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { createClient } from "@/lib/supabase/client";
-import { fetchOngoingGame, type OngoingGameData } from "@/lib/supabase/queries";
+import { type OngoingGameData } from "@/lib/supabase/queries";
 import { type Seat, STARTING_POINTS, SEATS, type Round } from "@/lib/mahjong";
 import { formatPoints } from "@/lib/mahjong";
-import { Circle, Info, Check } from "lucide-react";
+import { Calendar, Info, Check } from "lucide-react";
 import { toast } from "sonner";
 
 interface HandEvent {
@@ -32,10 +31,6 @@ interface HandEvent {
   honba: number;
 }
 
-interface GameWithHands extends OngoingGameData {
-  handEvents: HandEvent[];
-}
-
 const ROUND_INFO: Record<string, { name: string; kanji: string }> = {
   E: { name: "East", kanji: "東" },
   S: { name: "South", kanji: "南" },
@@ -43,29 +38,24 @@ const ROUND_INFO: Record<string, { name: string; kanji: string }> = {
   N: { name: "North", kanji: "北" },
 };
 
-export function LiveGameCard() {
-  const router = useRouter();
-  const [game, setGame] = useState<GameWithHands | null>(null);
+interface LiveGameCardProps {
+  game: OngoingGameData;
+}
+
+export function LiveGameCard({ game }: LiveGameCardProps) {
+  const [handEvents, setHandEvents] = useState<HandEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [gameIdCopied, setGameIdCopied] = useState(false);
 
   useEffect(() => {
-    async function loadOngoingGame() {
+    async function loadHandEvents() {
       setLoading(true);
       try {
-        const ongoingGame = await fetchOngoingGame();
-        if (!ongoingGame) {
-          setGame(null);
-          setLoading(false);
-          return;
-        }
-
-        // Fetch hand events for this game
         const supabase = createClient();
         const { data: handEvents, error } = await supabase
           .from("hand_events")
           .select("*")
-          .eq("game_id", ongoingGame.id)
+          .eq("game_id", game.id)
           .order("hand_seq", { ascending: true })
           .order("seat", { ascending: true });
 
@@ -73,20 +63,17 @@ export function LiveGameCard() {
           console.error("Error fetching hand events:", error);
         }
 
-        setGame({
-          ...ongoingGame,
-          handEvents: (handEvents as HandEvent[]) || [],
-        });
+        setHandEvents((handEvents as HandEvent[]) || []);
       } catch (error) {
-        console.error("Error loading ongoing game:", error);
-        setGame(null);
+        console.error("Error loading hand events:", error);
+        setHandEvents([]);
       } finally {
         setLoading(false);
       }
     }
 
-    loadOngoingGame();
-  }, []);
+    loadHandEvents();
+  }, [game.id]);
 
   // Calculate current scores
   const currentScores = useMemo((): Record<Seat, number> => {
@@ -97,18 +84,18 @@ export function LiveGameCard() {
       north: STARTING_POINTS,
     };
 
-    if (!game?.handEvents) return scores;
+    if (!handEvents) return scores;
 
-    for (const event of game.handEvents) {
+    for (const event of handEvents) {
       scores[event.seat] += event.points_delta;
     }
 
     return scores;
-  }, [game?.handEvents]);
+  }, [handEvents]);
 
   // Calculate round/kyoku/honba from last hand event
   const { round, kyoku, honba } = useMemo(() => {
-    if (!game?.handEvents || game.handEvents.length === 0) {
+    if (!handEvents || handEvents.length === 0) {
       return {
         round: "E" as Round,
         kyoku: 1,
@@ -117,10 +104,8 @@ export function LiveGameCard() {
     }
 
     // Get the last hand sequence
-    const lastHandSeq = Math.max(...game.handEvents.map(e => e.hand_seq));
-    const lastHandEvents = game.handEvents.filter(
-      e => e.hand_seq === lastHandSeq
-    );
+    const lastHandSeq = Math.max(...handEvents.map(e => e.hand_seq));
+    const lastHandEvents = handEvents.filter(e => e.hand_seq === lastHandSeq);
     const lastEvent = lastHandEvents[0];
 
     if (!lastEvent) {
@@ -193,14 +178,14 @@ export function LiveGameCard() {
       kyoku: nextKyoku,
       honba: nextHonba,
     };
-  }, [game?.handEvents]);
+  }, [handEvents]);
 
   // Calculate riichi sticks
   const riichiSticks = useMemo(() => {
-    if (!game?.handEvents) return 0;
+    if (!handEvents) return 0;
 
     const handGroups: Record<number, HandEvent[]> = {};
-    for (const event of game.handEvents) {
+    for (const event of handEvents) {
       if (!handGroups[event.hand_seq]) {
         handGroups[event.hand_seq] = [];
       }
@@ -229,7 +214,7 @@ export function LiveGameCard() {
     }
 
     return sticks;
-  }, [game?.handEvents]);
+  }, [handEvents]);
 
   if (loading) {
     return (
@@ -239,10 +224,6 @@ export function LiveGameCard() {
         </CardContent>
       </Card>
     );
-  }
-
-  if (!game) {
-    return null; // No ongoing game
   }
 
   // Get player info with scores
@@ -261,87 +242,102 @@ export function LiveGameCard() {
     (a, b) => b.score - a.score
   );
 
+  const startedAtDate = new Date(game.started_at);
+  const startedAtLabel = Number.isNaN(startedAtDate.getTime())
+    ? "Unknown start time"
+    : `${format(startedAtDate, "MMM d, yyyy")} • ${format(startedAtDate, "h:mm a")}`;
+
   return (
     <Link href={`/game/${game.id}/live`} className="block">
       <Card
-        className="border-primary/50 bg-primary/5 hover:bg-primary/10 cursor-pointer transition-colors"
+        className="border-primary/50 bg-primary/5 hover:bg-primary/10 cursor-pointer gap-0 transition-colors"
         data-testid="live-game-card"
       >
         <CardHeader className="pb-2">
-          {/* Round Info with tooltip */}
-          <div className="flex items-center justify-start gap-2">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    className="text-muted-foreground hover:text-foreground transition-colors"
-                    aria-label="Game ID"
-                    onClick={async e => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      try {
-                        // Try modern clipboard API first
-                        if (
-                          navigator.clipboard &&
-                          navigator.clipboard.writeText
-                        ) {
-                          await navigator.clipboard.writeText(game.id);
-                        } else {
-                          // Fallback for iOS Safari and older browsers
-                          const textArea = document.createElement("textarea");
-                          textArea.value = game.id;
-                          textArea.style.position = "fixed";
-                          textArea.style.left = "-999999px";
-                          textArea.style.top = "-999999px";
-                          document.body.appendChild(textArea);
-                          textArea.focus();
-                          textArea.select();
+          {/* Started date/time + Game ID tooltip */}
+          <div className="text-muted-foreground flex items-center gap-2 text-sm">
+            <Calendar className="h-4 w-4" />
+            <div className="flex items-center gap-2">
+              <span>{startedAtLabel}</span>
+              <span aria-hidden="true">•</span>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className="text-muted-foreground hover:text-foreground transition-colors"
+                      aria-label="Game ID"
+                      onClick={async e => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        try {
+                          // Try modern clipboard API first
+                          if (
+                            navigator.clipboard &&
+                            navigator.clipboard.writeText
+                          ) {
+                            await navigator.clipboard.writeText(game.id);
+                          } else {
+                            // Fallback for iOS Safari and older browsers
+                            const textArea = document.createElement("textarea");
+                            textArea.value = game.id;
+                            textArea.style.position = "fixed";
+                            textArea.style.left = "-999999px";
+                            textArea.style.top = "-999999px";
+                            document.body.appendChild(textArea);
+                            textArea.focus();
+                            textArea.select();
 
-                          const successful = document.execCommand("copy");
-                          document.body.removeChild(textArea);
+                            const successful = document.execCommand("copy");
+                            document.body.removeChild(textArea);
 
-                          if (!successful) {
-                            throw new Error("Copy command failed");
+                            if (!successful) {
+                              throw new Error("Copy command failed");
+                            }
                           }
-                        }
 
-                        setGameIdCopied(true);
-                        toast.success("Game ID copied to clipboard");
-                        // Reset the copied state after 2 seconds
-                        setTimeout(() => {
-                          setGameIdCopied(false);
-                        }, 2000);
-                      } catch {
-                        toast.error("Failed to copy Game ID");
-                      }
-                    }}
-                  >
-                    <Info className="h-3.5 w-3.5" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent className="border-slate-700 bg-slate-900 text-white dark:border-slate-800 dark:bg-slate-950">
-                  <div className="flex flex-col gap-1.5">
-                    <span className="text-xs font-semibold text-white">
-                      Game ID
-                    </span>
-                    <span className="rounded border border-slate-700 bg-slate-800 px-2 py-1 font-mono text-xs text-white dark:border-slate-800 dark:bg-slate-900">
-                      {game.id}
-                    </span>
-                    {gameIdCopied ? (
-                      <div className="mt-0.5 flex items-center gap-1.5 text-xs text-green-400">
-                        <Check className="h-3 w-3" />
-                        <span className="font-medium">Copied!</span>
-                      </div>
-                    ) : (
-                      <span className="mt-0.5 text-xs text-slate-300 dark:text-slate-400">
-                        Click to copy
+                          setGameIdCopied(true);
+                          toast.success("Game ID copied to clipboard");
+                          // Reset the copied state after 2 seconds
+                          setTimeout(() => {
+                            setGameIdCopied(false);
+                          }, 2000);
+                        } catch {
+                          toast.error("Failed to copy Game ID");
+                        }
+                      }}
+                    >
+                      <Info className="h-3.5 w-3.5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent className="border-slate-700 bg-slate-900 text-white dark:border-slate-800 dark:bg-slate-950">
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-xs font-semibold text-white">
+                        Game ID
                       </span>
-                    )}
-                  </div>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+                      <span className="rounded border border-slate-700 bg-slate-800 px-2 py-1 font-mono text-xs text-white dark:border-slate-800 dark:bg-slate-900">
+                        {game.id}
+                      </span>
+                      {gameIdCopied ? (
+                        <div className="mt-0.5 flex items-center gap-1.5 text-xs text-green-400">
+                          <Check className="h-3 w-3" />
+                          <span className="font-medium">Copied!</span>
+                        </div>
+                      ) : (
+                        <span className="mt-0.5 text-xs text-slate-300 dark:text-slate-400">
+                          Click to copy
+                        </span>
+                      )}
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {/* Round + table state (centered) */}
+          <div className="flex flex-wrap items-center justify-center gap-2">
             <Badge variant="outline" className="text-sm">
               {ROUND_INFO[round]?.name ?? round} (
               {ROUND_INFO[round]?.kanji ?? ""}) {kyoku}
@@ -357,8 +353,7 @@ export function LiveGameCard() {
               </Badge>
             )}
           </div>
-        </CardHeader>
-        <CardContent className="space-y-2">
+
           {/* Player Scores */}
           <div className="space-y-1">
             {sortedPlayers.map((player, index) => {

@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Circle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { GamePageHeader } from "@/components/layout/GamePageHeader";
+import { CompletedGameBadge } from "@/features/games/components/CompletedGameBadge";
 import {
   ScoreBoard,
   HandHistory,
@@ -53,13 +55,13 @@ interface GameData {
 }
 
 export default function LiveGameViewPage() {
-  const router = useRouter();
   const params = useParams();
   const gameId = params.id as string;
 
   const [game, setGame] = useState<GameData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const refetchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Fetch game data
   const fetchGame = useCallback(async () => {
@@ -97,14 +99,23 @@ export default function LiveGameViewPage() {
           table: "hand_events",
           filter: `game_id=eq.${gameId}`,
         },
-        payload => {
-          // Refetch game data to get updated scores
-          fetchGame();
+        _payload => {
+          // Debounce bursts of inserts (one hand inserts multiple rows)
+          if (refetchTimeoutRef.current) {
+            clearTimeout(refetchTimeoutRef.current);
+          }
+          refetchTimeoutRef.current = setTimeout(() => {
+            fetchGame();
+          }, 150);
         }
       )
       .subscribe();
 
     return () => {
+      if (refetchTimeoutRef.current) {
+        clearTimeout(refetchTimeoutRef.current);
+        refetchTimeoutRef.current = null;
+      }
       channel.unsubscribe();
     };
   }, [gameId, fetchGame]);
@@ -166,7 +177,7 @@ export default function LiveGameViewPage() {
     }
 
     return sticks;
-  }, [game?.handEvents]);
+  }, [game]);
 
   // Get game format (default to hanchan for backwards compatibility)
   const gameFormat: GameFormat = game?.game_format || "hanchan";
@@ -371,7 +382,7 @@ export default function LiveGameViewPage() {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
         <Link href="/games">
-          <Button variant="outline">
+          <Button>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Games
           </Button>
@@ -387,7 +398,7 @@ export default function LiveGameViewPage() {
           <AlertDescription>Game not found</AlertDescription>
         </Alert>
         <Link href="/games">
-          <Button variant="outline">
+          <Button>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Games
           </Button>
@@ -399,25 +410,25 @@ export default function LiveGameViewPage() {
   return (
     <div className="container mx-auto max-w-4xl space-y-4 p-4">
       {/* Header with back button */}
-      <div className="flex items-center justify-between">
+      <GamePageHeader>
         <Link href="/games">
-          <Button variant="outline" size="sm">
+          <Button size="sm" className="h-9 text-base">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Games
           </Button>
         </Link>
         {isFinished ? (
-          <div className="text-muted-foreground text-sm">Game Finished</div>
+          <CompletedGameBadge />
         ) : (
           <Badge
             variant="destructive"
-            className="animate-pulse px-3 py-1.5 text-base"
+            className="h-9 animate-pulse px-3 py-1.5 text-base"
           >
             <Circle className="mr-1.5 h-4 w-4 fill-current" />
             LIVE GAME
           </Badge>
         )}
-      </div>
+      </GamePageHeader>
 
       {/* Error Alert */}
       {error && (

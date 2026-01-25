@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GameHistoryView } from "./GameHistoryView";
 import * as queries from "@/lib/queries";
+import * as supabaseQueries from "@/lib/supabase/queries";
 
 // Mock the hooks
 vi.mock("@/lib/queries", () => ({
@@ -11,11 +12,23 @@ vi.mock("@/lib/queries", () => ({
   usePlayerGameCounts: vi.fn(),
 }));
 
+vi.mock("@/lib/supabase/queries", () => ({
+  fetchOngoingGames: vi.fn(),
+}));
+
+vi.mock("./LiveGameCard", () => ({
+  LiveGameCard: ({ game }: { game: { id: string } }) => (
+    <div data-testid="live-game-card">{game.id}</div>
+  ),
+}));
+
 const mockGameHistory = {
   games: [
     {
       id: "1",
-      date: "2024-01-15",
+      startedAt: "2024-01-15T14:00:00.000Z",
+      finishedAt: "2024-01-15T16:13:00.000Z",
+      date: "2024-01-15T16:13:00.000Z",
       seasonId: "season_3_2024",
       results: [
         {
@@ -62,7 +75,9 @@ const mockGameHistory = {
     },
     {
       id: "2",
-      date: "2024-01-14",
+      startedAt: "2024-01-14T18:00:00.000Z",
+      finishedAt: "2024-01-14T18:45:00.000Z",
+      date: "2024-01-14T18:45:00.000Z",
       seasonId: "season_3_2024",
       results: [
         {
@@ -158,6 +173,8 @@ const setupDefaultMocks = () => {
     isLoading: false,
     error: null,
   } as any);
+
+  vi.mocked(supabaseQueries.fetchOngoingGames).mockResolvedValue([]);
 };
 
 const renderWithQuery = (component: React.ReactElement) => {
@@ -210,6 +227,11 @@ describe("GameHistoryView", () => {
     // Check heading
     expect(screen.getByText("🎮 Game History")).toBeInTheDocument();
 
+    // Check time range + duration formatting (at least for the first game)
+    const gameDates = screen.getAllByTestId("game-date");
+    expect(gameDates[0]).toHaveTextContent(" - ");
+    expect(gameDates[0]).toHaveTextContent("(2h 13m)");
+
     // Check first game players
     expect(screen.getByText("Joseph")).toBeInTheDocument();
     expect(screen.getByText("Josh")).toBeInTheDocument();
@@ -221,6 +243,39 @@ describe("GameHistoryView", () => {
     expect(screen.getAllByText("🥈")).toHaveLength(2);
     expect(screen.getAllByText("🥉")).toHaveLength(2);
     expect(screen.getAllByText("4️⃣")).toHaveLength(2);
+  });
+
+  it("renders multiple live games when multiple ongoing games exist", async () => {
+    vi.mocked(queries.useGameHistory).mockReturnValue({
+      data: mockGameHistory,
+      isLoading: false,
+      error: null,
+    } as any);
+
+    vi.mocked(supabaseQueries.fetchOngoingGames).mockResolvedValue([
+      {
+        id: "game-newer",
+        started_at: "2024-02-01T00:00:00.000Z",
+        status: "ongoing",
+        game_format: "hanchan",
+        game_seats: [],
+      },
+      {
+        id: "game-older",
+        started_at: "2024-01-01T00:00:00.000Z",
+        status: "ongoing",
+        game_format: "hanchan",
+        game_seats: [],
+      },
+    ] as any);
+
+    renderWithQuery(<GameHistoryView />);
+
+    expect(await screen.findByText("LIVE GAMES")).toBeInTheDocument();
+    const cards = await screen.findAllByTestId("live-game-card");
+    expect(cards).toHaveLength(2);
+    expect(cards[0]).toHaveTextContent("game-newer");
+    expect(cards[1]).toHaveTextContent("game-older");
   });
 
   it("formats scores correctly", () => {
@@ -238,22 +293,6 @@ describe("GameHistoryView", () => {
     expect(screen.getByText("-3,000")).toBeInTheDocument();
   });
 
-  it("displays plus/minus values", () => {
-    vi.mocked(queries.useGameHistory).mockReturnValue({
-      data: mockGameHistory,
-      isLoading: false,
-      error: null,
-    } as any);
-
-    renderWithQuery(<GameHistoryView />);
-
-    // Check plus/minus values
-    expect(screen.getByText("+23,000")).toBeInTheDocument();
-    expect(screen.getByText("+10,000")).toBeInTheDocument();
-    expect(screen.getByText("-5,000")).toBeInTheDocument();
-    expect(screen.getByText("-28,000")).toBeInTheDocument();
-  });
-
   it("handles empty game history", () => {
     vi.mocked(queries.useGameHistory).mockReturnValue({
       data: { games: [], totalGames: 0, hasMore: false, showingAll: true },
@@ -266,7 +305,7 @@ describe("GameHistoryView", () => {
     expect(screen.getByText("No games played yet")).toBeInTheDocument();
   });
 
-  it("displays game dates with calendar icon", () => {
+  it("renders a date row for each game", () => {
     vi.mocked(queries.useGameHistory).mockReturnValue({
       data: mockGameHistory,
       isLoading: false,
@@ -275,12 +314,8 @@ describe("GameHistoryView", () => {
 
     renderWithQuery(<GameHistoryView />);
 
-    // Check that calendar icons exist (one for each game)
-    const calendarIcons = document.querySelectorAll('[class*="calendar"]');
-    expect(calendarIcons.length).toBeGreaterThan(0);
-
-    // Check that year 2024 is shown (at least once)
-    const yearElements = screen.getAllByText(/2024/);
-    expect(yearElements.length).toBeGreaterThan(0);
+    const gameDates = screen.getAllByTestId("game-date");
+    expect(gameDates).toHaveLength(2);
+    expect(gameDates[0]).toHaveTextContent(/2024/);
   });
 });

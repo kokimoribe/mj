@@ -12,6 +12,8 @@ configs/
 ├── README.md                 # This file
 ├── season-3.yaml            # Season 3 configuration (Feb 2022 - Jul 2025)
 ├── season-4.yaml            # Season 4 configuration (Aug 2025+)
+├── season-4-v2.yaml         # Season 4 v2 configuration (corrected cutoff)
+├── season-5.yaml            # Season 5 configuration (Dec 2025 - Jun 2026)
 └── experimental/            # Non-official configurations for testing
     ├── high-stakes.yaml
     └── beginner-friendly.yaml
@@ -26,6 +28,7 @@ Configurations are stored as YAML files for human readability and version contro
 1. Create `season-X.yaml` with the configuration
 2. Create a migration script to load it into the database
 3. Mark as official in the database
+4. Update the web app default season hash/name in `apps/web/src/config/index.ts`
 
 ### Configuration Format
 

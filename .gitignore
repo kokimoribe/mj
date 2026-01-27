@@ -326,3 +326,8 @@ verify-*.js
 analyze-*.mjs
 *.png
 !public/*.png
+
+# Rating Engine environment files
+apps/rating-engine/.env
+apps/rating-engine/.env.dev
+apps/rating-engine/.env.prod

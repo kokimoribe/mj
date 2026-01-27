@@ -52,15 +52,37 @@ except ImportError:
     sys.path.insert(0, str(Path(__file__).parent.parent))
     from rating_engine.materialization import materialize_data_for_config
 
-# Load environment variables
-load_dotenv()
-
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(levelname)s: %(message)s",
 )
 logger = logging.getLogger(__name__)
+
+
+def load_environment(env: str | None = None) -> None:
+    """Load environment variables from appropriate .env file."""
+    script_dir = Path(__file__).parent
+    rating_engine_dir = script_dir.parent
+    
+    if env == "prod":
+        env_file = rating_engine_dir / ".env.prod"
+    elif env == "dev":
+        env_file = rating_engine_dir / ".env.dev"
+    else:
+        # Default: try .env first, fallback to .env.dev
+        env_file = rating_engine_dir / ".env"
+        if not env_file.exists():
+            env_file = rating_engine_dir / ".env.dev"
+    
+    if not env_file.exists():
+        raise FileNotFoundError(
+            f"Environment file not found: {env_file}\n"
+            f"Create {env_file} with SUPABASE_URL and SUPABASE_SECRET_KEY"
+        )
+    
+    load_dotenv(env_file)
+    logger.info(f"📁 Loaded environment from: {env_file.name}")
 
 
 def get_supabase_client():
@@ -187,6 +209,10 @@ Examples:
 
   # Force refresh (ignore cache)
   uv run python scripts/materialize_data.py --config-hash abc123... --force-refresh
+
+  # Use specific environment
+  uv run python scripts/materialize_data.py --env prod --config "Season 5"
+  uv run python scripts/materialize_data.py --env dev --config "Season 5"
         """,
     )
 
@@ -210,8 +236,17 @@ Examples:
         action="store_true",
         help="Force recalculation even if cache is valid",
     )
+    parser.add_argument(
+        "--env",
+        choices=["dev", "prod"],
+        default=None,
+        help="Environment to use (dev or prod). Defaults to .env or .env.dev",
+    )
 
     args = parser.parse_args()
+    
+    # Load environment variables based on --env flag
+    load_environment(args.env)
 
     # Handle list command
     if args.list:

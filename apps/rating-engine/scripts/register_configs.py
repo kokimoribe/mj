@@ -38,15 +38,37 @@ import yaml
 from dotenv import load_dotenv
 from supabase import Client, create_client
 
-# Load environment variables
-load_dotenv()
-
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(levelname)s: %(message)s",
 )
 logger = logging.getLogger(__name__)
+
+
+def load_environment(env: str | None = None) -> None:
+    """Load environment variables from appropriate .env file."""
+    script_dir = Path(__file__).parent
+    rating_engine_dir = script_dir.parent
+    
+    if env == "prod":
+        env_file = rating_engine_dir / ".env.prod"
+    elif env == "dev":
+        env_file = rating_engine_dir / ".env.dev"
+    else:
+        # Default: try .env first, fallback to .env.dev
+        env_file = rating_engine_dir / ".env"
+        if not env_file.exists():
+            env_file = rating_engine_dir / ".env.dev"
+    
+    if not env_file.exists():
+        raise FileNotFoundError(
+            f"Environment file not found: {env_file}\n"
+            f"Create {env_file} with SUPABASE_URL and SUPABASE_SECRET_KEY"
+        )
+    
+    load_dotenv(env_file)
+    logger.info(f"📁 Loaded environment from: {env_file.name}")
 
 
 class ConfigRegistrar:
@@ -162,6 +184,10 @@ Examples:
 
   # Register a single config
   uv run python scripts/register_configs.py configs/season-5.yaml
+
+  # Use specific environment
+  uv run python scripts/register_configs.py --env prod configs/season-5.yaml
+  uv run python scripts/register_configs.py --env dev configs/season-5.yaml
         """,
     )
     parser.add_argument(
@@ -175,8 +201,17 @@ Examples:
         action="store_true",
         help="Register all YAML files in the configs directory",
     )
+    parser.add_argument(
+        "--env",
+        choices=["dev", "prod"],
+        default=None,
+        help="Environment to use (dev or prod). Defaults to .env or .env.dev",
+    )
 
     args = parser.parse_args()
+    
+    # Load environment variables based on --env flag
+    load_environment(args.env)
 
     # Determine which configs to register
     if args.all:

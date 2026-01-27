@@ -44,21 +44,23 @@ uv run python -c "from api.index import app; from lib.materialization import Mat
 
 1. **Disable Vercel Protection** (Vercel Dashboard → Project Settings → Deployment Protection)
 2. **Use Protection Bypass Headers** (if configured):
+
    ```bash
    # First: Set up bypass secret in Vercel Dashboard → Project Settings → Deployment Protection
    # Then: Use the secret in requests
    curl -H "x-vercel-protection-bypass: YOUR_BYPASS_SECRET" "https://[deployment-url]/"
    ```
-   
+
    **⚠️ Current Status**: No bypass secret configured for this project
-   
+
 3. **Test locally only** with `uv run fastapi dev api/index.py`
 
 ### 🔧 How to Configure Protection Bypass (Optional)
 
 **Setup Steps:**
+
 1. Go to Vercel Dashboard → Your Project → Settings
-2. Navigate to "Deployment Protection" tab  
+2. Navigate to "Deployment Protection" tab
 3. Enable "Protection Bypass for Automation"
 4. Generate/set a bypass secret (keep this secure!)
 5. Use in requests: `x-vercel-protection-bypass: your-secret`
@@ -98,11 +100,12 @@ uv run python -c "from api.index import app; from lib.materialization import Mat
 
 ### Current Deployment Status ✅
 
+- **Production URL**: `https://mj-skill-rating.vercel.app`
 - **API Structure**: ✅ Single FastAPI function at `api/index.py` (consolidated from 4 separate functions)
 - **Shared Modules**: ✅ `lib/` directory with materialization logic working
 - **Python Imports**: ✅ Verified working in Vercel serverless functions
 - **Git Deployment**: ✅ Automatic deployment on `git push` configured
-- **Protection**: ⚠️ Vercel auth protection enabled (returns 401 for public access)
+- **Protection**: ✅ Publicly accessible (health check returns 200)
 
 ## 🚀 Deployment Methods
 
@@ -146,8 +149,30 @@ apps/rating-engine/
 ### API Endpoints
 
 - `GET /` - Health check
-- `POST /` - Materialization endpoint
-- `GET /configurations` - List configurations
+- `GET /debug` - Debug environment configuration (shows which env vars are set)
+- `POST /` or `POST /materialize` - Materialization endpoint
+- `GET /configurations` - List available configurations
+- `GET /leaderboard` - Get current leaderboard data
+
+**Production Base URL**: `https://mj-skill-rating.vercel.app`
+
+**Example Usage:**
+
+```bash
+# Health check
+curl https://mj-skill-rating.vercel.app/
+
+# Debug environment (check what env vars are available)
+curl https://mj-skill-rating.vercel.app/debug
+
+# List configurations
+curl https://mj-skill-rating.vercel.app/configurations
+
+# Trigger materialization
+curl -X POST "https://mj-skill-rating.vercel.app/" \
+  -H "Content-Type: application/json" \
+  -d '{"config_hash": "your-config-hash", "force_refresh": false}'
+```
 
 ## 🔧 FastAPI + Vercel Configuration
 
@@ -214,11 +239,54 @@ npx vercel list
 # Get deployment logs
 npx vercel logs [deployment-url]
 
+# Check environment variables in Vercel
+npx vercel env ls
+
+# Test production API
+curl https://mj-skill-rating.vercel.app/
+curl https://mj-skill-rating.vercel.app/debug
+
 # Test local development
+cd apps/rating-engine
 uv run fastapi dev api/index.py
 
 # Verify Python imports work locally
-python -c "from lib.materialization import MaterializationEngine; print('Import OK')"
+python -c "from rating_engine.materialization import materialize_data_for_config; print('Import OK')"
+```
+
+### Environment Variables
+
+**Checking Vercel Environment Variables:**
+
+```bash
+# List all environment variables
+npx vercel env ls
+
+# This shows variables for Production, Preview, and Development environments
+```
+
+**Required Environment Variables for Rating Engine:**
+
+The rating-engine Vercel deployment requires these environment variables (set in Vercel Dashboard → Settings → Environment Variables):
+
+- `SUPABASE_URL` - Production Supabase project URL
+- `SUPABASE_SECRET_KEY` - Production Supabase secret key
+
+**Local Development Environment Files:**
+
+For local development, use separate environment files:
+
+- `apps/rating-engine/.env.dev` - Local Supabase (via Supabase CLI)
+- `apps/rating-engine/.env.prod` - Production Supabase
+
+Use the `--env` flag with scripts to specify which environment:
+
+```bash
+# Use production environment
+uv run python scripts/materialize_data.py --env prod --config "Season 5"
+
+# Use development environment
+uv run python scripts/materialize_data.py --env dev --config "Season 5"
 ```
 
 ## 📊 Performance & Limits
@@ -238,17 +306,17 @@ python -c "from lib.materialization import MaterializationEngine; print('Import 
 
 ## 🔐 Security & Access
 
-### Vercel Protection ⚠️
+### Vercel Protection
 
-- Currently enabled (returns 401 Authentication Required)
-- Can be bypassed with protection headers (if configured)
-- Not an application error - intentional security layer
+- **Current Status**: Publicly accessible (protection disabled or bypassed)
+- **Production URL**: `https://mj-skill-rating.vercel.app` returns 200 OK
+- **Health Check**: `GET /` endpoint is publicly accessible
 
 ### Production Access
 
-- Authentication screen is Vercel's security feature
-- Functions are running correctly behind auth layer
-- Consider disabling protection for public APIs if needed
+- API endpoints are currently publicly accessible
+- For sensitive operations, consider enabling Vercel Protection if needed
+- Environment variables are secure (not exposed in responses)
 
 ## 🎓 Key Learnings for LLM Agents
 
@@ -303,7 +371,42 @@ curl -s "https://[latest-deployment]/" | head -1
 git status && git add . && git commit -m "Update" && git push
 ```
 
+## 📋 Quick Reference
+
+### Production URLs
+
+- **Rating Engine API**: `https://mj-skill-rating.vercel.app`
+- **Health Check**: `curl https://mj-skill-rating.vercel.app/`
+- **Debug Endpoint**: `curl https://mj-skill-rating.vercel.app/debug`
+
+### Key Commands
+
+```bash
+# Check deployments
+npx vercel list
+
+# Check environment variables
+npx vercel env ls
+
+# Register season configuration (production)
+cd apps/rating-engine
+uv run python scripts/register_configs.py --env prod configs/season-5.yaml
+
+# Materialize season data (production)
+uv run python scripts/materialize_data.py --env prod --config "Season 5"
+
+# List available configurations
+uv run python scripts/materialize_data.py --env prod --list
+```
+
+### Environment Files
+
+- `apps/rating-engine/.env.dev` - Local Supabase (development)
+- `apps/rating-engine/.env.prod` - Production Supabase
+- Both files contain: `SUPABASE_URL` and `SUPABASE_SECRET_KEY`
+
 ---
 
-**Last Updated**: July 2025  
-**Status**: Fully operational with Vercel auth protection
+**Last Updated**: January 2026  
+**Status**: Fully operational, publicly accessible  
+**Production URL**: `https://mj-skill-rating.vercel.app`

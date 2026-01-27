@@ -4,16 +4,16 @@ _Essential procedures for developers and LLM coding agents working with the Riic
 
 ## 🎯 Quick Reference
 
-| **Need to...**                | **Use this command/approach**                                          |
-| ----------------------------- | ---------------------------------------------------------------------- |
-| **Connect to production DB**  | `psql $POSTGRES_URL_NON_POOLING`                                       |
-| **Run local development**     | `npm run dev` (from project root)                                      |
-| **Generate migration**        | `supabase db diff -f new_migration_name`                               |
-| **Sync local data from prod** | `supabase db dump --data-only -f production_data.sql` then import      |
-| **Import data to local DB**   | `docker exec -i supabase_db_mj psql -U postgres < production_data.sql` |
-| **Run materialization**       | `uv run python scripts/materialize_data.py`                            |
-| **Check test coverage**       | `uv run pytest tests/ -v` (from rating-engine/)                        |
-| **Deploy to production**      | `git push origin main` (auto-deploy)                                   |
+| **Need to...**                | **Use this command/approach**                                              |
+| ----------------------------- | -------------------------------------------------------------------------- |
+| **Connect to production DB**  | `psql $POSTGRES_URL_NON_POOLING`                                           |
+| **Run local development**     | `npm run dev` (from project root)                                          |
+| **Generate migration**        | `supabase db diff -f new_migration_name`                                   |
+| **Sync local data from prod** | `supabase db dump --data-only -f production_data.sql` then import          |
+| **Import data to local DB**   | `docker exec -i supabase_db_mj psql -U postgres < production_data.sql`     |
+| **Run materialization**       | `uv run python scripts/materialize_data.py --env prod --config "Season 5"` |
+| **Check test coverage**       | `uv run pytest tests/ -v` (from rating-engine/)                            |
+| **Deploy to production**      | `git push origin main` (auto-deploy)                                       |
 
 ---
 
@@ -367,13 +367,59 @@ After importing data, you may need to:
 - ✅ After database schema changes affecting rating calculations
 - ✅ When cache invalidation is needed
 
+### Environment Configuration
+
+The rating-engine scripts support separate development and production environments using `.env.dev` and `.env.prod` files:
+
+**Environment Files:**
+
+- `.env.dev` - Local Supabase instance (via Supabase CLI)
+- `.env.prod` - Production Supabase instance
+- `.env` - Fallback (defaults to `.env.dev` if not found)
+
+**Required Variables:**
+
+Both environment files must contain:
+
+- `SUPABASE_URL` - Your Supabase project URL
+- `SUPABASE_SECRET_KEY` - Your Supabase secret key
+
+**Using Environment Flag:**
+
+All scripts support the `--env` flag to specify which environment to use:
+
+```bash
+# Use development environment (local Supabase)
+uv run python scripts/materialize_data.py --env dev --config "Season 5"
+
+# Use production environment (production Supabase)
+uv run python scripts/materialize_data.py --env prod --config "Season 5"
+
+# Default behavior (tries .env, falls back to .env.dev)
+uv run python scripts/materialize_data.py --config "Season 5"
+```
+
 ### Materialization Procedures
 
-**1. Check Current Status**
+**1. Register Season Configuration**
+
+Before materializing, register the season configuration in the database:
+
+```bash
+cd apps/rating-engine
+
+# Register configuration (development)
+uv run python scripts/register_configs.py --env dev configs/season-5.yaml
+
+# Register configuration (production)
+uv run python scripts/register_configs.py --env prod configs/season-5.yaml
+```
+
+**2. Check Current Status**
 
 ```bash
 # List available configurations
-uv run python scripts/materialize_data.py --list
+uv run python scripts/materialize_data.py --env prod --list
 
 # Check what's cached
 psql $POSTGRES_URL_NON_POOLING -c "
@@ -383,38 +429,45 @@ GROUP BY config_hash;
 "
 ```
 
-**2. Run Materialization (Local Development)**
+**3. Run Materialization**
 
 ```bash
 cd apps/rating-engine
 
-# Default: Materialize Season 3 configuration
-uv run python scripts/materialize_data.py
+# Production materialization (recommended)
+uv run python scripts/materialize_data.py --env prod --config "Season 5"
 
-# Specific configuration by name
-uv run python scripts/materialize_data.py --config "Season 4"
+# Development materialization (local testing)
+uv run python scripts/materialize_data.py --env dev --config "Season 5"
 
 # Force refresh (ignore cache)
-uv run python scripts/materialize_data.py --force-refresh
+uv run python scripts/materialize_data.py --env prod --config "Season 5" --force-refresh
 
-# Specific configuration by hash
-uv run python scripts/materialize_data.py --config-hash abc123...
+# Materialize by config hash
+uv run python scripts/materialize_data.py --env prod --config-hash abc123...
+
+# Default: Materialize Season 3 (uses .env or .env.dev)
+uv run python scripts/materialize_data.py
 ```
 
-**3. Run Materialization (API)**
+**4. Run Materialization via API (Alternative)**
+
+The production API is available at `https://mj-skill-rating.vercel.app`:
 
 ```bash
-# Start the FastAPI server
-uv run python -m rating_engine.main
+# Health check
+curl https://mj-skill-rating.vercel.app/
 
 # Trigger materialization via HTTP
-curl -X POST http://localhost:8000/materialize \
+curl -X POST "https://mj-skill-rating.vercel.app/" \
   -H "Content-Type: application/json" \
-  -d '{"config_hash": "season_3_legacy", "force_refresh": false}'
+  -d '{"config_hash": "your-config-hash", "force_refresh": false}'
 
-# Check available configurations
-curl http://localhost:8000/configurations
+# List configurations
+curl https://mj-skill-rating.vercel.app/configurations
 ```
+
+**Note:** The API approach requires the config hash. Using the CLI scripts with `--env prod` is recommended as it's simpler and provides better error messages.
 
 **4. Verify Results**
 
@@ -483,12 +536,30 @@ WHERE status = 'finished';
 **"Database connection failed"**
 
 ```bash
-# Verify environment variables
-echo $SUPABASE_URL
-echo ${SUPABASE_SECRET_KEY:0:20}...  # Should start with "sb_secret_"
+# Verify environment variables are loaded from correct file
+cd apps/rating-engine
 
-# Test connection
+# Check .env.prod file exists and has correct values
+cat .env.prod  # Should show SUPABASE_URL and SUPABASE_SECRET_KEY
+
+# Test connection with specific environment
+uv run python scripts/materialize_data.py --env prod --list
+
+# Or test connection directly
 psql $POSTGRES_URL_NON_POOLING -c "SELECT NOW();"
+```
+
+**"Environment file not found"**
+
+If you see this error, ensure the appropriate `.env` file exists:
+
+```bash
+# Check which env files exist
+ls -la apps/rating-engine/.env*
+
+# Create .env.prod if missing (copy from .env.dev and update values)
+cp apps/rating-engine/.env.dev apps/rating-engine/.env.prod
+# Then edit .env.prod with production credentials
 ```
 
 ---
@@ -718,10 +789,13 @@ cd apps/rating-engine
 # Run tests during development
 uv run pytest tests/test_materialization.py -v
 
-# Test API endpoints
-uv run python -m rating_engine.main
+# Test API endpoints locally
+uv run fastapi dev api/index.py
 # Then in another terminal:
-curl http://localhost:8000/health
+curl http://localhost:8000/
+
+# Test materialization with development environment
+uv run python scripts/materialize_data.py --env dev --config "Season 5"
 ```
 
 ### Debugging Common Issues
@@ -753,10 +827,10 @@ uv run python scripts/migrate_legacy_data.py
 
 ```bash
 # Check configuration hash
-uv run python scripts/materialize_data.py --list
+uv run python scripts/materialize_data.py --env prod --list
 
 # Force complete refresh
-uv run python scripts/materialize_data.py --force-refresh
+uv run python scripts/materialize_data.py --env prod --force-refresh --config "Season 5"
 
 # Check source data
 psql $POSTGRES_URL_NON_POOLING -c "
@@ -866,18 +940,27 @@ vercel logs --follow
 **3. Post-deployment Verification**
 
 ```bash
-# Test production API endpoints
-curl https://your-app.vercel.app/api/health
+# Test production rating-engine API
+curl https://mj-skill-rating.vercel.app/
 
-# Verify materialization works in production
-curl -X POST https://your-rating-engine.vercel.app/materialize \
+# Check environment configuration
+curl https://mj-skill-rating.vercel.app/debug
+
+# Verify materialization works (using CLI with --env prod is recommended)
+cd apps/rating-engine
+uv run python scripts/materialize_data.py --env prod --list
+
+# Or via API (requires config hash)
+curl -X POST https://mj-skill-rating.vercel.app/ \
   -H "Content-Type: application/json" \
-  -d '{"config_hash": "season_3_legacy"}'
+  -d '{"config_hash": "your-config-hash", "force_refresh": false}'
 
 # Check database state
 psql $POSTGRES_URL_NON_POOLING -c "
-SELECT COUNT(*) FROM cached_player_ratings
-WHERE computed_at > NOW() - INTERVAL '1 hour';
+SELECT config_hash, COUNT(*) as player_count, MAX(computed_at) as last_computed
+FROM cached_player_ratings
+GROUP BY config_hash
+ORDER BY last_computed DESC;
 "
 ```
 
@@ -911,7 +994,7 @@ FROM (
 
 # Monthly: Re-materialize all configurations
 cd apps/rating-engine
-uv run python scripts/materialize_data.py --force-refresh
+uv run python scripts/materialize_data.py --env prod --force-refresh --config "Season 5"
 ```
 
 ---

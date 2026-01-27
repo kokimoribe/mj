@@ -188,45 +188,74 @@ export async function fetchLeaderboardData(
   });
 
   // Get last 10 games per player for mini charts
-  // First get all games for these players
-  const { data: playerGameSeats } = await supabase
-    .from("game_seats")
-    .select("game_id, player_id")
-    .in("player_id", playerIds);
-
-  const playerGameIds = [
-    ...new Set(playerGameSeats?.map(s => s.game_id) || []),
-  ];
-
-  // Get the games to get their dates
-  const { data: playerGames } = await supabase
-    .from("games")
-    .select("id, finished_at")
-    .in("id", playerGameIds)
-    .order("finished_at", { ascending: false });
-
-  // Get cached results for these games
+  // OPTIMIZATION: Query cached_game_results directly with config_hash filter
+  // This avoids the problematic game_seats query that was hitting URL length limits (414 errors)
+  // and Supabase's default 1000 row limit
   interface PlayerRecentGame extends CachedGameResult {
     games?: { finished_at: string };
   }
   let playerRecentGames: PlayerRecentGame[] = [];
-  if (playerGameIds.length > 0) {
-    const { data: cachedResults } = await supabase
+
+  // Step 1: Get all cached game results for the current config
+  // This automatically filters to only games within the season
+  const { data: allCachedGameResults, error: cachedGameResultsError } =
+    await supabase
       .from("cached_game_results")
       .select("*")
-      .eq("config_hash", currentSeasonConfigHash)
-      .in("game_id", playerGameIds)
-      .in("player_id", playerIds);
+      .eq("config_hash", currentSeasonConfigHash);
 
-    if (cachedResults) {
-      playerRecentGames = cachedResults.map(result => {
-        const game = playerGames?.find(g => g.id === result.game_id);
-        return {
-          ...result,
-          games: { finished_at: game?.finished_at || "" },
-        };
-      });
-    }
+  if (cachedGameResultsError) {
+    console.error(
+      "Failed to fetch cached game results for mini charts:",
+      cachedGameResultsError
+    );
+  }
+
+  // Step 2: Fetch game dates - filter by time range if available to reduce payload
+  // Also apply a reasonable limit to avoid large responses
+  let gamesQuery = supabase
+    .from("games")
+    .select("id, finished_at")
+    .eq("status", "finished")
+    .order("finished_at", { ascending: false });
+
+  // Apply time range filter from config if available
+  if (timeRange?.startDate) {
+    gamesQuery = gamesQuery.gte("started_at", timeRange.startDate);
+  }
+  if (timeRange?.endDate) {
+    const endDate = new Date(timeRange.endDate);
+    endDate.setUTCDate(endDate.getUTCDate() + 1);
+    const nextDay = endDate.toISOString().split("T")[0];
+    gamesQuery = gamesQuery.lt("started_at", nextDay);
+  }
+
+  const { data: playerGames, error: playerGamesError } = await gamesQuery;
+
+  if (playerGamesError) {
+    console.error("Failed to fetch games for mini charts:", playerGamesError);
+  }
+
+  // Step 3: Create a map of game dates for quick lookup
+  const gameDateMap = new Map(
+    playerGames?.map(g => [g.id, g.finished_at]) || []
+  );
+
+  // Step 4: Build playerRecentGames by joining cached results with game dates
+  if (allCachedGameResults) {
+    playerRecentGames = allCachedGameResults
+      .filter(result => {
+        // Only include results for players on the leaderboard
+        // and games that have date info
+        return (
+          playerIds.includes(result.player_id) &&
+          gameDateMap.has(result.game_id)
+        );
+      })
+      .map(result => ({
+        ...result,
+        games: { finished_at: gameDateMap.get(result.game_id) || "" },
+      }));
   }
 
   // Sort games by date to ensure we get the most recent ones
@@ -257,27 +286,20 @@ export async function fetchLeaderboardData(
 
   // REQUIREMENT: Average Placement Calculation
   // Calculate average placement for each player from ALL their game results
+  // OPTIMIZATION: Reuse allCachedGameResults instead of making another query
   const playerAveragePlacements: Record<string, number> = {};
-
-  // We need ALL games for placement calculation, not just recent ones
-  // Get all cached results for ALL players' games
   const allPlayerPlacements: Record<string, number[]> = {};
 
-  if (playerGameIds.length > 0) {
-    const { data: allCachedResults } = await supabase
-      .from("cached_game_results")
-      .select("player_id, placement")
-      .eq("config_hash", currentSeasonConfigHash)
-      .in("player_id", playerIds);
+  if (allCachedGameResults) {
+    allCachedGameResults.forEach(result => {
+      // Only include players on the leaderboard
+      if (!playerIds.includes(result.player_id)) return;
 
-    if (allCachedResults) {
-      allCachedResults.forEach(result => {
-        if (!allPlayerPlacements[result.player_id]) {
-          allPlayerPlacements[result.player_id] = [];
-        }
-        allPlayerPlacements[result.player_id].push(result.placement);
-      });
-    }
+      if (!allPlayerPlacements[result.player_id]) {
+        allPlayerPlacements[result.player_id] = [];
+      }
+      allPlayerPlacements[result.player_id].push(result.placement);
+    });
   }
 
   // Calculate averages

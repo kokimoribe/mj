@@ -534,6 +534,47 @@ export async function fetchGameHistory(
   const currentSeasonConfigHash = options.configHash || config.season.hash;
   const { playerId, offset = 0, limit = 10 } = options;
 
+  // Fetch config metadata to get time range (similar to fetchLeaderboardData)
+  interface ConfigDataParsed {
+    timeRange?: {
+      startDate?: string;
+      endDate?: string;
+    };
+  }
+
+  interface RatingConfigurationRaw {
+    config_hash: string;
+    name: string;
+    config_data: string | ConfigDataParsed;
+  }
+
+  const { data: configData, error: configError } = await supabase
+    .from("rating_configurations")
+    .select("config_hash, name, config_data")
+    .eq("config_hash", currentSeasonConfigHash)
+    .single();
+
+  if (configError) {
+    console.error("Failed to fetch config metadata:", configError);
+  }
+
+  const ratingConfig = configData as RatingConfigurationRaw | null;
+
+  // Parse config_data to get time range
+  let parsedConfigData: ConfigDataParsed | null = null;
+  if (ratingConfig?.config_data) {
+    if (typeof ratingConfig.config_data === "string") {
+      try {
+        parsedConfigData = JSON.parse(ratingConfig.config_data);
+      } catch (e) {
+        console.error("Failed to parse config_data:", e);
+      }
+    } else {
+      parsedConfigData = ratingConfig.config_data;
+    }
+  }
+  const timeRange = parsedConfigData?.timeRange;
+
   let query = supabase
     .from("games")
     .select(
@@ -556,10 +597,26 @@ export async function fetchGameHistory(
     .eq("status", "finished")
     .order("finished_at", { ascending: false });
 
+  // Apply time range filter if available from config
+  if (timeRange?.startDate) {
+    query = query.gte("started_at", timeRange.startDate);
+  }
+  if (timeRange?.endDate) {
+    // Use lt(nextDay) instead of lte(endDate) to include all games on the end date
+    const endDate = new Date(timeRange.endDate);
+    endDate.setUTCDate(endDate.getUTCDate() + 1);
+    const nextDay = endDate.toISOString().split("T")[0];
+    query = query.lt("started_at", nextDay);
+  }
+
+  // Variables to track player filtering
+  let actualPlayerId: string | undefined;
+  let sortedPlayerGamesLength: number | undefined;
+
   // Apply player filter if specified
   if (playerId) {
     // First, check if playerId is a UUID or a display name
-    let actualPlayerId = playerId;
+    actualPlayerId = playerId;
 
     // If it's not a UUID (doesn't match UUID pattern), treat it as a display name
     const uuidPattern =
@@ -579,14 +636,15 @@ export async function fetchGameHistory(
       actualPlayerId = playerData.id;
     }
 
-    // First get game IDs for the player
-    const { data: playerGames, error: playerError } = await supabase
+    // First get game IDs for the player, applying time range filter
+    let playerGamesQuery = supabase
       .from("game_seats")
       .select(
         `
         game_id,
         games!inner(
           id,
+          started_at,
           finished_at,
           status
         )
@@ -594,6 +652,22 @@ export async function fetchGameHistory(
       )
       .eq("player_id", actualPlayerId)
       .eq("games.status", "finished");
+
+    // Apply time range filter if available from config
+    if (timeRange?.startDate) {
+      playerGamesQuery = playerGamesQuery.gte(
+        "games.started_at",
+        timeRange.startDate
+      );
+    }
+    if (timeRange?.endDate) {
+      const endDate = new Date(timeRange.endDate);
+      endDate.setUTCDate(endDate.getUTCDate() + 1);
+      const nextDay = endDate.toISOString().split("T")[0];
+      playerGamesQuery = playerGamesQuery.lt("games.started_at", nextDay);
+    }
+
+    const { data: playerGames, error: playerError } = await playerGamesQuery;
 
     if (playerError) {
       throw new Error(`Failed to fetch player games: ${playerError.message}`);
@@ -614,6 +688,7 @@ export async function fetchGameHistory(
         return dateB - dateA;
       }
     );
+    sortedPlayerGamesLength = sortedPlayerGames.length;
 
     // Apply pagination after sorting
     let paginatedGames: typeof sortedPlayerGames;
@@ -627,10 +702,11 @@ export async function fetchGameHistory(
     }
 
     if (gameIds.length === 0) {
+      // Use the sorted player games length (already filtered by time range)
       return {
         games: [],
-        totalGames: sortedPlayerGames.length,
-        hasMore: sortedPlayerGames.length > offset + limit,
+        totalGames: sortedPlayerGamesLength || 0,
+        hasMore: (sortedPlayerGamesLength || 0) > offset + limit,
         showingAll: false,
       };
     }
@@ -756,10 +832,37 @@ export async function fetchGameHistory(
     };
   });
 
+  // Calculate total games count with time range filter for accurate count
+  let totalGamesCount: number;
+
+  if (playerId && sortedPlayerGamesLength !== undefined) {
+    // When filtering by player, use the length of sorted games (already filtered by time range)
+    totalGamesCount = sortedPlayerGamesLength;
+  } else {
+    // Calculate total count with time range filter
+    let totalCountQuery = supabase
+      .from("games")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "finished");
+
+    if (timeRange?.startDate) {
+      totalCountQuery = totalCountQuery.gte("started_at", timeRange.startDate);
+    }
+    if (timeRange?.endDate) {
+      const endDate = new Date(timeRange.endDate);
+      endDate.setUTCDate(endDate.getUTCDate() + 1);
+      const nextDay = endDate.toISOString().split("T")[0];
+      totalCountQuery = totalCountQuery.lt("started_at", nextDay);
+    }
+
+    const { count: totalCount } = await totalCountQuery;
+    totalGamesCount = totalCount || count || 0;
+  }
+
   return {
     games: transformedGames,
-    totalGames: count || 0,
-    hasMore: (count || 0) > offset + limit,
+    totalGames: totalGamesCount,
+    hasMore: totalGamesCount > offset + limit,
     showingAll: false,
   };
 }

@@ -177,19 +177,24 @@ export const GameHistoryView = memo(function GameHistoryView() {
             <SelectItem value="all" data-testid="filter-option">
               All Games
             </SelectItem>
-            {players?.map((player: Player) => {
-              const count = gameCounts?.[player.id] || 0;
-              return (
-                <SelectItem
-                  key={player.id}
-                  value={player.id}
-                  data-testid="filter-option"
-                >
-                  {player.display_name} ({count}{" "}
-                  {count === 1 ? "game" : "games"})
-                </SelectItem>
-              );
-            })}
+            {players
+              ?.filter(
+                (player: Player) =>
+                  gameCounts && gameCounts[player.id] !== undefined
+              )
+              .map((player: Player) => {
+                const count = gameCounts![player.id];
+                return (
+                  <SelectItem
+                    key={player.id}
+                    value={player.id}
+                    data-testid="filter-option"
+                  >
+                    {player.display_name} ({count}{" "}
+                    {count === 1 ? "game" : "games"})
+                  </SelectItem>
+                );
+              })}
           </SelectContent>
         </Select>
       </div>

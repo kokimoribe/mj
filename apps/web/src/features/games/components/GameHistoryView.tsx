@@ -175,7 +175,7 @@ export const GameHistoryView = memo(function GameHistoryView() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all" data-testid="filter-option">
-              All Games
+              All Players
             </SelectItem>
             {players
               ?.filter(

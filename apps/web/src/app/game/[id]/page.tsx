@@ -499,7 +499,7 @@ export default function LiveGamePage() {
     }
   };
 
-  // Handle confirmed exit - delete the game and navigate away
+  // Handle confirmed exit - cancel the game and navigate away
   const handleConfirmExit = async () => {
     setIsDeleting(true);
     try {
@@ -509,7 +509,7 @@ export default function LiveGamePage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to delete game");
+        throw new Error(errorData.error || "Failed to cancel game");
       }
 
       // Invalidate games queries to trigger refresh on games page
@@ -518,11 +518,11 @@ export default function LiveGamePage() {
       queryClient.invalidateQueries({ queryKey: ["players", "gameCounts"] });
 
       setShowExitConfirmation(false);
-      toast.success("Game discarded");
+      toast.success("Game cancelled");
       router.push("/games");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete game");
-      toast.error("Failed to delete game. Please try again.");
+      setError(err instanceof Error ? err.message : "Failed to cancel game");
+      toast.error("Failed to cancel game. Please try again.");
       setIsDeleting(false);
     }
   };
@@ -693,10 +693,11 @@ export default function LiveGamePage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Discard this game?</AlertDialogTitle>
+            <AlertDialogTitle>Cancel this game?</AlertDialogTitle>
             <AlertDialogDescription>
-              You are about to leave this game. If you exit now, no games or
-              hands will be recorded. All progress will be lost.
+              You are about to leave this game. If you exit now, this game will
+              be cancelled and will not appear in your game history or be
+              included in ratings. All progress will be lost.
               <br />
               <br />
               Are you sure you want to continue?
@@ -712,10 +713,10 @@ export default function LiveGamePage() {
               {isDeleting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Deleting...
+                  Cancelling...
                 </>
               ) : (
-                "Discard Game"
+                "Cancel Game"
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

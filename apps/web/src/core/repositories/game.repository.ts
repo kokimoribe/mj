@@ -179,6 +179,9 @@ export class GameRepository extends BaseRepository {
     if (filters) {
       if (filters.status) {
         query = query.eq("status", filters.status);
+      } else {
+        // Exclude cancelled games by default unless explicitly requested
+        query = query.neq("status", "cancelled");
       }
 
       if (filters.playerId) {
@@ -189,6 +192,9 @@ export class GameRepository extends BaseRepository {
         limit: filters.limit,
         offset: filters.offset,
       });
+    } else {
+      // Exclude cancelled games by default when no filters are provided
+      query = query.neq("status", "cancelled");
     }
 
     const result = await this.executeQuery(

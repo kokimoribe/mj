@@ -229,8 +229,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
 }
 
 /**
- * DELETE /api/games/[gameId] - Delete a game and all associated data
- * This will cascade delete game_seats and hand_events due to foreign key constraints
+ * DELETE /api/games/[gameId] - Cancel a game by setting status to 'cancelled'
+ * This preserves the game record but marks it as cancelled, excluding it from
+ * game lists, materialization, and leaderboard counts. If we want to actually delete the game, we will need to setup a DELETE RLS policy on the 'games' table.
  */
 export async function DELETE(request: NextRequest, context: RouteContext) {
   try {
@@ -255,26 +256,26 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
       );
     }
 
-    // Delete the game (cascade will handle game_seats and hand_events)
-    const { error: deleteError } = await supabase
+    // Update game status to cancelled
+    const { error: updateError } = await supabase
       .from("games")
-      .delete()
+      .update({ status: "cancelled" })
       .eq("id", gameId);
 
-    if (deleteError) {
-      console.error("Failed to delete game:", deleteError);
+    if (updateError) {
+      console.error("Failed to cancel game:", updateError);
       return NextResponse.json(
-        { error: "Failed to delete game" },
+        { error: "Failed to cancel game" },
         { status: 500 }
       );
     }
 
     return NextResponse.json({
-      message: "Game deleted successfully",
+      message: "Game cancelled successfully",
       gameId,
     });
   } catch (error) {
-    console.error("Error deleting game:", error);
+    console.error("Error cancelling game:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

@@ -103,8 +103,11 @@ export async function POST(request: NextRequest) {
 
     if (seatsError) {
       console.error("Failed to create game seats:", seatsError);
-      // Attempt to clean up the game
-      await supabase.from("games").delete().eq("id", game.id);
+      // Attempt to clean up the game by marking it as cancelled
+      await supabase
+        .from("games")
+        .update({ status: "cancelled" })
+        .eq("id", game.id);
       return NextResponse.json(
         { error: "Failed to create game seats", details: seatsError.message },
         { status: 500 }
@@ -183,6 +186,9 @@ export async function GET(request: NextRequest) {
 
     if (status) {
       query = query.eq("status", status);
+    } else {
+      // Exclude cancelled games by default unless explicitly requested
+      query = query.neq("status", "cancelled");
     }
 
     const { data: games, error } = await query;

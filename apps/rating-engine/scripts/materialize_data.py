@@ -130,18 +130,24 @@ def list_configurations(supabase):
 
 
 def get_config_hash_by_name(supabase, config_name: str) -> str | None:
-    """Get config hash by configuration name."""
+    """Get config hash by configuration name.
+    
+    Returns the most recently created official configuration with the given name.
+    If no official config exists, returns None.
+    """
     result = (
         supabase.table("rating_configurations")
         .select("config_hash")
         .eq("name", config_name)
+        .eq("is_official", True)
+        .order("created_at", desc=True)
         .execute()
     )
 
     if not result.data:
         return None
 
-    # If multiple configs with same name, return the most recent
+    # Return the most recent official config
     return result.data[0]["config_hash"]
 
 

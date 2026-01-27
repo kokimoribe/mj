@@ -72,7 +72,7 @@ function ExpandablePlayerCardComponent({
       <CardContent className="p-0">
         {/* Main Row - Clickable Header */}
         <div
-          className="focus-visible:ring-primary cursor-pointer rounded-t-lg px-4 py-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.99]"
+          className="focus-visible:ring-primary cursor-pointer rounded-t-lg px-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.99]"
           role="button"
           tabIndex={0}
           aria-expanded={isExpanded}

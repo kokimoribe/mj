@@ -188,45 +188,74 @@ export async function fetchLeaderboardData(
   });
 
   // Get last 10 games per player for mini charts
-  // First get all games for these players
-  const { data: playerGameSeats } = await supabase
-    .from("game_seats")
-    .select("game_id, player_id")
-    .in("player_id", playerIds);
-
-  const playerGameIds = [
-    ...new Set(playerGameSeats?.map(s => s.game_id) || []),
-  ];
-
-  // Get the games to get their dates
-  const { data: playerGames } = await supabase
-    .from("games")
-    .select("id, finished_at")
-    .in("id", playerGameIds)
-    .order("finished_at", { ascending: false });
-
-  // Get cached results for these games
+  // OPTIMIZATION: Query cached_game_results directly with config_hash filter
+  // This avoids the problematic game_seats query that was hitting URL length limits (414 errors)
+  // and Supabase's default 1000 row limit
   interface PlayerRecentGame extends CachedGameResult {
     games?: { finished_at: string };
   }
   let playerRecentGames: PlayerRecentGame[] = [];
-  if (playerGameIds.length > 0) {
-    const { data: cachedResults } = await supabase
+
+  // Step 1: Get all cached game results for the current config
+  // This automatically filters to only games within the season
+  const { data: allCachedGameResults, error: cachedGameResultsError } =
+    await supabase
       .from("cached_game_results")
       .select("*")
-      .eq("config_hash", currentSeasonConfigHash)
-      .in("game_id", playerGameIds)
-      .in("player_id", playerIds);
+      .eq("config_hash", currentSeasonConfigHash);
 
-    if (cachedResults) {
-      playerRecentGames = cachedResults.map(result => {
-        const game = playerGames?.find(g => g.id === result.game_id);
-        return {
-          ...result,
-          games: { finished_at: game?.finished_at || "" },
-        };
-      });
-    }
+  if (cachedGameResultsError) {
+    console.error(
+      "Failed to fetch cached game results for mini charts:",
+      cachedGameResultsError
+    );
+  }
+
+  // Step 2: Fetch game dates - filter by time range if available to reduce payload
+  // Also apply a reasonable limit to avoid large responses
+  let gamesQuery = supabase
+    .from("games")
+    .select("id, finished_at")
+    .eq("status", "finished")
+    .order("finished_at", { ascending: false });
+
+  // Apply time range filter from config if available
+  if (timeRange?.startDate) {
+    gamesQuery = gamesQuery.gte("started_at", timeRange.startDate);
+  }
+  if (timeRange?.endDate) {
+    const endDate = new Date(timeRange.endDate);
+    endDate.setUTCDate(endDate.getUTCDate() + 1);
+    const nextDay = endDate.toISOString().split("T")[0];
+    gamesQuery = gamesQuery.lt("started_at", nextDay);
+  }
+
+  const { data: playerGames, error: playerGamesError } = await gamesQuery;
+
+  if (playerGamesError) {
+    console.error("Failed to fetch games for mini charts:", playerGamesError);
+  }
+
+  // Step 3: Create a map of game dates for quick lookup
+  const gameDateMap = new Map(
+    playerGames?.map(g => [g.id, g.finished_at]) || []
+  );
+
+  // Step 4: Build playerRecentGames by joining cached results with game dates
+  if (allCachedGameResults) {
+    playerRecentGames = allCachedGameResults
+      .filter(result => {
+        // Only include results for players on the leaderboard
+        // and games that have date info
+        return (
+          playerIds.includes(result.player_id) &&
+          gameDateMap.has(result.game_id)
+        );
+      })
+      .map(result => ({
+        ...result,
+        games: { finished_at: gameDateMap.get(result.game_id) || "" },
+      }));
   }
 
   // Sort games by date to ensure we get the most recent ones
@@ -257,27 +286,20 @@ export async function fetchLeaderboardData(
 
   // REQUIREMENT: Average Placement Calculation
   // Calculate average placement for each player from ALL their game results
+  // OPTIMIZATION: Reuse allCachedGameResults instead of making another query
   const playerAveragePlacements: Record<string, number> = {};
-
-  // We need ALL games for placement calculation, not just recent ones
-  // Get all cached results for ALL players' games
   const allPlayerPlacements: Record<string, number[]> = {};
 
-  if (playerGameIds.length > 0) {
-    const { data: allCachedResults } = await supabase
-      .from("cached_game_results")
-      .select("player_id, placement")
-      .eq("config_hash", currentSeasonConfigHash)
-      .in("player_id", playerIds);
+  if (allCachedGameResults) {
+    allCachedGameResults.forEach(result => {
+      // Only include players on the leaderboard
+      if (!playerIds.includes(result.player_id)) return;
 
-    if (allCachedResults) {
-      allCachedResults.forEach(result => {
-        if (!allPlayerPlacements[result.player_id]) {
-          allPlayerPlacements[result.player_id] = [];
-        }
-        allPlayerPlacements[result.player_id].push(result.placement);
-      });
-    }
+      if (!allPlayerPlacements[result.player_id]) {
+        allPlayerPlacements[result.player_id] = [];
+      }
+      allPlayerPlacements[result.player_id].push(result.placement);
+    });
   }
 
   // Calculate averages
@@ -331,7 +353,14 @@ export async function fetchLeaderboardData(
     gameCountQuery = gameCountQuery.gte("started_at", timeRange.startDate);
   }
   if (timeRange?.endDate) {
-    gameCountQuery = gameCountQuery.lte("started_at", timeRange.endDate);
+    // BUG FIX: Use lt(nextDay) instead of lte(endDate) to include all games on the end date.
+    // When comparing timestamps to date strings, PostgreSQL treats "2025-07-26" as midnight,
+    // so "2025-07-26 01:00:00" would be excluded by lte("2025-07-26").
+    // Using lt("2025-07-27") correctly includes all games on 2025-07-26.
+    const endDate = new Date(timeRange.endDate);
+    endDate.setUTCDate(endDate.getUTCDate() + 1);
+    const nextDay = endDate.toISOString().split("T")[0];
+    gameCountQuery = gameCountQuery.lt("started_at", nextDay);
   }
 
   const { count: gameCount, error: gameCountError } = await gameCountQuery;
@@ -527,6 +556,47 @@ export async function fetchGameHistory(
   const currentSeasonConfigHash = options.configHash || config.season.hash;
   const { playerId, offset = 0, limit = 10 } = options;
 
+  // Fetch config metadata to get time range (similar to fetchLeaderboardData)
+  interface ConfigDataParsed {
+    timeRange?: {
+      startDate?: string;
+      endDate?: string;
+    };
+  }
+
+  interface RatingConfigurationRaw {
+    config_hash: string;
+    name: string;
+    config_data: string | ConfigDataParsed;
+  }
+
+  const { data: configData, error: configError } = await supabase
+    .from("rating_configurations")
+    .select("config_hash, name, config_data")
+    .eq("config_hash", currentSeasonConfigHash)
+    .single();
+
+  if (configError) {
+    console.error("Failed to fetch config metadata:", configError);
+  }
+
+  const ratingConfig = configData as RatingConfigurationRaw | null;
+
+  // Parse config_data to get time range
+  let parsedConfigData: ConfigDataParsed | null = null;
+  if (ratingConfig?.config_data) {
+    if (typeof ratingConfig.config_data === "string") {
+      try {
+        parsedConfigData = JSON.parse(ratingConfig.config_data);
+      } catch (e) {
+        console.error("Failed to parse config_data:", e);
+      }
+    } else {
+      parsedConfigData = ratingConfig.config_data;
+    }
+  }
+  const timeRange = parsedConfigData?.timeRange;
+
   let query = supabase
     .from("games")
     .select(
@@ -549,10 +619,26 @@ export async function fetchGameHistory(
     .eq("status", "finished")
     .order("finished_at", { ascending: false });
 
+  // Apply time range filter if available from config
+  if (timeRange?.startDate) {
+    query = query.gte("started_at", timeRange.startDate);
+  }
+  if (timeRange?.endDate) {
+    // Use lt(nextDay) instead of lte(endDate) to include all games on the end date
+    const endDate = new Date(timeRange.endDate);
+    endDate.setUTCDate(endDate.getUTCDate() + 1);
+    const nextDay = endDate.toISOString().split("T")[0];
+    query = query.lt("started_at", nextDay);
+  }
+
+  // Variables to track player filtering
+  let actualPlayerId: string | undefined;
+  let sortedPlayerGamesLength: number | undefined;
+
   // Apply player filter if specified
   if (playerId) {
     // First, check if playerId is a UUID or a display name
-    let actualPlayerId = playerId;
+    actualPlayerId = playerId;
 
     // If it's not a UUID (doesn't match UUID pattern), treat it as a display name
     const uuidPattern =
@@ -572,14 +658,15 @@ export async function fetchGameHistory(
       actualPlayerId = playerData.id;
     }
 
-    // First get game IDs for the player
-    const { data: playerGames, error: playerError } = await supabase
+    // First get game IDs for the player, applying time range filter
+    let playerGamesQuery = supabase
       .from("game_seats")
       .select(
         `
         game_id,
         games!inner(
           id,
+          started_at,
           finished_at,
           status
         )
@@ -587,6 +674,22 @@ export async function fetchGameHistory(
       )
       .eq("player_id", actualPlayerId)
       .eq("games.status", "finished");
+
+    // Apply time range filter if available from config
+    if (timeRange?.startDate) {
+      playerGamesQuery = playerGamesQuery.gte(
+        "games.started_at",
+        timeRange.startDate
+      );
+    }
+    if (timeRange?.endDate) {
+      const endDate = new Date(timeRange.endDate);
+      endDate.setUTCDate(endDate.getUTCDate() + 1);
+      const nextDay = endDate.toISOString().split("T")[0];
+      playerGamesQuery = playerGamesQuery.lt("games.started_at", nextDay);
+    }
+
+    const { data: playerGames, error: playerError } = await playerGamesQuery;
 
     if (playerError) {
       throw new Error(`Failed to fetch player games: ${playerError.message}`);
@@ -607,6 +710,7 @@ export async function fetchGameHistory(
         return dateB - dateA;
       }
     );
+    sortedPlayerGamesLength = sortedPlayerGames.length;
 
     // Apply pagination after sorting
     let paginatedGames: typeof sortedPlayerGames;
@@ -620,10 +724,11 @@ export async function fetchGameHistory(
     }
 
     if (gameIds.length === 0) {
+      // Use the sorted player games length (already filtered by time range)
       return {
         games: [],
-        totalGames: sortedPlayerGames.length,
-        hasMore: sortedPlayerGames.length > offset + limit,
+        totalGames: sortedPlayerGamesLength || 0,
+        hasMore: (sortedPlayerGamesLength || 0) > offset + limit,
         showingAll: false,
       };
     }
@@ -749,10 +854,37 @@ export async function fetchGameHistory(
     };
   });
 
+  // Calculate total games count with time range filter for accurate count
+  let totalGamesCount: number;
+
+  if (playerId && sortedPlayerGamesLength !== undefined) {
+    // When filtering by player, use the length of sorted games (already filtered by time range)
+    totalGamesCount = sortedPlayerGamesLength;
+  } else {
+    // Calculate total count with time range filter
+    let totalCountQuery = supabase
+      .from("games")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "finished");
+
+    if (timeRange?.startDate) {
+      totalCountQuery = totalCountQuery.gte("started_at", timeRange.startDate);
+    }
+    if (timeRange?.endDate) {
+      const endDate = new Date(timeRange.endDate);
+      endDate.setUTCDate(endDate.getUTCDate() + 1);
+      const nextDay = endDate.toISOString().split("T")[0];
+      totalCountQuery = totalCountQuery.lt("started_at", nextDay);
+    }
+
+    const { count: totalCount } = await totalCountQuery;
+    totalGamesCount = totalCount || count || 0;
+  }
+
   return {
     games: transformedGames,
-    totalGames: count || 0,
-    hasMore: (count || 0) > offset + limit,
+    totalGames: totalGamesCount,
+    hasMore: totalGamesCount > offset + limit,
     showingAll: false,
   };
 }

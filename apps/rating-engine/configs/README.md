@@ -11,11 +11,19 @@ This directory contains the **official and experimental** rating configurations 
 configs/
 ├── README.md                 # This file
 ├── season-3.yaml            # Season 3 configuration (Feb 2022 - Jul 2025)
-├── season-4.yaml            # Season 4 configuration (Aug 2025+)
+├── season-4.yaml            # Season 4 configuration (DEPRECATED - use season-4-v2.yaml)
+├── season-4-v2.yaml         # Season 4 v2 configuration (corrected end date: Aug 2025 - Dec 2025)
+├── season-5.yaml            # Season 5 configuration (Dec 2025 - Jun 2026)
 └── experimental/            # Non-official configurations for testing
     ├── high-stakes.yaml
     └── beginner-friendly.yaml
 ```
+
+### Season 4 Configuration Note
+
+The original `season-4.yaml` file used an endDate of `2025-12-31`, which would overlap with Season 5 (starting `2025-12-28`). This would cause games from 12/28–12/31 to be counted in both seasons if both configs are materialized.
+
+**Use `season-4-v2.yaml` instead**, which corrects the end date to `2025-12-24` to avoid overlap. The original file is kept for historical reference only.
 
 ## Usage
 
@@ -26,6 +34,7 @@ Configurations are stored as YAML files for human readability and version contro
 1. Create `season-X.yaml` with the configuration
 2. Create a migration script to load it into the database
 3. Mark as official in the database
+4. Update the web app default season hash/name in `apps/web/src/config/index.ts`
 
 ### Configuration Format
 

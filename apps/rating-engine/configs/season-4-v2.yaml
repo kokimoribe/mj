@@ -1,0 +1,56 @@
+# Season 4 v2 Configuration (Corrected)
+#
+# Why does this exist?
+# - The original Season 4 config (`season-4.yaml`) used an endDate of 2025-12-31.
+# - We later decided Season 5 officially starts on 2025-12-28 (games have already been played and recorded in the system).
+# - Keeping Season 4 open through 12/31 would allow 12/28–12/31 games to be counted in BOTH
+#   Season 4 and Season 5 (overlapping time ranges) if both configs are materialized.
+#
+# Important: time filtering is done using `games.started_at` in UTC.
+# The web UI may render those timestamps in local time, but materialization uses UTC ranges.
+#
+# This v2 config closes Season 4 on 2025-12-24 to provide a cushion between the last Season 4
+# game (2025-12-23 started_at UTC) and the first Season 5 game (2025-12-28 started_at UTC).
+#
+# Note: The configuration hash is derived from the normalized JSON of:
+# - timeRange, rating, scoring, weights, qualification
+# (metadata below does NOT affect the hash).
+
+# NOTE: Keep the user-facing season name as "Season 4".
+# The "v2" distinction is internal-only (file name + comments + version metadata).
+name: "Season 4"
+description: "Official Season 4 - corrected end date to avoid overlap with Season 5"
+
+# Time bounds for this season (UTC dates)
+timeRange:
+  startDate: "2025-07-27"
+  endDate: "2025-12-24"
+  name: "Season 4"
+
+# OpenSkill rating parameters (same as Season 4 for continuity)
+rating:
+  initialMu: 25.0 # Starting skill estimate
+  initialSigma: 8.33 # Starting uncertainty
+  confidenceFactor: 2.0 # Display rating conservatism (μ - k*σ)
+  decayRate: 0.02 # Weekly sigma inflation for inactive players
+
+# Scoring system (same as Season 4)
+scoring:
+  oka: 20000 # Return bonus
+  uma: [10000, 5000, -5000, -10000] # Placement bonuses [1st, 2nd, 3rd, 4th]
+
+# Margin-of-victory weights (same as Season 4)
+weights:
+  divisor: 40 # Plus-minus scaling factor
+  min: 0.5 # Minimum weight multiplier
+  max: 1.5 # Maximum weight multiplier
+
+# Qualification rules (same as Season 4)
+qualification:
+  minGames: 8 # Games needed for prizes
+  dropWorst: 2 # Safety net for bad games
+
+# Metadata
+isOfficial: true
+createdBy: "jmoon"
+version: "2.0.0"

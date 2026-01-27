@@ -422,6 +422,51 @@ export const useConfigStore = create<ConfigState>()(
         customConfigs: state.customConfigs,
         activeConfig: state.activeConfig,
       }),
+      onRehydrateStorage: () => (state, error) => {
+        if (error) {
+          console.error("Error rehydrating config store:", error);
+          return;
+        }
+
+        if (state?.activeConfig) {
+          // If the restored config doesn't match the current default season,
+          // reset it to the default Season 5
+          if (state.activeConfig.hash !== appConfig.season.hash) {
+            state.activeConfig = {
+              hash: appConfig.season.hash,
+              name: appConfig.season.name,
+              isOfficial: true,
+              data: {
+                timeRange: {
+                  startDate: "2025-12-28",
+                  endDate: "2026-06-30",
+                  name: "Season 5",
+                },
+                rating: {
+                  initialMu: 25,
+                  initialSigma: 8.33,
+                  confidenceFactor: 2,
+                  decayRate: 0.02,
+                },
+                scoring: {
+                  oka: 20000,
+                  uma: [10000, 5000, -5000, -10000],
+                },
+                weights: {
+                  divisor: 40,
+                  min: 0.5,
+                  max: 1.5,
+                },
+                qualification: {
+                  minGames: 8,
+                  dropWorst: 2,
+                },
+              },
+            };
+            state.selectedConfig = appConfig.season.hash;
+          }
+        }
+      },
     }
   )
 );

@@ -1,6 +1,6 @@
-# Legacy Data Migration Scripts
+# Rating Engine Scripts
 
-This directory contains scripts for migrating legacy CSV game data into the Phase 0 database schema using the modern Supabase Python client.
+This directory contains utility scripts for managing the rating engine, including data migration and configuration management.
 
 ## migrate_legacy_data.py
 
@@ -99,3 +99,99 @@ The script creates the Season 3 rating configuration from `configs/season-3.yaml
 - **Authentication**: Proper service role key usage
 - **Maintainability**: Clean, readable code that's easy to extend
 - **Performance**: Efficient batch operations with Supabase
+
+## register_configs.py
+
+Registers season YAML configuration files in the database by generating deterministic SHA256 hashes and upserting to the `rating_configurations` table.
+
+### Quick Start
+
+```bash
+# From the rating-engine directory
+cd apps/rating-engine
+
+# Register specific config files
+uv run python scripts/register_configs.py configs/season-4-v2.yaml configs/season-5.yaml
+
+# Register all configs in the configs directory
+uv run python scripts/register_configs.py --all
+
+# Register a single config
+uv run python scripts/register_configs.py configs/season-5.yaml
+```
+
+### Features
+
+- ✅ **Deterministic Hashing** - SHA256 hash based on config content (timeRange, rating, scoring, weights, qualification)
+- ✅ **Idempotent** - Safe to run multiple times (uses upsert)
+- ✅ **Validation** - Checks for required fields before registration
+- ✅ **Batch Support** - Can register multiple configs at once
+- ✅ **Clear Output** - Shows config names and hashes
+
+### How Configuration Hashes Work
+
+The hash is generated from the normalized JSON of these fields only:
+
+- `timeRange` - Season date range
+- `rating` - OpenSkill parameters
+- `scoring` - Oka/uma values
+- `weights` - Margin-of-victory weights
+- `qualification` - Qualification rules
+
+**Metadata fields** (`name`, `description`, `isOfficial`, `version`, etc.) do **NOT** affect the hash. This means:
+
+- You can update metadata without changing the hash
+- Configs with identical parameters will have the same hash (useful for detecting duplicates)
+
+### Requirements
+
+1. **Database**: Phase 0 schema with `rating_configurations` table
+2. **Environment**: `SUPABASE_URL` and `SUPABASE_SECRET_KEY` in `.env` file
+3. **YAML Files**: Valid season configuration files in `configs/` directory
+
+### Usage Examples
+
+```bash
+# Register new season configs
+uv run python scripts/register_configs.py configs/season-4-v2.yaml configs/season-5.yaml
+
+# Register all configs (useful after adding new seasons)
+uv run python scripts/register_configs.py --all
+
+# Register a single config
+uv run python scripts/register_configs.py configs/season-5.yaml
+```
+
+### Output
+
+The script provides:
+
+- Real-time logging of each config being registered
+- Summary table showing config names and their hashes
+- Success/failure status for each registration
+
+Example output:
+
+```
+✅ Connected to Supabase
+📋 Loaded config: Season 4
+✅ Config 'Season 4' registered: a1b2c3d4...
+📋 Loaded config: Season 5
+✅ Config 'Season 5' registered: e5f6g7h8...
+
+============================================================
+📊 Registration Summary
+============================================================
+  Season 4                        a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2
+  Season 5                        e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2g3h4i5j6
+============================================================
+
+✅ Successfully registered 2 configuration(s)
+```
+
+### When to Use
+
+- **Adding new seasons**: After creating a new `season-X.yaml` file
+- **Updating configs**: After modifying existing YAML files (will update database records)
+- **Database sync**: Ensuring all configs in the repo are registered in the database
+- **Verification**: Checking that configs are properly stored before materialization

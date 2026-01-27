@@ -331,7 +331,14 @@ export async function fetchLeaderboardData(
     gameCountQuery = gameCountQuery.gte("started_at", timeRange.startDate);
   }
   if (timeRange?.endDate) {
-    gameCountQuery = gameCountQuery.lte("started_at", timeRange.endDate);
+    // BUG FIX: Use lt(nextDay) instead of lte(endDate) to include all games on the end date.
+    // When comparing timestamps to date strings, PostgreSQL treats "2025-07-26" as midnight,
+    // so "2025-07-26 01:00:00" would be excluded by lte("2025-07-26").
+    // Using lt("2025-07-27") correctly includes all games on 2025-07-26.
+    const endDate = new Date(timeRange.endDate);
+    endDate.setUTCDate(endDate.getUTCDate() + 1);
+    const nextDay = endDate.toISOString().split("T")[0];
+    gameCountQuery = gameCountQuery.lt("started_at", nextDay);
   }
 
   const { count: gameCount, error: gameCountError } = await gameCountQuery;

@@ -1,6 +1,20 @@
-# Season 4 Configuration
-# Official configuration for the new system era
-# Starts August 2025 with the new web app and rating system
+# Season 4 Configuration (DEPRECATED - Use season-4-v2.yaml instead)
+#
+# ⚠️  This configuration has been superseded by `season-4-v2.yaml`
+#
+# Why was this replaced?
+# - This original config used an endDate of 2025-12-31
+# - Season 5 officially starts on 2025-12-28 (games have already been played and recorded)
+# - Keeping Season 4 open through 12/31 would allow 12/28–12/31 games to be counted in BOTH
+#   Season 4 and Season 5 (overlapping time ranges) if both configs are materialized
+#
+# The corrected version (`season-4-v2.yaml`) closes Season 4 on 2025-12-24 to provide a
+# cushion between the last Season 4 game and the first Season 5 game, avoiding overlap.
+#
+# Important: time filtering is done using `games.started_at` in UTC.
+# The web UI may render those timestamps in local time, but materialization uses UTC ranges.
+#
+# This file is kept for historical reference only. Do not use for new materializations.
 
 name: "Season 4"
 description: "Official Season 4 - New system era with web app integration"

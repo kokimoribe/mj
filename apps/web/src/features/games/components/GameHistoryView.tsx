@@ -26,6 +26,7 @@ import { differenceInMinutes, format } from "date-fns";
 import { Calendar, Plus, Circle } from "lucide-react";
 import { safeFormatNumber } from "@/lib/utils/data-validation";
 import { LiveGameCard } from "./LiveGameCard";
+import { useConfigStore } from "@/stores/configStore";
 
 interface Player {
   id: string;
@@ -35,6 +36,7 @@ interface Player {
 export const GameHistoryView = memo(function GameHistoryView() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const activeConfig = useConfigStore(state => state.activeConfig);
 
   // Initialize state from URL params
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | undefined>(
@@ -144,7 +146,7 @@ export const GameHistoryView = memo(function GameHistoryView() {
         <div>
           <h1 className="text-2xl font-bold">🎮 Game History</h1>
           <p className="text-muted-foreground text-sm">
-            Season 3 • {totalGames} games
+            {activeConfig?.name || "No Season Found"} • {totalGames} games
           </p>
         </div>
         <Link href="/game/new">

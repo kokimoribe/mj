@@ -14,6 +14,29 @@ function calculateScoreDelta(placement: number): number {
   return uma[placement - 1] * 1000; // Convert to points (multiply by 1000)
 }
 
+// Achievement types
+export interface Achievement {
+  id: string;
+  code: string;
+  name: string;
+  description: string;
+  iconName: string;
+  category?: string | null;
+  seasonName?: string; // Season when this achievement was earned
+  playerAchievementId?: string; // Unique ID for this player achievement instance
+}
+
+export interface PlayerAchievement {
+  id: string;
+  playerId: string;
+  achievementId: string;
+  seasonName: string;
+  earnedAt: string;
+  grantedBy?: string | null;
+  metadata?: Record<string, unknown> | null;
+  achievement?: Achievement;
+}
+
 // Core types for the application
 export interface Player {
   id: string;
@@ -32,6 +55,7 @@ export interface Player {
     date: string;
     rating: number;
   }>;
+  achievements?: Achievement[];
 }
 
 export interface LeaderboardData {
@@ -310,6 +334,17 @@ export async function fetchLeaderboardData(
     }
   });
 
+  // Fetch achievements for all players on the leaderboard
+  let achievementsByPlayer: Record<string, Achievement[]> = {};
+  try {
+    achievementsByPlayer = await fetchLeaderboardAchievements(
+      currentSeasonConfigHash
+    );
+  } catch (error) {
+    console.error("Failed to fetch achievements:", error);
+    // Continue without achievements if fetch fails
+  }
+
   // Transform data to match interface
   const transformedPlayers: Player[] = (
     (players as CachedPlayerRating[]) || []
@@ -335,6 +370,7 @@ export async function fetchLeaderboardData(
       ratingHistory: [], // Column doesn't exist in current schema
       recentGames: recentGamesByPlayer[p.player_id]?.reverse() || [], // Reverse to get chronological order
       averagePlacement: playerAveragePlacements[p.player_id] || undefined,
+      achievements: achievementsByPlayer[p.player_id] || [],
     };
   });
 
@@ -483,6 +519,15 @@ export async function fetchPlayerProfile(
       }))
       .reverse() || [];
 
+  // Fetch achievements for this player
+  let achievements: Achievement[] = [];
+  try {
+    achievements = await fetchPlayerAchievements(actualPlayerId);
+  } catch (error) {
+    console.error("Failed to fetch player achievements:", error);
+    // Continue without achievements if fetch fails
+  }
+
   return {
     id: data.player_id,
     name: playerData?.display_name || "Unknown",
@@ -494,6 +539,7 @@ export async function fetchPlayerProfile(
     rating7DayDelta: null, // Not needed for profile view
     ratingHistory: data.rating_history || [],
     recentGames: formattedRecentGames,
+    achievements,
   };
 }
 
@@ -1031,4 +1077,142 @@ export async function fetchOngoingGame(): Promise<OngoingGameData | null> {
   }
 
   return normalizeOngoingGame(data as unknown as OngoingGameRaw);
+}
+
+// Achievement query functions
+export async function fetchPlayerAchievements(
+  playerId: string,
+  seasonName?: string
+): Promise<Achievement[]> {
+  const supabase = createClient();
+
+  let query = supabase
+    .from("player_achievements")
+    .select(
+      `
+      id,
+      player_id,
+      achievement_id,
+      season_name,
+      earned_at,
+      granted_by,
+      metadata,
+      achievements (
+        id,
+        code,
+        name,
+        description,
+        icon_name,
+        category
+      )
+    `
+    )
+    .eq("player_id", playerId);
+
+  if (seasonName) {
+    query = query.eq("season_name", seasonName);
+  }
+
+  const { data, error } = await query.order("earned_at", {
+    ascending: false,
+  });
+
+  if (error) {
+    throw new Error(`Failed to fetch player achievements: ${error.message}`);
+  }
+
+  // Transform the data to match our Achievement interface
+  return (
+    data?.map((pa: any) => ({
+      id: pa.achievements.id,
+      code: pa.achievements.code,
+      name: pa.achievements.name,
+      description: pa.achievements.description,
+      iconName: pa.achievements.icon_name,
+      category: pa.achievements.category,
+      seasonName: pa.season_name, // Include season name in achievement data
+      playerAchievementId: pa.id, // Unique ID for this player achievement instance
+    })) || []
+  );
+}
+
+export async function fetchLeaderboardAchievements(
+  _configHash?: string
+): Promise<Record<string, Achievement[]>> {
+  const supabase = createClient();
+
+  // Fetch ALL player achievements regardless of season/configuration
+  const { data, error } = await supabase.from("player_achievements").select(
+    `
+      id,
+      player_id,
+      season_name,
+      earned_at,
+      achievements (
+        id,
+        code,
+        name,
+        description,
+        icon_name,
+        category
+      )
+    `
+  );
+
+  if (error) {
+    throw new Error(
+      `Failed to fetch leaderboard achievements: ${error.message}`
+    );
+  }
+
+  // Group achievements by player_id, keeping earned_at for sorting
+  const achievementsByPlayerRaw: Record<
+    string,
+    Array<{
+      id: string;
+      code: string;
+      name: string;
+      description: string;
+      iconName: string;
+      category: string | null;
+      seasonName: string;
+      playerAchievementId: string;
+      earnedAt: string;
+    }>
+  > = {};
+
+  data?.forEach((pa: any) => {
+    if (!pa.player_id || !pa.achievements) return;
+
+    if (!achievementsByPlayerRaw[pa.player_id]) {
+      achievementsByPlayerRaw[pa.player_id] = [];
+    }
+
+    achievementsByPlayerRaw[pa.player_id].push({
+      id: pa.achievements.id,
+      code: pa.achievements.code,
+      name: pa.achievements.name,
+      description: pa.achievements.description,
+      iconName: pa.achievements.icon_name,
+      category: pa.achievements.category,
+      seasonName: pa.season_name,
+      playerAchievementId: pa.id,
+      earnedAt: pa.earned_at,
+    });
+  });
+
+  // Sort each player's achievements by earned_at (most recent first) and remove earnedAt
+  const achievementsByPlayer: Record<string, Achievement[]> = {};
+  Object.entries(achievementsByPlayerRaw).forEach(
+    ([playerId, achievements]) => {
+      achievementsByPlayer[playerId] = achievements
+        .sort(
+          (a, b) =>
+            new Date(b.earnedAt).getTime() - new Date(a.earnedAt).getTime()
+        )
+        .map(({ earnedAt: _earnedAt, ...achievement }) => achievement);
+    }
+  );
+
+  return achievementsByPlayer;
 }

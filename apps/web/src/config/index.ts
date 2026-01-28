@@ -48,6 +48,13 @@ export const config = {
     interactionTarget: 100, // 100ms
     refreshTarget: 500, // 500ms
   },
+
+  // Rating engine configuration
+  // Use RATING_ENGINE_URL env var for local development (http://localhost:8000)
+  // Falls back to production URL if not set
+  ratingEngine: {
+    url: process.env.RATING_ENGINE_URL || "https://mj-skill-rating.vercel.app",
+  },
 } as const;
 
 // Type-safe config access

@@ -1,8 +1,63 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { config } from "@/config";
 
 interface RouteContext {
   params: Promise<{ gameId: string }>;
+}
+
+/**
+ * Response from the rating-engine materialization endpoint
+ */
+interface MaterializationResult {
+  status: string;
+  config_hash: string;
+  players_count?: number | null;
+  games_count?: number | null;
+  source_data_hash?: string | null;
+  error?: string | null;
+}
+
+/**
+ * Trigger materialization in the rating-engine to update player ratings.
+ * This is called after a game finishes to recalculate ratings.
+ *
+ * @param configHash - The configuration hash to use for materialization
+ * @returns The materialization result or an error object
+ */
+async function triggerMaterialization(
+  configHash: string
+): Promise<MaterializationResult> {
+  try {
+    const response = await fetch(`${config.ratingEngine.url}/materialize`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ config_hash: configHash, force_refresh: false }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(
+        `Materialization request failed with status ${response.status}:`,
+        errorText
+      );
+      return {
+        status: "error",
+        config_hash: configHash,
+        error: `HTTP ${response.status}: ${errorText}`,
+      };
+    }
+
+    const result: MaterializationResult = await response.json();
+    return result;
+  } catch (error) {
+    console.error("Failed to trigger materialization:", error);
+    return {
+      status: "error",
+      config_hash: configHash,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
 }
 
 export interface UpdateGameRequest {
@@ -215,9 +270,27 @@ export async function POST(request: NextRequest, context: RouteContext) {
       );
     }
 
+    // Trigger materialization to update ratings
+    // This runs synchronously but game finish succeeds even if materialization fails
+    const materializationResult = await triggerMaterialization(
+      config.season.hash
+    );
+
+    if (materializationResult.status === "error") {
+      console.error(
+        "Materialization failed after game finish:",
+        materializationResult.error
+      );
+    } else {
+      console.log(
+        `Materialization completed: ${materializationResult.players_count} players, ${materializationResult.games_count} games`
+      );
+    }
+
     return NextResponse.json({
       message: "Game finished successfully",
       game,
+      materialization: materializationResult,
     });
   } catch (error) {
     console.error("Error finishing game:", error);

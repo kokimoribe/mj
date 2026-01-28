@@ -491,16 +491,8 @@ export default function LiveGamePage() {
     setEndDialogDismissed(true);
   };
 
-  // Handle back button click - show confirmation if game is in progress
-  const handleBackClick = (e: React.MouseEvent) => {
-    if (!isFinished && handHistory.length > 0) {
-      e.preventDefault();
-      setShowExitConfirmation(true);
-    }
-  };
-
-  // Handle confirmed exit - cancel the game and navigate away
-  const handleConfirmExit = async () => {
+  // Cancel game - reusable function
+  const cancelGame = useCallback(async () => {
     setIsDeleting(true);
     try {
       const response = await fetch(`/api/games/${gameId}`, {
@@ -517,7 +509,6 @@ export default function LiveGamePage() {
       queryClient.invalidateQueries({ queryKey: ["ongoing-game"] });
       queryClient.invalidateQueries({ queryKey: ["players", "gameCounts"] });
 
-      setShowExitConfirmation(false);
       toast.success("Game cancelled");
       router.push("/games");
     } catch (err) {
@@ -525,6 +516,27 @@ export default function LiveGamePage() {
       toast.error("Failed to cancel game. Please try again.");
       setIsDeleting(false);
     }
+  }, [gameId, queryClient, router]);
+
+  // Handle back button click - always cancel game if not finished
+  const handleBackClick = (e: React.MouseEvent) => {
+    if (isFinished) return;
+
+    e.preventDefault();
+
+    // If there are hands recorded, show confirmation dialog
+    // If no hands, cancel immediately
+    if (handHistory.length > 0) {
+      setShowExitConfirmation(true);
+    } else {
+      cancelGame();
+    }
+  };
+
+  // Handle confirmed exit - cancel the game and navigate away
+  const handleConfirmExit = async () => {
+    setShowExitConfirmation(false);
+    await cancelGame();
   };
 
   // Browser beforeunload protection for in-progress games
@@ -576,7 +588,7 @@ export default function LiveGamePage() {
       {/* Header */}
       <GamePageHeader>
         <div className="flex items-center gap-4">
-          {isFinished || handHistory.length === 0 ? (
+          {isFinished ? (
             <Link href="/games">
               <Button variant="ghost" size="icon">
                 <ArrowLeft className="h-5 w-5" />

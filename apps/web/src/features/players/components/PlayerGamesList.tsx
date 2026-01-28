@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 interface PlayerGame {
   id: string;
@@ -33,6 +34,7 @@ export const PlayerGamesList = memo(function PlayerGamesList({
   playerId: _playerId,
   initialGames,
 }: PlayerGamesListProps) {
+  const router = useRouter();
   const [displayedGames, setDisplayedGames] = useState(5); // Start by showing 5 games
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const allGames = initialGames; // All games are loaded initially
@@ -81,7 +83,8 @@ export const PlayerGamesList = memo(function PlayerGamesList({
         <div
           key={game.id}
           data-testid="game-entry"
-          className="space-y-1 border-b pb-3 last:border-0"
+          onClick={() => router.push(`/games/${game.id}`)}
+          className="hover:bg-muted/50 -mx-2 -my-1 cursor-pointer space-y-1 rounded-sm border-b px-2 py-1 pb-3 transition-colors last:border-0"
         >
           {/* Format as per spec: [Date] • [Placement] • [↑↓Rating] */}
           <div className="text-sm">
@@ -125,6 +128,7 @@ export const PlayerGamesList = memo(function PlayerGamesList({
                   href={`/player/${opponent.id}`}
                   className="text-primary hover:underline"
                   data-testid="opponent-link"
+                  onClick={e => e.stopPropagation()}
                 >
                   {opponent.name}
                 </Link>

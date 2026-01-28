@@ -8,6 +8,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import type { Player } from "@/lib/queries";
+import { AchievementIcon } from "@/components/achievements/AchievementIcon";
+import { AchievementBadge } from "@/components/achievements/AchievementBadge";
 import {
   LineChart,
   Line,
@@ -95,9 +97,25 @@ function ExpandablePlayerCardComponent({
 
             {/* Player Name & Games */}
             <div className="min-w-0 flex-1">
-              <h3 className="truncate font-medium" data-testid="player-name">
-                {player.name || "Unknown Player"}
-              </h3>
+              <div className="flex items-center gap-2">
+                <h3 className="truncate font-medium" data-testid="player-name">
+                  {player.name || "Unknown Player"}
+                </h3>
+                {player.achievements && player.achievements.length > 0 && (
+                  <div className="flex flex-shrink-0 items-center gap-1">
+                    {player.achievements.map(achievement => (
+                      <AchievementIcon
+                        key={
+                          achievement.playerAchievementId ||
+                          `${achievement.id}-${achievement.seasonName}`
+                        }
+                        achievement={achievement}
+                        size="sm"
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
               <p
                 className="text-muted-foreground text-sm"
                 data-testid="games-played"
@@ -237,6 +255,26 @@ function ExpandablePlayerCardComponent({
                 player.recentGames.length === 1
                   ? "Need at least 2 games for chart"
                   : "No recent games to display"}
+              </div>
+            )}
+
+            {/* Achievements Section */}
+            {player.achievements && player.achievements.length > 0 && (
+              <div>
+                <div className="text-muted-foreground mb-2 text-sm">
+                  Achievements:
+                </div>
+                <div className="space-y-2">
+                  {player.achievements.map(achievement => (
+                    <AchievementBadge
+                      key={
+                        achievement.playerAchievementId ||
+                        `${achievement.id}-${achievement.seasonName}`
+                      }
+                      achievement={achievement}
+                    />
+                  ))}
+                </div>
               </div>
             )}
 

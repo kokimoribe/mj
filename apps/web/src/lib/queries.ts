@@ -16,6 +16,8 @@ export type {
   Game,
   GameResult,
   GameHistoryData,
+  Achievement,
+  PlayerAchievement,
 } from "./supabase/queries";
 
 // Leaderboard queries - now using Supabase exclusively

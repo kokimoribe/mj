@@ -20,6 +20,8 @@ import {
   safeFormatNumber,
   validatePlayerData,
 } from "@/lib/utils/data-validation";
+import { AchievementBadge } from "@/components/achievements/AchievementBadge";
+import { AchievementIcon } from "@/components/achievements/AchievementIcon";
 
 interface PlayerGame {
   id: string;
@@ -237,9 +239,25 @@ export const PlayerProfileView = memo(function PlayerProfileView({
 
       {/* Player Header */}
       <div className="space-y-1" data-testid="player-header">
-        <h1 className="text-2xl font-bold" data-testid="player-name">
-          {player.name}
-        </h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold" data-testid="player-name">
+            {player.name}
+          </h1>
+          {player.achievements && player.achievements.length > 0 && (
+            <div className="flex items-center gap-1">
+              {player.achievements.map(achievement => (
+                <AchievementIcon
+                  key={
+                    achievement.playerAchievementId ||
+                    `${achievement.id}-${achievement.seasonName}`
+                  }
+                  achievement={achievement}
+                  size="md"
+                />
+              ))}
+            </div>
+          )}
+        </div>
         <h2 className="text-muted-foreground text-base">
           <span data-testid="player-rank">#{playerRank || "—"}</span> • Rating:{" "}
           <span data-testid="player-rating">
@@ -405,6 +423,31 @@ export const PlayerProfileView = memo(function PlayerProfileView({
           </div>
         </CardContent>
       </Card>
+
+      {/* Achievements */}
+      {player.achievements && player.achievements.length > 0 && (
+        <Card data-testid="achievements-section">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <span className="text-xl">🏆</span>
+              Achievements
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {player.achievements.map(achievement => (
+                <AchievementBadge
+                  key={
+                    achievement.playerAchievementId ||
+                    `${achievement.id}-${achievement.seasonName}`
+                  }
+                  achievement={achievement}
+                />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Recent Games */}
       <Card data-testid="game-history">

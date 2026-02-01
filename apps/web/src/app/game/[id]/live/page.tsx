@@ -21,7 +21,6 @@ import {
   useGameEndDetection,
   type GameFormat,
 } from "@/hooks/useGameEndDetection";
-import { createClient } from "@/lib/supabase/client";
 
 interface GameSeat {
   seat: Seat;
@@ -55,6 +54,7 @@ interface GameData {
 }
 
 const REDIRECT_DELAY_MS = 2500;
+const POLL_INTERVAL_MS = 30_000; // 30 seconds
 
 export default function LiveGameViewPage() {
   const params = useParams();
@@ -64,9 +64,11 @@ export default function LiveGameViewPage() {
   const [game, setGame] = useState<GameData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const refetchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const completionHandledRef = useRef(false);
+  const cancelledHandledRef = useRef(false);
   const [showCompletionOverlay, setShowCompletionOverlay] = useState(false);
+  const [showCancelledOverlay, setShowCancelledOverlay] = useState(false);
 
   // Fetch game data
   const fetchGame = useCallback(async () => {
@@ -89,39 +91,64 @@ export default function LiveGameViewPage() {
     fetchGame();
   }, [fetchGame]);
 
-  // Set up real-time subscription
+  // Poll for updates so spectators stay in sync when new hands are recorded.
+  // Uses the Page Visibility API: poll only when the tab is visible; when the
+  // user returns we refetch immediately. On iOS Safari, visibilitychange can
+  // be unreliable when returning from another app, so we also use pageshow
+  // and focus to refetch and resume polling.
   useEffect(() => {
     if (!gameId) return;
 
-    const supabase = createClient();
-    const channel = supabase
-      .channel("live-game-updates")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "hand_events",
-          filter: `game_id=eq.${gameId}`,
-        },
-        _payload => {
-          // Debounce bursts of inserts (one hand inserts multiple rows)
-          if (refetchTimeoutRef.current) {
-            clearTimeout(refetchTimeoutRef.current);
-          }
-          refetchTimeoutRef.current = setTimeout(() => {
-            fetchGame();
-          }, 150);
-        }
-      )
-      .subscribe();
+    const startPolling = () => {
+      if (pollIntervalRef.current) return;
+      pollIntervalRef.current = setInterval(fetchGame, POLL_INTERVAL_MS);
+    };
+
+    const stopPolling = () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+    };
+
+    const refetchAndStartPollingIfVisible = () => {
+      if (document.visibilityState === "visible") {
+        fetchGame();
+        startPolling();
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        refetchAndStartPollingIfVisible();
+      } else {
+        stopPolling();
+      }
+    };
+
+    const handlePageShow = (event: PageTransitionEvent) => {
+      // Refetch when page is shown (e.g. restored from bfcache, or when tab becomes active on iOS)
+      if (event.persisted || document.visibilityState === "visible") {
+        refetchAndStartPollingIfVisible();
+      }
+    };
+
+    const handleWindowFocus = () => {
+      refetchAndStartPollingIfVisible();
+    };
+
+    if (document.visibilityState === "visible") {
+      startPolling();
+    }
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("pageshow", handlePageShow);
+    window.addEventListener("focus", handleWindowFocus);
 
     return () => {
-      if (refetchTimeoutRef.current) {
-        clearTimeout(refetchTimeoutRef.current);
-        refetchTimeoutRef.current = null;
-      }
-      channel.unsubscribe();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("pageshow", handlePageShow);
+      window.removeEventListener("focus", handleWindowFocus);
+      stopPolling();
     };
   }, [gameId, fetchGame]);
 
@@ -360,6 +387,11 @@ export default function LiveGameViewPage() {
     return game?.status === "finished";
   }, [game?.status]);
 
+  // Check if game is cancelled
+  const isCancelled = useMemo(() => {
+    return game?.status === "cancelled";
+  }, [game?.status]);
+
   // Game end detection
   const gameEndDetection = useGameEndDetection({
     scores: currentScores,
@@ -370,7 +402,7 @@ export default function LiveGameViewPage() {
     playerNames,
   });
 
-  // When game completes while spectating: toast, blur overlay, then redirect to game history
+  // When game completes while spectating: blur overlay, then redirect to game history
   useEffect(() => {
     if (!gameId || !isFinished || completionHandledRef.current) return;
     completionHandledRef.current = true;
@@ -380,6 +412,17 @@ export default function LiveGameViewPage() {
     }, REDIRECT_DELAY_MS);
     return () => clearTimeout(t);
   }, [gameId, isFinished, router]);
+
+  // When game is cancelled while spectating: show overlay, then redirect to games list
+  useEffect(() => {
+    if (!gameId || !isCancelled || cancelledHandledRef.current) return;
+    cancelledHandledRef.current = true;
+    setShowCancelledOverlay(true);
+    const t = setTimeout(() => {
+      router.push("/games");
+    }, REDIRECT_DELAY_MS);
+    return () => clearTimeout(t);
+  }, [gameId, isCancelled, router]);
 
   if (isLoading) {
     return (
@@ -436,6 +479,21 @@ export default function LiveGameViewPage() {
           <div className="bg-background rounded-lg border px-6 py-4 text-center shadow-lg">
             <p className="text-foreground font-medium">
               This game has finished. Redirecting to the full game history page.
+            </p>
+          </div>
+        </div>
+      )}
+      {/* Blur overlay when game cancelled and redirecting */}
+      {showCancelledOverlay && (
+        <div
+          className="fixed inset-0 z-40 flex items-center justify-center bg-black/20 p-4 backdrop-blur-md"
+          role="status"
+          aria-live="polite"
+          aria-label="Game cancelled, redirecting"
+        >
+          <div className="bg-background rounded-lg border px-6 py-4 text-center shadow-lg">
+            <p className="text-foreground font-medium">
+              This game was cancelled. Redirecting to the games list.
             </p>
           </div>
         </div>

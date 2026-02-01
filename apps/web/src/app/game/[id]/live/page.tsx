@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Circle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -54,14 +54,19 @@ interface GameData {
   }>;
 }
 
+const REDIRECT_DELAY_MS = 2500;
+
 export default function LiveGameViewPage() {
   const params = useParams();
+  const router = useRouter();
   const gameId = params.id as string;
 
   const [game, setGame] = useState<GameData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const refetchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const completionHandledRef = useRef(false);
+  const [showCompletionOverlay, setShowCompletionOverlay] = useState(false);
 
   // Fetch game data
   const fetchGame = useCallback(async () => {
@@ -365,6 +370,17 @@ export default function LiveGameViewPage() {
     playerNames,
   });
 
+  // When game completes while spectating: toast, blur overlay, then redirect to game history
+  useEffect(() => {
+    if (!gameId || !isFinished || completionHandledRef.current) return;
+    completionHandledRef.current = true;
+    setShowCompletionOverlay(true);
+    const t = setTimeout(() => {
+      router.push(`/games/${gameId}`);
+    }, REDIRECT_DELAY_MS);
+    return () => clearTimeout(t);
+  }, [gameId, isFinished, router]);
+
   if (isLoading) {
     return (
       <div className="container mx-auto max-w-4xl space-y-4 p-4">
@@ -408,50 +424,67 @@ export default function LiveGameViewPage() {
   }
 
   return (
-    <div className="container mx-auto max-w-4xl space-y-4 p-4">
-      {/* Header with back button */}
-      <GamePageHeader>
-        <Link href="/games">
-          <Button size="sm" className="h-9 text-base">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Games
-          </Button>
-        </Link>
-        {isFinished ? (
-          <CompletedGameBadge />
-        ) : (
-          <Badge
-            variant="destructive"
-            className="h-9 animate-pulse px-3 py-1.5 text-base"
-          >
-            <Circle className="mr-1.5 h-4 w-4 fill-current" />
-            LIVE GAME
-          </Badge>
-        )}
-      </GamePageHeader>
-
-      {/* Error Alert */}
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
+    <div className="relative">
+      {/* Blur overlay when game completed and redirecting */}
+      {showCompletionOverlay && (
+        <div
+          className="fixed inset-0 z-40 flex items-center justify-center bg-black/20 p-4 backdrop-blur-md"
+          role="status"
+          aria-live="polite"
+          aria-label="Game finished, redirecting"
+        >
+          <div className="bg-background rounded-lg border px-6 py-4 text-center shadow-lg">
+            <p className="text-foreground font-medium">
+              This game has finished. Redirecting to the full game history page.
+            </p>
+          </div>
+        </div>
       )}
+      <div className="container mx-auto max-w-4xl space-y-4 p-4">
+        {/* Header with back button */}
+        <GamePageHeader>
+          <Link href="/games">
+            <Button size="sm" className="h-9 text-base">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Games
+            </Button>
+          </Link>
+          {isFinished ? (
+            <CompletedGameBadge />
+          ) : (
+            <Badge
+              variant="destructive"
+              className="h-9 animate-pulse px-3 py-1.5 text-base"
+            >
+              <Circle className="mr-1.5 h-4 w-4 fill-current" />
+              LIVE GAME
+            </Badge>
+          )}
+        </GamePageHeader>
 
-      {/* Score Board */}
-      <ScoreBoard
-        scores={playerScores}
-        dealerSeat={dealerSeat}
-        round={round}
-        kyoku={kyoku}
-        honba={honba}
-        riichiSticks={riichiSticks}
-        inEnchousen={gameEndDetection.inEnchousen}
-        isFinalRound={gameEndDetection.isFinalRound}
-        gameFormat={gameFormat}
-      />
+        {/* Error Alert */}
+        {error && (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
-      {/* Hand History */}
-      <HandHistory hands={handHistory} playerNames={playerNames} />
+        {/* Score Board */}
+        <ScoreBoard
+          scores={playerScores}
+          dealerSeat={dealerSeat}
+          round={round}
+          kyoku={kyoku}
+          honba={honba}
+          riichiSticks={riichiSticks}
+          inEnchousen={gameEndDetection.inEnchousen}
+          isFinalRound={gameEndDetection.isFinalRound}
+          gameFormat={gameFormat}
+        />
+
+        {/* Hand History */}
+        <HandHistory hands={handHistory} playerNames={playerNames} />
+      </div>
     </div>
   );
 }

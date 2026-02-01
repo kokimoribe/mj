@@ -4,7 +4,14 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { ArrowLeft, Plus, Undo2, Loader2, AlertCircle } from "lucide-react";
+import {
+  ArrowLeft,
+  Plus,
+  Undo2,
+  Loader2,
+  AlertCircle,
+  CheckCircle,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -491,6 +498,20 @@ export default function LiveGamePage() {
     setEndDialogDismissed(true);
   };
 
+  // Re-open the end dialog (e.g. after user clicked "Continue Anyway" by mistake)
+  const handleReopenFinishDialog = () => {
+    setEndDialogDismissed(false);
+    setShowEndDialog(true);
+  };
+
+  // When user closes the end dialog (x or click outside), treat as dismissed so it doesn't auto-reopen
+  const handleEndDialogOpenChange = (open: boolean) => {
+    setShowEndDialog(open);
+    if (!open) {
+      setEndDialogDismissed(true);
+    }
+  };
+
   // Cancel game - reusable function
   const cancelGame = useCallback(async () => {
     setIsDeleting(true);
@@ -641,30 +662,48 @@ export default function LiveGamePage() {
 
       {/* Action Buttons */}
       {!isFinished && (
-        <div className="flex gap-2">
-          <Button
-            onClick={() => setShowHandEntry(true)}
-            className="flex-1 text-base"
-            size="lg"
-          >
-            <Plus className="mr-2 h-5 w-5" />
-            Record Hand
-          </Button>
-          <Button
-            variant="outline"
-            size="lg"
-            className="text-base"
-            onClick={handleUndo}
-            disabled={handHistory.length === 0 || isUndoing}
-            title="Undo the most recent hand entry"
-          >
-            {isUndoing ? (
-              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-            ) : (
-              <Undo2 className="mr-2 h-5 w-5" />
-            )}
-            Undo
-          </Button>
+        <div className="flex flex-col gap-2">
+          {gameEndDetection.shouldEnd && endDialogDismissed && (
+            <Button
+              onClick={handleReopenFinishDialog}
+              className="w-full text-base"
+              size="lg"
+              title="Re-open finish game dialog"
+            >
+              <CheckCircle className="mr-2 h-5 w-5" />
+              Finish Game
+            </Button>
+          )}
+          <div className="flex gap-2">
+            <Button
+              onClick={() => setShowHandEntry(true)}
+              variant={
+                gameEndDetection.shouldEnd && endDialogDismissed
+                  ? "outline"
+                  : "default"
+              }
+              className="flex-1 text-base"
+              size="lg"
+            >
+              <Plus className="mr-2 h-5 w-5" />
+              Record Hand
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              className="text-base"
+              onClick={handleUndo}
+              disabled={handHistory.length === 0 || isUndoing}
+              title="Undo the most recent hand entry"
+            >
+              {isUndoing ? (
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              ) : (
+                <Undo2 className="mr-2 h-5 w-5" />
+              )}
+              Undo
+            </Button>
+          </div>
         </div>
       )}
 
@@ -688,7 +727,7 @@ export default function LiveGamePage() {
       {/* Game End Dialog */}
       <GameEndDialog
         open={showEndDialog}
-        onOpenChange={setShowEndDialog}
+        onOpenChange={handleEndDialogOpenChange}
         reason={gameEndDetection.reason}
         message={gameEndDetection.endMessage}
         scores={endDialogScores}

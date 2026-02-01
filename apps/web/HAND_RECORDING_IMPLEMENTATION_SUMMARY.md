@@ -75,7 +75,7 @@ Created all required UI components:
 ### Manual Testing
 
 1. Navigate to `/games/active`
-2. If no active game, you'll be redirected to `/games/new`
+2. If no active game, you'll be redirected to `/game/new`
 3. Create a new game with 4 players
 4. Return to `/games/active` to see hand recording interface
 5. Test recording hands using Quick Entry or Manual Entry

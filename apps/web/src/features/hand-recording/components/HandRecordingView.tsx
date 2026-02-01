@@ -45,35 +45,10 @@ export function HandRecordingView() {
     "final_only" | "partial" | "complete"
   >("final_only");
 
-  // Load active game
+  // Load active game on mount
   useEffect(() => {
     loadActiveGame();
-
-    // Set up real-time subscription
-    const supabase = createClient();
-    const channel = supabase
-      .channel("game-hands")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "hands",
-          filter: `game_id=eq.${gameState?.gameId}`,
-        },
-        (payload: any) => {
-          // Update hands list with new hand
-          if (payload.new) {
-            setHands(prev => [...prev, payload.new]);
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      channel.unsubscribe();
-    };
-  }, [gameState?.gameId]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- run once on mount
 
   const loadActiveGame = async () => {
     try {
@@ -102,7 +77,7 @@ export function HandRecordingView() {
 
       if (!games || games.length === 0) {
         // No active game, redirect to create new game
-        router.push("/games/new");
+        router.push("/game/new");
         return;
       }
 

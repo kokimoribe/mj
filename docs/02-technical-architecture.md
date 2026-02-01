@@ -14,7 +14,7 @@ _Tech stack, system design, and architectural decisions_
          │                       │                       │
          │              ┌──────────────────┐             │
          └─────────────▶│  Supabase Auth   │             │
-                        │   & Realtime     │             │
+                        │  (no Realtime)   │             │
                         └──────────────────┘             │
                                  │                       │
                         ┌──────────────────┐             │
@@ -38,11 +38,11 @@ _Tech stack, system design, and architectural decisions_
 
 ### Backend & Database
 
-| Technology           | Purpose                    | Justification                                    |
-| -------------------- | -------------------------- | ------------------------------------------------ |
-| **Supabase**         | Database + Auth + Realtime | Postgres, built-in auth, real-time subscriptions |
-| **Python**           | Rating calculations        | OpenSkill library, data science ecosystem        |
-| **Vercel Functions** | Serverless compute         | Seamless Next.js integration                     |
+| Technology           | Purpose             | Justification                                                                                   |
+| -------------------- | ------------------- | ----------------------------------------------------------------------------------------------- |
+| **Supabase**         | Database + Auth     | Postgres, built-in auth. Supabase Realtime is not a valid option; use polling for live updates. |
+| **Python**           | Rating calculations | OpenSkill library, data science ecosystem                                                       |
+| **Vercel Functions** | Serverless compute  | Seamless Next.js integration                                                                    |
 
 ### Development & Deployment
 

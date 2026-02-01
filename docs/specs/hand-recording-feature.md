@@ -1013,7 +1013,7 @@ $$ LANGUAGE plpgsql;
 - **Basic Validation**: Point balance, required fields, constraints
 - **Score Tracking**: Running score calculations via functions
 - **Transactions**: Atomic hand recording operations
-- **Real-time**: Subscriptions for live updates
+- **Live updates**: Use polling or another approach (Supabase Realtime is not a valid option for this project)
 
 #### Python Serverless (Rating Engine)
 
@@ -1304,7 +1304,7 @@ Based on comprehensive review and research, this specification has been enhanced
 
 - Supabase-specific RLS policies for security
 - PostgreSQL functions for validation and scoring
-- Real-time subscriptions for live updates
+- Polling or another approach for live updates (Supabase Realtime is not used)
 - Edge Functions for complex validation
 - Proper separation of concerns (DB vs Python vs Edge)
 - PWA offline support strategy

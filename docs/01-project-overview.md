@@ -93,7 +93,7 @@ Create a **Progressive Web App (PWA)** to track Riichi Mahjong games and ranking
 
 **Technical Requirements**:
 
-- Supabase realtime for live updates
+- Polling or another approach for live updates (Supabase Realtime is not a valid option for this project)
 - Intuitive mobile interface for quick data entry
 - Hand event logging (tsumo, ron, riichi, chombo, etc.)
 - Performance stats calculation from hand logs

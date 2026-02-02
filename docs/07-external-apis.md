@@ -24,13 +24,12 @@ _Reference links and documentation for third-party services and libraries_
 - **JavaScript Client**: https://supabase.com/docs/reference/javascript
 - **Database Guide**: https://supabase.com/docs/guides/database
 - **Authentication**: https://supabase.com/docs/guides/auth
-- **Real-time**: https://supabase.com/docs/guides/realtime
 
 #### Services Used
 
 - **PostgreSQL Database**: Source of truth for all game data
 - **Authentication**: User management and secure access
-- **Real-time Subscriptions**: Live game updates
+- **Live updates**: Use polling or another approach (Supabase Realtime is not a valid option for this project)
 - **Edge Functions**: Server-side logic for complex operations
 
 ### Python OpenSkill (Rating Engine)
@@ -180,30 +179,9 @@ create policy "Users can update own profile" on players
 
 ## Real-time & Performance
 
-### Supabase Realtime
+### Live Updates (Not Supabase Realtime)
 
-- **Realtime Guide**: https://supabase.com/docs/guides/realtime
-- **Channel API**: https://supabase.com/docs/reference/javascript/realtime-channel
-- **Presence**: https://supabase.com/docs/guides/realtime/presence
-
-#### Live Game Updates
-
-```typescript
-const channel = supabase
-  .channel("game_updates")
-  .on(
-    "postgres_changes",
-    {
-      event: "UPDATE",
-      schema: "public",
-      table: "games",
-    },
-    payload => {
-      // Handle real-time game updates
-    }
-  )
-  .subscribe();
-```
+Supabase Realtime is **not a valid option** for this project. Do not use Supabase Realtime channels or postgres_changes subscriptions. For live game updates and other real-time needs, use **polling** (e.g. React Query refetch intervals) or another approach that fits the deployment constraints.
 
 ### React Query (Data Fetching)
 

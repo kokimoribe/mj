@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "uv run --project . python -m uvicorn api.index:app --reload --port 8000 --host 0.0.0.0",
+    "dev": "uv run --project . python -m uvicorn api.index:app --reload --port 8000 --host 127.0.0.1",
     "build": "echo 'Python build handled by Vercel runtime' && exit 0",
     "lint": "uv run --project . ruff check rating_engine/ tests/",
     "type-check": "uv run --project . mypy rating_engine/",

@@ -133,7 +133,7 @@
 
 - **Database**: PostgreSQL
 - **Authentication**: Supabase Auth (future)
-- **Real-time**: Supabase Realtime (future)
+- **Real-time**: Not using Supabase Realtime (not a valid option for this project). Use polling or another approach for live updates.
 - **Storage**: Supabase Storage (future)
 
 ## File Structure

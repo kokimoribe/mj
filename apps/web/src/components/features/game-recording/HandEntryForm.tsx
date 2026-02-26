@@ -19,6 +19,7 @@ import {
   formatPoints,
   getValidFuValues,
   getScoringTier,
+  getWinnersByTurnOrderFromLoser,
   type Seat,
   SEATS,
 } from "@/lib/mahjong";
@@ -42,6 +43,8 @@ export type AbortiveDrawType =
 export interface HandEntryData {
   eventType: EventType;
   winnerSeat?: Seat;
+  winnerSeats?: Seat[];
+  winnerHandValues?: Partial<Record<Seat, { han: number; fu: number }>>;
   loserSeat?: Seat;
   han?: number;
   fu?: number;
@@ -91,8 +94,8 @@ const ABORTIVE_DRAW_TYPES: {
 }[] = [
   { value: "kyuushu_kyuuhai", label: "Nine Terminals", japanese: "九種九牌" },
   { value: "suufon_renda", label: "Four Wind Discards", japanese: "四風連打" },
-  { value: "suucha_riichi", label: "Four Riichi", japanese: "四家立直" },
   { value: "suukan_sanra", label: "Four Kans", japanese: "四槓散了" },
+  { value: "suucha_riichi", label: "Four Riichi", japanese: "四家立直" },
   { value: "sanchahou", label: "Triple Ron", japanese: "三家和" },
 ];
 
@@ -117,6 +120,10 @@ export function HandEntryForm({
 }: HandEntryFormProps) {
   const [eventType, setEventType] = useState<EventType>("ron");
   const [winnerSeat, setWinnerSeat] = useState<Seat | "">("");
+  const [winnerSeats, setWinnerSeats] = useState<Seat[]>([]);
+  const [winnerHandValues, setWinnerHandValues] = useState<
+    Partial<Record<Seat, { han: number; fu: number }>>
+  >({});
   const [loserSeat, setLoserSeat] = useState<Seat | "">("");
   const [han, setHan] = useState<number>(1);
   const [fu, setFu] = useState<number>(30);
@@ -125,29 +132,33 @@ export function HandEntryForm({
     AbortiveDrawType | ""
   >("");
   const [tenpaiSeats, setTenpaiSeats] = useState<Seat[]>([]);
+  const [isAutoAbortive, setIsAutoAbortive] = useState(false);
 
   // Reset form when opened (using useEffect to catch programmatic open changes)
   useEffect(() => {
     if (open) {
       setEventType("ron");
       setWinnerSeat("");
+      setWinnerSeats([]);
+      setWinnerHandValues({});
       setLoserSeat("");
       setHan(1);
       setFu(30);
       setRiichiDeclarations([]);
       setAbortiveDrawType("");
       setTenpaiSeats([]);
+      setIsAutoAbortive(false);
     }
   }, [open]);
 
   // Calculate points preview with detailed breakdown
   const pointsPreview = useMemo(() => {
-    if (!winnerSeat || (eventType !== "ron" && eventType !== "tsumo")) {
+    if (!winnerSeat || eventType !== "tsumo") {
       return null;
     }
 
     const isDealer = winnerSeat === dealerSeat;
-    const isTsumo = eventType === "tsumo";
+    const isTsumo = true;
 
     // Calculate base points (without honba)
     const baseResult = calculatePoints(han, fu, isDealer, isTsumo, 0);
@@ -183,6 +194,61 @@ export function HandEntryForm({
 
   const scoringTier = useMemo(() => getScoringTier(han, fu), [han, fu]);
 
+  const ronPointsPreview = useMemo(() => {
+    if (eventType !== "ron" || winnerSeats.length === 0) {
+      return [];
+    }
+
+    const totalRiichiSticksCollected = riichiSticks + riichiDeclarations.length;
+    const orderedWinners =
+      loserSeat && winnerSeats.length > 0
+        ? getWinnersByTurnOrderFromLoser(loserSeat, winnerSeats)
+        : [];
+    const riichiCollector = orderedWinners[0];
+
+    return winnerSeats.map(seat => {
+      const values = winnerHandValues[seat] || { han: 1, fu: 30 };
+      const isDealer = seat === dealerSeat;
+      const baseResult = calculatePoints(
+        values.han,
+        values.fu,
+        isDealer,
+        false,
+        0
+      );
+      const withHonba = calculatePoints(
+        values.han,
+        values.fu,
+        isDealer,
+        false,
+        honba
+      );
+      const honbaBonus = honba * 300;
+      const getsRiichi = riichiCollector === seat;
+      const riichiValue = getsRiichi ? totalRiichiSticksCollected * 1000 : 0;
+
+      return {
+        seat,
+        han: values.han,
+        fu: values.fu,
+        basePoints: baseResult.total,
+        honbaBonus,
+        riichiValue,
+        riichiSticksCollected: getsRiichi ? totalRiichiSticksCollected : 0,
+        grandTotal: withHonba.total + riichiValue,
+      };
+    });
+  }, [
+    eventType,
+    winnerSeats,
+    winnerHandValues,
+    dealerSeat,
+    honba,
+    riichiSticks,
+    riichiDeclarations.length,
+    loserSeat,
+  ]);
+
   // Auto-convert draw to abortive_draw when 4 players declare riichi
   useEffect(() => {
     const riichiCount = riichiDeclarations.length;
@@ -190,6 +256,7 @@ export function HandEntryForm({
       // 4 riichi = abortive draw (suucha_riichi)
       setEventType("abortive_draw");
       setAbortiveDrawType("suucha_riichi");
+      setIsAutoAbortive(true);
     } else if (
       riichiCount === 4 &&
       eventType === "abortive_draw" &&
@@ -201,8 +268,28 @@ export function HandEntryForm({
       // If user unchecks a riichi and we're at suucha_riichi, clear the type
       // They can select a different abortive draw type or change event type
       setAbortiveDrawType("");
+      setIsAutoAbortive(false);
     }
   }, [riichiDeclarations.length, eventType, abortiveDrawType]);
+
+  // Auto-convert ron to abortive_draw when 3 players win (triple ron)
+  useEffect(() => {
+    const winnerCount = winnerSeats.length;
+    if (winnerCount === 3 && eventType === "ron") {
+      setEventType("abortive_draw");
+      setAbortiveDrawType("sanchahou");
+      setIsAutoAbortive(true);
+    } else if (
+      winnerCount === 3 &&
+      eventType === "abortive_draw" &&
+      !abortiveDrawType
+    ) {
+      setAbortiveDrawType("sanchahou");
+    } else if (winnerCount < 3 && abortiveDrawType === "sanchahou") {
+      setAbortiveDrawType("");
+      setIsAutoAbortive(false);
+    }
+  }, [winnerSeats.length, eventType, abortiveDrawType]);
 
   // When suucha_riichi is selected, ensure exactly 4 riichi are declared
   useEffect(() => {
@@ -242,18 +329,56 @@ export function HandEntryForm({
     return players.find(p => p.seat === seat);
   };
 
+  const toggleRonWinner = (seat: Seat) => {
+    setWinnerSeats(prev => {
+      const isSelected = prev.includes(seat);
+      const next = isSelected ? prev.filter(s => s !== seat) : [...prev, seat];
+      return next;
+    });
+    setWinnerHandValues(prev => {
+      if (prev[seat]) return prev;
+      return { ...prev, [seat]: { han: 1, fu: 30 } };
+    });
+  };
+
+  const updateWinnerHandValue = (
+    seat: Seat,
+    values: Partial<{ han: number; fu: number }>
+  ) => {
+    setWinnerHandValues(prev => {
+      const current = prev[seat] || { han: 1, fu: 30 };
+      return {
+        ...prev,
+        [seat]: {
+          han: values.han ?? current.han,
+          fu: values.fu ?? current.fu,
+        },
+      };
+    });
+  };
+
   const isWinEvent = eventType === "ron" || eventType === "tsumo";
   const needsLoser = eventType === "ron" || eventType === "chombo";
   const isAbortiveDraw = eventType === "abortive_draw";
   const isDraw = eventType === "draw" || eventType === "abortive_draw";
   const hasFourRiichi = riichiDeclarations.length === 4;
+  const hasThreeRonWinners = winnerSeats.length === 3;
   const isSuuchaRiichi = abortiveDrawType === "suucha_riichi";
+  const isSanchahou = abortiveDrawType === "sanchahou";
+  const ronWinnersValid = winnerSeats.every(seat => {
+    const values = winnerHandValues[seat];
+    return !!values && values.han >= 1;
+  });
 
   const canSubmit = () => {
-    if (isWinEvent) {
+    if (eventType === "tsumo") {
       if (!winnerSeat || han < 1) return false;
-      if (eventType === "ron" && !loserSeat) return false;
-      if (eventType === "ron" && winnerSeat === loserSeat) return false;
+    }
+    if (eventType === "ron") {
+      if (winnerSeats.length < 1 || winnerSeats.length > 2) return false;
+      if (!loserSeat) return false;
+      if (winnerSeats.includes(loserSeat as Seat)) return false;
+      if (!ronWinnersValid) return false;
     }
     if (eventType === "chombo" && !loserSeat) return false;
     if (isAbortiveDraw && !abortiveDrawType) return false;
@@ -262,6 +387,15 @@ export function HandEntryForm({
     // If 4 riichi are declared, it must be abortive_draw with suucha_riichi
     if (hasFourRiichi && (eventType !== "abortive_draw" || !isSuuchaRiichi))
       return false;
+    // If sanchahou is selected, exactly 3 ron winners must be retained
+    if (isSanchahou && winnerSeats.length !== 3) return false;
+    // If 3 ron winners are selected, it must be abortive_draw with sanchahou
+    if (
+      hasThreeRonWinners &&
+      (eventType !== "abortive_draw" || abortiveDrawType !== "sanchahou")
+    ) {
+      return false;
+    }
     return true;
   };
 
@@ -273,10 +407,25 @@ export function HandEntryForm({
       riichiDeclarations,
     };
 
-    if (isWinEvent) {
+    if (eventType === "tsumo") {
       data.winnerSeat = winnerSeat as Seat;
       data.han = han;
       data.fu = fu;
+    }
+
+    if (eventType === "ron") {
+      data.winnerSeats = winnerSeats;
+      data.winnerHandValues = winnerHandValues;
+      // Keep backwards compatibility for single-winner consumers
+      if (winnerSeats.length === 1) {
+        const singleWinner = winnerSeats[0];
+        const singleValues = winnerHandValues[singleWinner];
+        if (singleWinner && singleValues) {
+          data.winnerSeat = singleWinner;
+          data.han = singleValues.han;
+          data.fu = singleValues.fu;
+        }
+      }
     }
 
     if (needsLoser && loserSeat) {
@@ -287,12 +436,19 @@ export function HandEntryForm({
       // If 4 riichi are declared, it must be suucha_riichi
       if (hasFourRiichi) {
         data.abortiveDrawType = "suucha_riichi";
+      } else if (hasThreeRonWinners) {
+        data.abortiveDrawType = "sanchahou";
       } else if (abortiveDrawType) {
         data.abortiveDrawType = abortiveDrawType;
       }
+      if (winnerSeats.length > 0) {
+        data.winnerSeats = winnerSeats;
+      }
     }
 
-    if (isDraw && tenpaiSeats.length > 0) {
+    // Sanchahou has no tenpai payments — omit tenpaiSeats so the API doesn't
+    // misinterpret the riichi-populated tenpai list as a noten/tenpai split.
+    if (isDraw && tenpaiSeats.length > 0 && !isSanchahou) {
       data.tenpaiSeats = tenpaiSeats;
     }
 
@@ -335,6 +491,7 @@ export function HandEntryForm({
                     onClick={() => {
                       if (!isDisabled) {
                         setEventType(type.value);
+                        setIsAutoAbortive(false);
                         // If switching away from abortive_draw, clear the type
                         if (type.value !== "abortive_draw") {
                           setAbortiveDrawType("");
@@ -360,17 +517,38 @@ export function HandEntryForm({
           {isAbortiveDraw && (
             <div className="space-y-2">
               <Label>Abortive Draw Type</Label>
-              {isSuuchaRiichi && riichiDeclarations.length !== 4 && (
-                <div className="mb-2 rounded-md border border-red-500/50 bg-red-500/10 p-2 text-sm">
-                  <span className="text-red-700 dark:text-red-400">
-                    ⚠️ Four Riichi (四家立直) requires exactly 4 players to
-                    declare riichi
+              {isSanchahou && isAutoAbortive && (
+                <div className="mb-2 rounded-md border border-blue-500/50 bg-blue-500/10 p-2 text-sm">
+                  <span className="text-blue-700 dark:text-blue-400">
+                    ℹ️ 3 players won by Ron — this is a Triple Ron (三家和) and
+                    counts as an abortive draw
                   </span>
                 </div>
               )}
+              {isSuuchaRiichi && isAutoAbortive && (
+                <div className="mb-2 rounded-md border border-blue-500/50 bg-blue-500/10 p-2 text-sm">
+                  <span className="text-blue-700 dark:text-blue-400">
+                    ℹ️ All 4 players declared riichi — this is a Four Riichi
+                    (四家立直) abortive draw
+                  </span>
+                </div>
+              )}
+              {isSuuchaRiichi &&
+                !isAutoAbortive &&
+                riichiDeclarations.length !== 4 && (
+                  <div className="mb-2 rounded-md border border-red-500/50 bg-red-500/10 p-2 text-sm">
+                    <span className="text-red-700 dark:text-red-400">
+                      ⚠️ Four Riichi (四家立直) requires exactly 4 players to
+                      declare riichi
+                    </span>
+                  </div>
+                )}
               <div className="grid grid-cols-1 gap-2">
-                {ABORTIVE_DRAW_TYPES.map(type => {
+                {ABORTIVE_DRAW_TYPES.filter(
+                  type => !isAutoAbortive || type.value === abortiveDrawType
+                ).map(type => {
                   const isSuuchaRiichiType = type.value === "suucha_riichi";
+                  const isSanchahouType = type.value === "sanchahou";
                   const isSelected = abortiveDrawType === type.value;
                   return (
                     <Button
@@ -378,19 +556,37 @@ export function HandEntryForm({
                       variant={isSelected ? "default" : "outline"}
                       className="flex h-auto min-h-11 items-center justify-start px-4 py-3"
                       onClick={() => {
-                        setAbortiveDrawType(type.value);
-                        // If selecting suucha_riichi, ensure we have 4 riichi
-                        // If deselecting suucha_riichi and we have 4 riichi, we'll auto-set it back
+                        if (isAutoAbortive) return;
+                        if (type.value === "sanchahou") {
+                          // Switch to ron so the user can pick 3 winners; the
+                          // auto-convert effect will switch back to abortive_draw
+                          // with sanchahou once the 3rd winner is selected.
+                          setEventType("ron");
+                          setAbortiveDrawType("");
+                        } else if (type.value === "suucha_riichi") {
+                          // Pre-select all 4 riichi/tenpai declarations so that
+                          // riichiCount is already 4 when React runs the effect,
+                          // preventing the "riichiCount < 4" branch from clearing
+                          // the selection.
+                          setAbortiveDrawType("suucha_riichi");
+                          setRiichiDeclarations([...SEATS]);
+                          setTenpaiSeats([...SEATS]);
+                        } else {
+                          setAbortiveDrawType(type.value);
+                        }
                       }}
                     >
                       <div className="flex flex-col items-start">
                         <span className="font-medium">{type.label}</span>
-                        <span className="text-muted-foreground text-xs">
-                          ({type.japanese})
-                        </span>
-                        {isSuuchaRiichiType && (
-                          <span className="text-muted-foreground mt-1 text-xs italic">
+                        {isSuuchaRiichiType && !isAutoAbortive && (
+                          <span className="mt-1 text-xs text-amber-500 italic">
                             Requires 4 riichi declarations
+                          </span>
+                        )}
+                        {isSanchahouType && !isAutoAbortive && (
+                          <span className="mt-1 text-xs text-amber-500 italic">
+                            Tap to select 3 ron winners — will auto-confirm as
+                            Triple Ron
                           </span>
                         )}
                       </div>
@@ -404,19 +600,27 @@ export function HandEntryForm({
           {/* Winner Selection (for wins) */}
           {isWinEvent && (
             <div className="space-y-2">
-              <Label>Winner</Label>
+              <Label>{eventType === "ron" ? "Winner(s)" : "Winner"}</Label>
               <div className="grid grid-cols-2 gap-2">
                 {SEATS.map(seat => {
                   const player = getPlayerBySeat(seat);
                   if (!player) return null;
                   const isDealer = seat === dealerSeat;
+                  const isSelected =
+                    eventType === "ron"
+                      ? winnerSeats.includes(seat)
+                      : winnerSeat === seat;
 
                   return (
                     <Button
                       key={seat}
-                      variant={winnerSeat === seat ? "default" : "outline"}
+                      variant={isSelected ? "default" : "outline"}
                       className="flex h-11 items-center justify-between gap-2 px-3"
-                      onClick={() => setWinnerSeat(seat)}
+                      onClick={() =>
+                        eventType === "ron"
+                          ? toggleRonWinner(seat)
+                          : setWinnerSeat(seat)
+                      }
                     >
                       <span className="truncate text-sm font-medium">
                         {player.playerName}
@@ -445,7 +649,8 @@ export function HandEntryForm({
                   const player = getPlayerBySeat(seat);
                   if (!player) return null;
                   // Can't deal into yourself - disable instead of hiding
-                  const isDisabled = eventType === "ron" && seat === winnerSeat;
+                  const isDisabled =
+                    eventType === "ron" && winnerSeats.includes(seat);
 
                   return (
                     <Button
@@ -468,13 +673,11 @@ export function HandEntryForm({
             </div>
           )}
 
-          {/* Han/Fu Selection (for wins) */}
-          {isWinEvent && (
+          {/* Han/Fu Selection (for tsumo) */}
+          {eventType === "tsumo" && (
             <Card
               className={cn(
-                !winnerSeat || (eventType === "ron" && !loserSeat)
-                  ? "pointer-events-none opacity-50"
-                  : ""
+                !winnerSeat ? "pointer-events-none opacity-50" : ""
               )}
             >
               <CardHeader className="pb-2">
@@ -485,15 +688,11 @@ export function HandEntryForm({
                   )}
                 </CardTitle>
               </CardHeader>
-              {(!winnerSeat || (eventType === "ron" && !loserSeat)) && (
+              {!winnerSeat && (
                 <div className="px-6 pb-4">
                   <div className="rounded-md border border-amber-500/50 bg-amber-500/10 p-3 text-sm">
                     <span className="text-amber-700 dark:text-amber-400">
-                      {!winnerSeat && eventType === "ron" && !loserSeat
-                        ? "⚠️ Please select Winner and Deal-in first"
-                        : !winnerSeat
-                          ? "⚠️ Please select Winner first"
-                          : "⚠️ Please select Deal-in first"}
+                      ⚠️ Please select Winner first
                     </span>
                   </div>
                 </div>
@@ -606,10 +805,129 @@ export function HandEntryForm({
             </Card>
           )}
 
+          {/* Han/Fu Selection (for ron winners) */}
+          {eventType === "ron" && winnerSeats.length > 0 && (
+            <div className="space-y-4">
+              {winnerSeats.map(seat => {
+                const player = getPlayerBySeat(seat);
+                const values = winnerHandValues[seat] || { han: 1, fu: 30 };
+                const preview = ronPointsPreview.find(p => p.seat === seat);
+                return (
+                  <Card key={seat}>
+                    <CardHeader className="pb-0">
+                      <CardTitle className="text-sm">
+                        Hand Value: {player?.playerName || seat}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label>Han (翻)</Label>
+                        <div className="flex flex-wrap gap-1.5">
+                          {HAN_OPTIONS.map(option => (
+                            <Button
+                              key={`${seat}-han-${option.value}`}
+                              variant={
+                                values.han === option.value
+                                  ? "default"
+                                  : "outline"
+                              }
+                              size="sm"
+                              className="h-8 min-w-8 px-2"
+                              onClick={() =>
+                                updateWinnerHandValue(seat, {
+                                  han: option.value,
+                                })
+                              }
+                            >
+                              {option.label}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {values.han < 5 && (
+                        <div className="space-y-2">
+                          <Label>Fu (符)</Label>
+                          <div className="flex flex-wrap gap-1">
+                            {getValidFuValues().map(f => (
+                              <Button
+                                key={`${seat}-fu-${f}`}
+                                variant={
+                                  values.fu === f ? "default" : "outline"
+                                }
+                                size="sm"
+                                className="h-8 w-10 p-0"
+                                onClick={() =>
+                                  updateWinnerHandValue(seat, { fu: f })
+                                }
+                              >
+                                {f}
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {preview && (
+                        <div className="bg-muted rounded-lg p-4">
+                          <div className="text-muted-foreground mb-2 text-center text-sm">
+                            Ron Points Preview
+                          </div>
+                          <div className="space-y-1 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">
+                                Hand value ({preview.han} Han
+                                {preview.han < 5 && `, ${preview.fu} Fu`})
+                              </span>
+                              <span className="text-amber-500">
+                                {formatPoints(preview.basePoints)}
+                              </span>
+                            </div>
+
+                            {preview.honbaBonus > 0 && (
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">
+                                  Honba bonus ({honba}本場 × 300)
+                                </span>
+                                <span className="text-foreground">
+                                  +{formatPoints(preview.honbaBonus)}
+                                </span>
+                              </div>
+                            )}
+
+                            {preview.riichiValue > 0 && (
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">
+                                  Riichi sticks ({preview.riichiSticksCollected}
+                                  本 × 1,000)
+                                </span>
+                                <span className="text-blue-500">
+                                  +{formatPoints(preview.riichiValue)}
+                                </span>
+                              </div>
+                            )}
+
+                            <div className="border-foreground/20 my-2 border-t" />
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium">Total</span>
+                              <span className="text-2xl font-bold text-green-500">
+                                {formatPoints(preview.grandTotal)}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+
           {/* Riichi Declarations */}
           <div className="space-y-2">
             <Label>Riichi Declared This Hand</Label>
-            {hasFourRiichi && (
+            {hasFourRiichi && !isAutoAbortive && (
               <div className="mb-2 rounded-md border border-blue-500/50 bg-blue-500/10 p-2 text-sm">
                 <span className="text-blue-700 dark:text-blue-400">
                   ℹ️ All 4 players declared riichi - this is an abortive draw
@@ -651,7 +969,7 @@ export function HandEntryForm({
           </div>
 
           {/* Tenpai Selection (for draws) */}
-          {isDraw && (
+          {isDraw && !isSanchahou && !isAutoAbortive && (
             <div className="space-y-2">
               <Label>Players in Tenpai (聴牌)</Label>
               <div className="grid grid-cols-4 gap-2">

@@ -142,4 +142,38 @@ describe("calculatePlayerStatistics", () => {
     expect(result.handStats.averageHanOnWins).toBeNull();
     expect(result.handStats.highestHanAchieved).toBeNull();
   });
+
+  it("counts wins from winnerSeats in double ron hands", () => {
+    const result = calculatePlayerStatistics({
+      games: [
+        {
+          gameId: "g1",
+          startedAt: "2026-01-03T00:00:00Z",
+          finishedAt: "2026-01-03T01:00:00Z",
+          seat: "south",
+          finalScore: 29000,
+          placement: 2,
+        },
+      ],
+      handEvents: [
+        {
+          gameId: "g1",
+          handSeq: 1,
+          seat: "south",
+          eventType: "ron",
+          riichiDeclared: false,
+          pointsDelta: 7700,
+          details: {
+            winnerSeats: ["south", "west"],
+            loserSeat: "east",
+            dealerSeat: "north",
+            pointsWon: 7700,
+          },
+        },
+      ],
+    });
+
+    expect(result.totals.totalWins).toBe(1);
+    expect(result.handStats.winRate).toBeCloseTo(100, 5);
+  });
 });

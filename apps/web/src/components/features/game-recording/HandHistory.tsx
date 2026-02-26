@@ -21,10 +21,14 @@ export interface HandEvent {
     han?: number;
     fu?: number;
     winnerSeat?: Seat;
+    winnerSeats?: Seat[];
+    winnerHandValues?: Partial<Record<Seat, { han: number; fu: number }>>;
+    winnerPoints?: Partial<Record<Seat, number>>;
     loserSeat?: Seat;
     pointsWon?: number;
     tier?: string;
     riichiSticks?: number; // Sticks on table before this hand
+    riichiCollectorSeat?: Seat;
     tenpaiSeats?: Seat[]; // Players in tenpai for draw hands
     abortiveDrawType?: string; // Type of abortive draw
   };
@@ -135,12 +139,9 @@ export function HandHistoryItem({
     isAbortiveDraw && abortiveDrawType
       ? ABORTIVE_DRAW_TYPE_LABELS[abortiveDrawType]
       : null;
-  const winnerEvent = hand.events.find(e => e.pointsDelta > 0);
-  const winnerEvents = isChombo
+  const winnerEvents = !isDraw
     ? hand.events.filter(e => e.pointsDelta > 0)
-    : winnerEvent
-      ? [winnerEvent]
-      : [];
+    : [];
   const loserEvents = hand.events.filter(e => e.pointsDelta < 0);
   const riichiEvents = hand.events.filter(e => e.riichiDeclared);
 
@@ -157,30 +158,33 @@ export function HandHistoryItem({
       )
     : [];
 
-  // Calculate point breakdown for winning hands
-  const getPointBreakdown = () => {
-    if (!winnerEvent || !hand.details?.pointsWon) return null;
+  const getWinnerBreakdown = (seat: Seat, pointsDelta: number) => {
+    if (isChombo || !hand.details) return null;
 
     const honbaBonus = hand.honba * 300;
-    // Riichi sticks collected = sticks on table + newly declared riichi this hand
-    const existingRiichiSticks = hand.details?.riichiSticks || 0;
+    const existingRiichiSticks = hand.details.riichiSticks || 0;
     const newRiichiSticks = riichiEvents.length;
     const totalRiichiSticks = existingRiichiSticks + newRiichiSticks;
-    const riichiValue = totalRiichiSticks * 1000;
+    const totalRiichiValue = totalRiichiSticks * 1000;
 
-    // Base points = pointsWon (which includes honba) - honba bonus
-    const basePoints = (hand.details?.pointsWon || 0) - honbaBonus;
+    const riichiCollectorSeat =
+      hand.details.riichiCollectorSeat || hand.details.winnerSeat;
+    const riichiValue = seat === riichiCollectorSeat ? totalRiichiValue : 0;
+
+    const winnerPointWithHonba =
+      hand.details.winnerPoints?.[seat] ?? hand.details.pointsWon;
+    if (typeof winnerPointWithHonba !== "number") return null;
+
+    const basePoints = winnerPointWithHonba - honbaBonus;
 
     return {
       basePoints,
       honbaBonus,
       riichiValue,
-      riichiSticksCollected: totalRiichiSticks,
-      grandTotal: winnerEvent.pointsDelta,
+      riichiSticksCollected: riichiValue > 0 ? totalRiichiSticks : 0,
+      grandTotal: pointsDelta,
     };
   };
-
-  const breakdown = getPointBreakdown();
 
   return (
     <div
@@ -238,77 +242,89 @@ export function HandHistoryItem({
       {/* Win details (or chombo recipients) - exclude draws, they use tenpai section */}
       {!isDraw && winnerEvents.length > 0 && hand.details && (
         <div className="mt-2 space-y-1 text-sm">
-          {winnerEvents.map(event => (
-            <div key={event.seat} className="flex items-center gap-2">
-              <div className="flex w-[42px] flex-shrink-0 items-center justify-center">
-                {event.seat === dealerSeat && (
-                  <Badge
-                    variant="outline"
-                    className="border-yellow-500 bg-yellow-500/20 px-2 text-xs"
-                  >
-                    親
-                  </Badge>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-green-500">
-                  {event.playerName}
-                </span>
-                <span className="text-green-500">
-                  +{formatPoints(event.pointsDelta)}
-                </span>
-                {!isChombo && hand.details?.han && (
-                  <span className="text-muted-foreground text-xs">
-                    {hand.details.han} Han (翻){" "}
-                    {hand.details.fu &&
-                      hand.details.han < 5 &&
-                      `${hand.details.fu} Fu (符)`}
-                  </span>
-                )}
-                {!isChombo && hand.details?.tier && (
-                  <Badge
-                    variant="secondary"
-                    className={cn(
-                      "text-xs",
-                      TIER_CLASSES[hand.details.tier] &&
-                        "!overflow-visible border-0 bg-transparent px-2 py-0"
+          {winnerEvents.map(event => {
+            const breakdown = getWinnerBreakdown(event.seat, event.pointsDelta);
+            return (
+              <div key={event.seat}>
+                <div className="flex items-center gap-2">
+                  <div className="flex w-[42px] flex-shrink-0 items-center justify-center">
+                    {event.seat === dealerSeat && (
+                      <Badge
+                        variant="outline"
+                        className="border-yellow-500 bg-yellow-500/20 px-2 text-xs"
+                      >
+                        親
+                      </Badge>
                     )}
-                  >
-                    <span className={TIER_CLASSES[hand.details.tier] || ""}>
-                      {hand.details.tier}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-green-500">
+                      {event.playerName}
                     </span>
-                  </Badge>
-                )}
-              </div>
-            </div>
-          ))}
-
-          {/* Point breakdown (only for wins, not chombo) */}
-          {!isChombo &&
-            breakdown &&
-            (breakdown.honbaBonus > 0 || breakdown.riichiValue > 0) && (
-              <div className="mt-1.5 flex items-center gap-2">
-                <div className="w-[42px] flex-shrink-0"></div>
-                <div className="bg-muted/50 flex-1 rounded px-0 py-1 text-xs">
-                  <span className="text-amber-500">
-                    + {formatPoints(breakdown.basePoints)} base
-                  </span>
-                  {breakdown.honbaBonus > 0 && (
-                    <span className="text-foreground">
-                      {" "}
-                      + {formatPoints(breakdown.honbaBonus)} honba
+                    <span className="text-green-500">
+                      +{formatPoints(event.pointsDelta)}
                     </span>
-                  )}
-                  {breakdown.riichiValue > 0 && (
-                    <span className="text-blue-500">
-                      {" "}
-                      + {formatPoints(breakdown.riichiValue)} riichi (
-                      {breakdown.riichiSticksCollected}本)
-                    </span>
-                  )}
+                    {!isChombo &&
+                      (hand.details?.han ||
+                        hand.details?.winnerHandValues?.[event.seat]?.han) && (
+                        <span className="text-muted-foreground text-xs">
+                          {(hand.details.winnerHandValues?.[event.seat]?.han ??
+                            hand.details.han) ||
+                            0}{" "}
+                          Han{" "}
+                          {((hand.details.winnerHandValues?.[event.seat]?.han ??
+                            hand.details.han) ||
+                            0) < 5 &&
+                            `${hand.details.winnerHandValues?.[event.seat]?.fu ?? hand.details.fu ?? 30} Fu`}
+                        </span>
+                      )}
+                    {!isChombo && hand.details?.tier && (
+                      <Badge
+                        variant="secondary"
+                        className={cn(
+                          "text-xs",
+                          TIER_CLASSES[hand.details.tier] &&
+                            "!overflow-visible border-0 bg-transparent px-2 py-0"
+                        )}
+                      >
+                        <span className={TIER_CLASSES[hand.details.tier] || ""}>
+                          {hand.details.tier}
+                        </span>
+                      </Badge>
+                    )}
+                  </div>
                 </div>
+
+                {/* Point breakdown (single or multiple ron winners) */}
+                {!isChombo &&
+                  breakdown &&
+                  (hand.eventType === "ron" ||
+                    breakdown.honbaBonus > 0 ||
+                    breakdown.riichiValue > 0) && (
+                    <div className="mt-1.5 flex items-center gap-2">
+                      <div className="w-[42px] flex-shrink-0"></div>
+                      <div className="bg-muted/50 flex-1 rounded px-0 py-1 text-xs">
+                        <span className="text-amber-500">
+                          + {formatPoints(breakdown.basePoints)} base
+                        </span>
+                        {breakdown.honbaBonus > 0 && (
+                          <span className="text-foreground">
+                            {" "}
+                            + {formatPoints(breakdown.honbaBonus)} honba
+                          </span>
+                        )}
+                        {breakdown.riichiValue > 0 && (
+                          <span className="text-blue-500">
+                            {" "}
+                            + {formatPoints(breakdown.riichiValue)} riichi
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
               </div>
-            )}
+            );
+          })}
         </div>
       )}
 
@@ -370,7 +386,7 @@ export function HandHistoryItem({
                         : formatPoints(event.pointsDelta)}
                     </span>
                     <Badge variant="outline" className="text-xs">
-                      Tenpai (聴牌)
+                      Tenpai
                     </Badge>
                   </div>
                 </div>
@@ -381,7 +397,7 @@ export function HandHistoryItem({
                     <div className="w-[42px] flex-shrink-0"></div>
                     <div className="bg-muted/50 flex-1 rounded px-0 py-1 text-xs">
                       <span className="text-green-500">
-                        +{formatPoints(tenpaiPayment)} Tenpai
+                        + {formatPoints(tenpaiPayment)} Tenpai
                       </span>
                       <span className="text-muted-foreground">
                         {" "}

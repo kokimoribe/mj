@@ -221,13 +221,23 @@ export default function LiveGamePage() {
 
       const isWinningHand =
         lastEvent.event_type === "tsumo" || lastEvent.event_type === "ron";
+      const lastDetails = (lastEvent.details || {}) as {
+        winnerSeat?: Seat;
+        winnerSeats?: Seat[];
+      };
+      const winningSeats = Array.isArray(lastDetails.winnerSeats)
+        ? lastDetails.winnerSeats
+        : lastDetails.winnerSeat
+          ? [lastDetails.winnerSeat]
+          : [];
+      const currentDealerSeat = SEATS[lastEvent.kyoku - 1];
       const dealerEvent = lastHandEvents.find(
-        e => e.seat === SEATS[lastEvent.kyoku - 1]
+        e => e.seat === currentDealerSeat
       );
       const dealerWon: boolean = !!(
         isWinningHand &&
         dealerEvent &&
-        dealerEvent.points_delta > 0
+        winningSeats.includes(currentDealerSeat)
       );
 
       if (lastEvent.event_type === "chombo") {
@@ -411,6 +421,8 @@ export default function LiveGamePage() {
           kyoku,
           honba,
           winnerSeat: data.winnerSeat,
+          winnerSeats: data.winnerSeats,
+          winnerHandValues: data.winnerHandValues,
           loserSeat: data.loserSeat,
           han: data.han,
           fu: data.fu,

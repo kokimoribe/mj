@@ -4,6 +4,8 @@ import {
   calculateRonPoints,
   calculateTsumoPoints,
   calculateRonDeltas,
+  calculateMultiRonDeltas,
+  getWinnersByTurnOrderFromLoser,
   calculateTsumoDeltas,
   RIICHI_BET,
   type Seat,
@@ -29,6 +31,8 @@ export interface RecordHandRequest {
   honba: number;
   // For wins (ron/tsumo)
   winnerSeat?: Seat;
+  winnerSeats?: Seat[];
+  winnerHandValues?: Partial<Record<Seat, { han: number; fu: number }>>;
   han?: number;
   fu?: number;
   // For ron specifically
@@ -127,6 +131,17 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const { gameId } = await context.params;
     const supabase = await createClient();
     const body: RecordHandRequest = await request.json();
+    const normalizedWinnerSeats = body.winnerSeats?.length
+      ? body.winnerSeats
+      : body.winnerSeat
+        ? [body.winnerSeat]
+        : [];
+    let resolvedEventType: EventType = body.eventType;
+    let resolvedAbortiveDrawType = body.abortiveDrawType;
+    if (body.eventType === "ron" && normalizedWinnerSeats.length === 3) {
+      resolvedEventType = "abortive_draw";
+      resolvedAbortiveDrawType = "sanchahou";
+    }
 
     // Validate required fields
     if (!body.eventType || !body.round || !body.kyoku || !body.dealerSeat) {
@@ -137,18 +152,38 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
 
     // Validate win-specific fields
-    if (body.eventType === "ron" || body.eventType === "tsumo") {
-      if (!body.winnerSeat || !body.han || !body.fu) {
+    if (resolvedEventType === "ron" || resolvedEventType === "tsumo") {
+      if (
+        resolvedEventType === "tsumo" &&
+        (!body.winnerSeat || !body.han || !body.fu)
+      ) {
         return NextResponse.json(
           { error: "Winner seat, han, and fu are required for wins" },
           { status: 400 }
         );
       }
-      if (body.eventType === "ron" && !body.loserSeat) {
+      if (resolvedEventType === "ron" && !body.loserSeat) {
         return NextResponse.json(
           { error: "Loser seat is required for ron" },
           { status: 400 }
         );
+      }
+      if (resolvedEventType === "ron") {
+        if (
+          normalizedWinnerSeats.length < 1 ||
+          normalizedWinnerSeats.length > 2
+        ) {
+          return NextResponse.json(
+            { error: "Ron requires 1 or 2 winners" },
+            { status: 400 }
+          );
+        }
+        if (body.loserSeat && normalizedWinnerSeats.includes(body.loserSeat)) {
+          return NextResponse.json(
+            { error: "Loser seat cannot also be a winner" },
+            { status: 400 }
+          );
+        }
       }
     }
 
@@ -183,6 +218,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
     };
     let pointsWon = 0;
     let tier: string | undefined;
+    let riichiCollectorSeat: Seat | undefined;
+    const winnerPoints: Partial<Record<Seat, number>> = {};
 
     const riichiDeclarations = body.riichiDeclarations || [];
     const riichiSticks = body.riichiSticks || 0;
@@ -198,28 +235,74 @@ export async function POST(request: NextRequest, context: RouteContext) {
     // - Plus newly declared riichi sticks from this hand (winner collects all)
     const totalRiichiSticks = riichiSticks + riichiDeclarations.length;
 
-    switch (body.eventType) {
+    switch (resolvedEventType) {
       case "ron": {
-        const isWinnerDealer = body.winnerSeat === body.dealerSeat;
-        const result = calculateRonPoints(
-          body.han!,
-          body.fu!,
-          isWinnerDealer,
-          honba
-        );
-        pointsWon = result.total;
-        tier = result.tier;
+        const winners = normalizedWinnerSeats;
+        if (winners.length === 1) {
+          const winner = winners[0];
+          const values = body.winnerHandValues?.[winner];
+          const winnerHan = values?.han ?? body.han!;
+          const winnerFu = values?.fu ?? body.fu!;
+          const isWinnerDealer = winner === body.dealerSeat;
+          const result = calculateRonPoints(
+            winnerHan,
+            winnerFu,
+            isWinnerDealer,
+            honba
+          );
+          pointsWon = result.total;
+          tier = result.tier;
+          winnerPoints[winner] = result.total;
+          riichiCollectorSeat = winner;
 
-        const ronDeltas = calculateRonDeltas(
-          body.winnerSeat!,
-          body.loserSeat!,
-          result.total,
-          totalRiichiSticks
-        );
+          const ronDeltas = calculateRonDeltas(
+            winner,
+            body.loserSeat!,
+            result.total,
+            totalRiichiSticks
+          );
 
-        // Add ron deltas to existing deltas (from riichi)
-        for (const seat of seats) {
-          deltas[seat] += ronDeltas[seat];
+          // Add ron deltas to existing deltas (from riichi)
+          for (const seat of seats) {
+            deltas[seat] += ronDeltas[seat];
+          }
+        } else {
+          for (const winner of winners) {
+            const values = body.winnerHandValues?.[winner];
+            const winnerHan = values?.han ?? body.han;
+            const winnerFu = values?.fu ?? body.fu;
+            if (!winnerHan || !winnerFu) {
+              return NextResponse.json(
+                { error: "Each ron winner requires han and fu" },
+                { status: 400 }
+              );
+            }
+            const isWinnerDealer = winner === body.dealerSeat;
+            const result = calculateRonPoints(
+              winnerHan,
+              winnerFu,
+              isWinnerDealer,
+              honba
+            );
+            winnerPoints[winner] = result.total;
+            pointsWon += result.total;
+          }
+          const orderedWinners = getWinnersByTurnOrderFromLoser(
+            body.loserSeat!,
+            winners
+          );
+          riichiCollectorSeat = orderedWinners[0] as Seat | undefined;
+          const ronDeltas = calculateMultiRonDeltas(
+            winners,
+            body.loserSeat!,
+            winnerPoints as Record<string, number>,
+            totalRiichiSticks
+          );
+
+          // Add ron deltas to existing deltas (from riichi)
+          for (const seat of seats) {
+            deltas[seat] += ronDeltas[seat];
+          }
         }
         break;
       }
@@ -246,11 +329,18 @@ export async function POST(request: NextRequest, context: RouteContext) {
         for (const seat of seats) {
           deltas[seat] += tsumoDeltas[seat];
         }
+        riichiCollectorSeat = body.winnerSeat;
         break;
       }
 
       case "draw":
       case "abortive_draw": {
+        // Sanchahou (triple ron) is a pure abortive draw: no point exchanges,
+        // no tenpai payments. Only riichi declarations (already applied above) affect scores.
+        if (resolvedAbortiveDrawType === "sanchahou") {
+          break;
+        }
+
         // In a draw, riichi sticks stay on the table
         // The riichi declarations were already subtracted above (lines 192-194)
         // Handle tenpai payments ONLY if not all players are in tenpai
@@ -339,7 +429,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
     // Determine if this is a winning hand where riichi sticks are collected
     const isWinningHand =
-      body.eventType === "ron" || body.eventType === "tsumo";
+      resolvedEventType === "ron" || resolvedEventType === "tsumo";
     const riichiSticksCollected = isWinningHand ? totalRiichiSticks : 0;
 
     // Create hand events for each player
@@ -351,7 +441,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       if (riichiDeclarations.includes(seat)) {
         potDelta -= RIICHI_BET; // Declaring riichi
       }
-      if (seat === body.winnerSeat && riichiSticksCollected > 0) {
+      if (seat === riichiCollectorSeat && riichiSticksCollected > 0) {
         potDelta += riichiSticksCollected * RIICHI_BET; // Collecting riichi sticks
       }
 
@@ -359,7 +449,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
         game_id: gameId,
         hand_seq: nextSeq,
         seat,
-        event_type: body.eventType,
+        event_type: resolvedEventType,
         riichi_declared: riichiDeclarations.includes(seat),
         points_delta: deltas[seat],
         pot_delta: potDelta,
@@ -369,14 +459,21 @@ export async function POST(request: NextRequest, context: RouteContext) {
         details: {
           han: body.han,
           fu: body.fu,
+          winnerHandValues: body.winnerHandValues,
+          winnerPoints,
           yakuList: body.yakuList || [],
           dealerSeat: body.dealerSeat,
-          winnerSeat: body.winnerSeat,
+          winnerSeat:
+            normalizedWinnerSeats.length === 1
+              ? normalizedWinnerSeats[0]
+              : undefined,
+          winnerSeats: normalizedWinnerSeats,
           loserSeat: body.loserSeat,
           riichiSticks,
+          riichiCollectorSeat,
           pointsWon,
           tier,
-          abortiveDrawType: body.abortiveDrawType,
+          abortiveDrawType: resolvedAbortiveDrawType,
           tenpaiSeats: body.tenpaiSeats,
         },
       };
@@ -398,7 +495,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       handSeq: nextSeq,
       events: seats.map(seat => ({
         seat,
-        eventType: body.eventType,
+        eventType: resolvedEventType,
         pointsDelta: deltas[seat],
         riichiDeclared: riichiDeclarations.includes(seat),
       })),

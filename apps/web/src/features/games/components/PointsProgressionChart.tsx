@@ -205,7 +205,9 @@ export function PointsProgressionChart({
               domain={yDomain}
               tick={{ fontSize: 12 }}
               tickFormatter={value =>
-                value >= 1000 ? `${(value / 1000).toFixed(0)}k` : String(value)
+                Math.abs(value) >= 1000
+                  ? `${(value / 1000).toFixed(0)}k`
+                  : String(value)
               }
               className="text-muted-foreground"
               width={30}

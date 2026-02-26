@@ -643,6 +643,28 @@ DELETE /api/games/{gameId}/hands/{handId}
 6. **Draw Validation**: Tenpai payments must balance
 7. **Bankruptcy Handling**: When tobi is enabled, validate game end conditions
 
+### Multi-Ron Rule Clarification
+
+The hand recorder must treat multi-ron outcomes using the following league rules:
+
+1. **Double Ron (2 winners)**
+   - Each winner's hand is scored independently (separate han/fu inputs).
+   - The discarder pays the full ron value to each winner.
+   - Honba is not split: the discarder pays full honba bonus (`300 x honba`) to each winner.
+   - Riichi sticks are awarded to exactly one winner: the winning player nearest to the discarder in turn order (counter-clockwise from discarder), even if that player did not declare riichi.
+   - Dealer repeats only if dealer is one of the winning players; otherwise dealership passes.
+
+2. **Triple Ron (3 winners)**
+   - Triple ron is treated as an abortive draw (`sanchahou`).
+   - No ron hand payouts are exchanged.
+   - Riichi sticks remain on the table.
+   - Honba increases by `+1`.
+   - Dealer repeats (draw treatment).
+
+3. **Input behavior requirement**
+   - If `ron` reaches 3 selected winners in the hand entry UI, the flow must auto-convert to `abortive_draw` with `sanchahou` preselected.
+   - The 3 selected winners should be retained in details for historical context.
+
 ### Handling Incomplete/Uncertain Data
 
 The system supports recording hands with incomplete information:

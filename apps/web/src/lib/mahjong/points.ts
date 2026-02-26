@@ -557,6 +557,59 @@ export function calculateRonDeltas(
 }
 
 /**
+ * Get winners ordered by distance from loser in counter-clockwise turn order.
+ */
+export function getWinnersByTurnOrderFromLoser(
+  loserSeat: string,
+  winnerSeats: string[]
+): string[] {
+  const turnOrder: Record<string, string[]> = {
+    east: ["south", "west", "north"],
+    south: ["west", "north", "east"],
+    west: ["north", "east", "south"],
+    north: ["east", "south", "west"],
+  };
+  const order = turnOrder[loserSeat] || [];
+  return [...winnerSeats].sort((a, b) => order.indexOf(a) - order.indexOf(b));
+}
+
+/**
+ * Calculate deltas for a ron with multiple winners.
+ * The loser pays each winner's full ron value.
+ * Riichi sticks are awarded to the nearest winner by turn order from loser.
+ */
+export function calculateMultiRonDeltas(
+  winnerSeats: string[],
+  loserSeat: string,
+  winnerPoints: Record<string, number>,
+  riichiSticks: number = 0
+): Record<string, number> {
+  const deltas: Record<string, number> = {
+    east: 0,
+    south: 0,
+    west: 0,
+    north: 0,
+  };
+
+  let loserPaymentTotal = 0;
+  for (const winnerSeat of winnerSeats) {
+    const points = winnerPoints[winnerSeat] || 0;
+    deltas[winnerSeat] += points;
+    loserPaymentTotal += points;
+  }
+
+  const orderedWinners = getWinnersByTurnOrderFromLoser(loserSeat, winnerSeats);
+  const riichiRecipient = orderedWinners[0];
+  if (riichiRecipient) {
+    deltas[riichiRecipient] += riichiSticks * 1000;
+  }
+
+  deltas[loserSeat] -= loserPaymentTotal;
+
+  return deltas;
+}
+
+/**
  * Calculate the delta for each player in a tsumo scenario
  *
  * @param winnerSeat - Seat of the winner

@@ -27,6 +27,7 @@ export interface PlayerHandEventForStats {
   kyoku?: number; // 1-4
   details?: {
     winnerSeat?: Seat;
+    winnerSeats?: Seat[];
     loserSeat?: Seat;
     dealerSeat?: Seat;
     pointsWon?: number;
@@ -191,12 +192,17 @@ export function calculatePlayerStatistics(input: {
   }
   const totalHands = uniqueHands.size;
 
+  const isSeatWinner = (e: PlayerHandEventForStats) => {
+    const winnerSeats = e.details?.winnerSeats;
+    if (Array.isArray(winnerSeats) && winnerSeats.length > 0) {
+      return winnerSeats.includes(e.seat);
+    }
+    return !!e.details?.winnerSeat && e.seat === e.details.winnerSeat;
+  };
+
   // Identify wins and deal-ins using details.{winnerSeat,loserSeat}
   const wins = handEvents.filter(
-    e =>
-      (e.eventType === "tsumo" || e.eventType === "ron") &&
-      e.details?.winnerSeat &&
-      e.seat === e.details.winnerSeat
+    e => (e.eventType === "tsumo" || e.eventType === "ron") && isSeatWinner(e)
   );
 
   const dealIns = handEvents.filter(
@@ -233,19 +239,13 @@ export function calculatePlayerStatistics(input: {
     e => e.details?.dealerSeat && e.seat === e.details.dealerSeat
   );
   const dealerWins = dealerHands.filter(
-    e =>
-      (e.eventType === "tsumo" || e.eventType === "ron") &&
-      e.details?.winnerSeat &&
-      e.seat === e.details.winnerSeat
+    e => (e.eventType === "tsumo" || e.eventType === "ron") && isSeatWinner(e)
   );
   const nonDealerHands = handEvents.filter(
     e => e.details?.dealerSeat && e.seat !== e.details.dealerSeat
   );
   const nonDealerWins = nonDealerHands.filter(
-    e =>
-      (e.eventType === "tsumo" || e.eventType === "ron") &&
-      e.details?.winnerSeat &&
-      e.seat === e.details.winnerSeat
+    e => (e.eventType === "tsumo" || e.eventType === "ron") && isSeatWinner(e)
   );
 
   // Seat-specific hand win rates depend on having game seat assignment data.
@@ -268,11 +268,7 @@ export function calculatePlayerStatistics(input: {
     const seat = seatByGameId.get(e.gameId);
     if (!seat) continue;
     seatHandCounts[seat] += 1;
-    if (
-      (e.eventType === "tsumo" || e.eventType === "ron") &&
-      e.details?.winnerSeat &&
-      e.seat === e.details.winnerSeat
-    ) {
+    if ((e.eventType === "tsumo" || e.eventType === "ron") && isSeatWinner(e)) {
       seatWinCounts[seat] += 1;
     }
   }
@@ -464,8 +460,7 @@ export function calculatePlayerStatistics(input: {
     e =>
       e.riichiDeclared &&
       (e.eventType === "tsumo" || e.eventType === "ron") &&
-      e.details?.winnerSeat &&
-      e.seat === e.details.winnerSeat
+      isSeatWinner(e)
   ).length;
   const noRiichiHandCount = totalHands - riichiHandCount;
   const noRiichiHandWins = wins.length - riichiHandWins;

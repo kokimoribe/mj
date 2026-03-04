@@ -69,7 +69,7 @@ function ExpandablePlayerCardComponent({
         "hover:shadow-md",
         isExpanded && "ring-primary/20 ring-2",
         "min-h-[80px]", // Prevent layout shift
-        "pb-0" // Align expanded content bottom with card border
+        "py-0" // Even vertical spacing; header and expanded content control their own padding
       )}
     >
       <CardContent className="overflow-hidden rounded-b-xl p-0">
@@ -97,7 +97,7 @@ function ExpandablePlayerCardComponent({
             </div>
 
             {/* Player Name & Games */}
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 flex-1 space-y-0.5">
               <div className="flex items-center gap-2">
                 <h3 className="truncate font-medium" data-testid="player-name">
                   {player.name || "Unknown Player"}

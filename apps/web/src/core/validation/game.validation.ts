@@ -91,54 +91,6 @@ export function validateGameSubmission(data: {
 }
 
 /**
- * Validates hand recording data
- */
-export function validateHandRecording(data: {
-  round: number;
-  hand: number;
-  winner_id?: string;
-  loser_id?: string;
-  points?: number;
-  hand_type?: string;
-}): GameValidationResult {
-  const errors: string[] = [];
-  const warnings: string[] = [];
-
-  // Validate round number
-  if (data.round < 1 || data.round > 4) {
-    errors.push("Round must be between 1 and 4");
-  }
-
-  // Validate hand number
-  if (data.hand < 1 || data.hand > 8) {
-    warnings.push("Unusual hand number (typically 1-8)");
-  }
-
-  // Validate winner/loser relationship
-  if (data.winner_id && data.loser_id) {
-    if (data.winner_id === data.loser_id) {
-      errors.push("Winner and loser cannot be the same player");
-    }
-  }
-
-  // Validate points
-  if (data.points !== undefined) {
-    if (data.points < 0) {
-      errors.push("Points cannot be negative");
-    }
-    if (data.points > 100000) {
-      warnings.push("Unusually high point value");
-    }
-  }
-
-  return {
-    isValid: errors.length === 0,
-    errors,
-    warnings,
-  };
-}
-
-/**
  * Common score patterns for quick validation
  */
 export const SCORE_PATTERNS = {

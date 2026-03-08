@@ -93,47 +93,6 @@ export interface GameWithPlayers extends Game {
 }
 
 // ============================================================================
-// Hand Recording Domain
-// ============================================================================
-
-export type HandStatus = "incomplete" | "ready" | "confirmed";
-export type HandActionType =
-  | "tsumo"
-  | "ron"
-  | "draw"
-  | "riichi"
-  | "penalty"
-  | "bonus";
-
-export interface Hand {
-  id: UUID;
-  game_id: UUID;
-  round_number: number;
-  round_wind: RiichiSeat;
-  hand_number: number;
-  status: HandStatus;
-  honba_sticks: number;
-  riichi_sticks: number;
-  created_at: ISODateString;
-  updated_at: ISODateString;
-}
-
-export interface HandAction {
-  id: UUID;
-  hand_id: UUID;
-  player_id: UUID;
-  action_type: HandActionType;
-  action_order: number;
-  points_delta?: number;
-  riichi_stick_delta: number;
-  created_at: ISODateString;
-}
-
-export interface HandWithActions extends Hand {
-  hand_actions: HandAction[];
-}
-
-// ============================================================================
 // Rating Configuration Domain
 // ============================================================================
 
@@ -221,19 +180,6 @@ export interface UpdateScoresRequest {
     player_id: UUID;
     score: number;
   }[];
-}
-
-export interface CreateHandRequest {
-  round_number: number;
-  round_wind: RiichiSeat;
-  hand_number: number;
-  honba_sticks?: number;
-  riichi_sticks?: number;
-}
-
-export interface UpdateHandRequest {
-  status?: HandStatus;
-  actions?: Omit<HandAction, "id" | "hand_id" | "created_at">[];
 }
 
 // ============================================================================

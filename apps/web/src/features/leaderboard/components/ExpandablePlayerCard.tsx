@@ -68,13 +68,14 @@ function ExpandablePlayerCardComponent({
         "transition-all duration-200",
         "hover:shadow-md",
         isExpanded && "ring-primary/20 ring-2",
-        "min-h-[80px]" // Prevent layout shift
+        "min-h-[80px]", // Prevent layout shift
+        "py-0" // Even vertical spacing; header and expanded content control their own padding
       )}
     >
-      <CardContent className="p-0">
+      <CardContent className="overflow-hidden rounded-b-xl p-0">
         {/* Main Row - Clickable Header */}
         <div
-          className="focus-visible:ring-primary cursor-pointer rounded-t-lg px-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.99]"
+          className="focus-visible:ring-primary cursor-pointer rounded-t-lg px-4 py-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.99]"
           role="button"
           tabIndex={0}
           aria-expanded={isExpanded}
@@ -96,7 +97,7 @@ function ExpandablePlayerCardComponent({
             </div>
 
             {/* Player Name & Games */}
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 flex-1 space-y-0.5">
               <div className="flex items-center gap-2">
                 <h3 className="truncate font-medium" data-testid="player-name">
                   {player.name || "Unknown Player"}
@@ -179,7 +180,7 @@ function ExpandablePlayerCardComponent({
         {/* Expanded Content */}
         {isExpanded && (
           <div
-            className="bg-muted/30 space-y-3 border-t px-4 py-4"
+            className="bg-muted/30 space-y-3 border-t px-4 pt-3 pb-4"
             data-testid="expanded-content"
             onClick={e => e.stopPropagation()}
           >

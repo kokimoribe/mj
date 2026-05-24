@@ -14,7 +14,11 @@ import {
 } from "@/components/ui/tooltip";
 import { createClient } from "@/lib/supabase/client";
 import { type OngoingGameData } from "@/lib/supabase/queries";
-import { type Seat, STARTING_POINTS, SEATS, type Round } from "@/lib/mahjong";
+import {
+  type Seat,
+  STARTING_POINTS,
+  computeNextHandStateFromEvents,
+} from "@/lib/mahjong";
 import { formatPoints } from "@/lib/mahjong";
 import { Calendar, Info, Check } from "lucide-react";
 import { toast } from "sonner";
@@ -29,6 +33,10 @@ interface HandEvent {
   round_kanji: string;
   kyoku: number;
   honba: number;
+  // `details` carries `tenpaiSeats` / `winnerSeats` which the dealer
+  // rotation helper consults to correctly handle dealer-riichi-at-draw
+  // edge cases (e.g. dealer net delta 0 but still tenpai).
+  details: Record<string, unknown> | null;
 }
 
 const ROUND_INFO: Record<string, { name: string; kanji: string }> = {
@@ -93,92 +101,13 @@ export function LiveGameCard({ game }: LiveGameCardProps) {
     return scores;
   }, [handEvents]);
 
-  // Calculate round/kyoku/honba from last hand event
-  const { round, kyoku, honba } = useMemo(() => {
-    if (!handEvents || handEvents.length === 0) {
-      return {
-        round: "E" as Round,
-        kyoku: 1,
-        honba: 0,
-      };
-    }
-
-    // Get the last hand sequence
-    const lastHandSeq = Math.max(...handEvents.map(e => e.hand_seq));
-    const lastHandEvents = handEvents.filter(e => e.hand_seq === lastHandSeq);
-    const lastEvent = lastHandEvents[0];
-
-    if (!lastEvent) {
-      return {
-        round: "E" as Round,
-        kyoku: 1,
-        honba: 0,
-      };
-    }
-
-    // Determine next round based on last event
-    let nextRound = lastEvent.round_kanji as Round;
-    let nextKyoku = lastEvent.kyoku;
-    let nextHonba = lastEvent.honba;
-
-    const isWinningHand =
-      lastEvent.event_type === "tsumo" || lastEvent.event_type === "ron";
-    const dealerEvent = lastHandEvents.find(
-      e => e.seat === SEATS[lastEvent.kyoku - 1]
-    );
-    const dealerWon: boolean = !!(
-      isWinningHand &&
-      dealerEvent &&
-      dealerEvent.points_delta > 0
-    );
-
-    if (lastEvent.event_type === "chombo") {
-      // Chombo: no change
-    } else if (dealerWon) {
-      // Dealer won - honba increases
-      nextHonba = lastEvent.honba + 1;
-    } else if (lastEvent.event_type === "abortive_draw") {
-      // Abortive draw - dealer stays, honba increases
-      nextHonba = lastEvent.honba + 1;
-    } else if (lastEvent.event_type === "draw") {
-      // Exhaustive draw - check if dealer was tenpai
-      const dealerWasTenpai = dealerEvent && dealerEvent.points_delta > 0;
-      nextHonba = lastEvent.honba + 1;
-
-      if (!dealerWasTenpai) {
-        // Dealer was noten - rotate dealer
-        if (nextKyoku >= 4) {
-          const rounds: Round[] = ["E", "S", "W", "N"];
-          const currentRoundIndex = rounds.indexOf(nextRound);
-          if (currentRoundIndex < rounds.length - 1) {
-            nextRound = rounds[currentRoundIndex + 1];
-            nextKyoku = 1;
-          }
-        } else {
-          nextKyoku = nextKyoku + 1;
-        }
-      }
-    } else {
-      // Dealer rotation
-      nextHonba = 0;
-      if (nextKyoku >= 4) {
-        const rounds: Round[] = ["E", "S", "W", "N"];
-        const currentRoundIndex = rounds.indexOf(nextRound);
-        if (currentRoundIndex < rounds.length - 1) {
-          nextRound = rounds[currentRoundIndex + 1];
-          nextKyoku = 1;
-        }
-      } else {
-        nextKyoku = nextKyoku + 1;
-      }
-    }
-
-    return {
-      round: nextRound,
-      kyoku: nextKyoku,
-      honba: nextHonba,
-    };
-  }, [handEvents]);
+  // Derive next hand's round/kyoku/honba via the shared pure helper so
+  // this card stays in sync with the live game page. The helper reads
+  // `details.tenpaiSeats` to handle dealer-tenpai edge cases correctly.
+  const { round, kyoku, honba } = useMemo(
+    () => computeNextHandStateFromEvents(handEvents),
+    [handEvents]
+  );
 
   // Calculate riichi sticks
   const riichiSticks = useMemo(() => {

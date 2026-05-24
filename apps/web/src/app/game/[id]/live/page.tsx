@@ -16,7 +16,11 @@ import {
   type PlayerScore,
   type HandEvent,
 } from "@/components/features/game-recording";
-import { type Seat, SEATS, STARTING_POINTS, type Round } from "@/lib/mahjong";
+import {
+  type Seat,
+  STARTING_POINTS,
+  computeNextHandStateFromEvents,
+} from "@/lib/mahjong";
 import {
   useGameEndDetection,
   type GameFormat,
@@ -214,117 +218,14 @@ export default function LiveGameViewPage() {
   // Get game format (default to hanchan for backwards compatibility)
   const gameFormat: GameFormat = game?.game_format || "hanchan";
 
-  // Calculate current round based on hand count
-  const { round, kyoku, honba, dealerSeat, lastEventWasDealerWin } =
-    useMemo((): {
-      round: Round;
-      kyoku: number;
-      honba: number;
-      dealerSeat: Seat;
-      lastEventWasDealerWin: boolean;
-    } => {
-      if (!game?.handEvents || game.handEvents.length === 0) {
-        return {
-          round: "E" as Round,
-          kyoku: 1,
-          honba: 0,
-          dealerSeat: "east" as Seat,
-          lastEventWasDealerWin: false,
-        };
-      }
-
-      // Get the last hand's round info
-      const lastHandSeq = Math.max(...game.handEvents.map(e => e.hand_seq));
-      const lastHandEvents = game.handEvents.filter(
-        e => e.hand_seq === lastHandSeq
-      );
-      const lastEvent = lastHandEvents[0];
-
-      if (!lastEvent) {
-        return {
-          round: "E" as Round,
-          kyoku: 1,
-          honba: 0,
-          dealerSeat: "east" as Seat,
-          lastEventWasDealerWin: false,
-        };
-      }
-
-      // Determine next round based on last event
-      let nextRound = lastEvent.round_kanji as Round;
-      let nextKyoku = lastEvent.kyoku;
-      let nextHonba = lastEvent.honba;
-
-      const isWinningHand =
-        lastEvent.event_type === "tsumo" || lastEvent.event_type === "ron";
-      const dealerEvent = lastHandEvents.find(
-        e => e.seat === SEATS[lastEvent.kyoku - 1]
-      );
-      const dealerWon: boolean = !!(
-        isWinningHand &&
-        dealerEvent &&
-        dealerEvent.points_delta > 0
-      );
-
-      if (lastEvent.event_type === "chombo") {
-        // Chombo: honba does NOT increase, dealer does not rotate
-        // Keep same kyoku, same round, same honba
-        // nextHonba remains unchanged (stays at lastEvent.honba)
-        // nextKyoku and nextRound remain unchanged
-      } else if (dealerWon) {
-        // Dealer won - honba increases, same kyoku
-        nextHonba = lastEvent.honba + 1;
-      } else if (lastEvent.event_type === "abortive_draw") {
-        // Abortive draw - dealer stays, honba increases
-        nextHonba = lastEvent.honba + 1;
-      } else if (lastEvent.event_type === "draw") {
-        // Exhaustive draw - check if dealer was tenpai
-        // Dealer stays if tenpai (positive points_delta), rotates if noten
-        const dealerWasTenpai = dealerEvent && dealerEvent.points_delta > 0;
-        nextHonba = lastEvent.honba + 1;
-
-        if (!dealerWasTenpai) {
-          // Dealer was noten - rotate dealer
-          if (nextKyoku >= 4) {
-            // Move to next round
-            const rounds: Round[] = ["E", "S", "W", "N"];
-            const currentRoundIndex = rounds.indexOf(nextRound);
-            if (currentRoundIndex < rounds.length - 1) {
-              nextRound = rounds[currentRoundIndex + 1];
-              nextKyoku = 1;
-            }
-          } else {
-            nextKyoku = nextKyoku + 1;
-          }
-        }
-        // If dealer was tenpai, kyoku stays the same (dealer repeat)
-      } else {
-        // Dealer rotation
-        nextHonba = 0;
-        if (nextKyoku >= 4) {
-          // Move to next round
-          const rounds: Round[] = ["E", "S", "W", "N"];
-          const currentRoundIndex = rounds.indexOf(nextRound);
-          if (currentRoundIndex < rounds.length - 1) {
-            nextRound = rounds[currentRoundIndex + 1];
-            nextKyoku = 1;
-          }
-        } else {
-          nextKyoku = nextKyoku + 1;
-        }
-      }
-
-      // Dealer is based on kyoku (1 = East, 2 = South, etc.)
-      const dealerSeat = SEATS[nextKyoku - 1];
-
-      return {
-        round: nextRound,
-        kyoku: nextKyoku,
-        honba: nextHonba,
-        dealerSeat,
-        lastEventWasDealerWin: dealerWon,
-      };
-    }, [game?.handEvents]);
+  // Derive next hand's round/kyoku/honba/dealer from the persisted events.
+  // The pure helper consults `details.tenpaiSeats` so a dealer who is
+  // tenpai (e.g. dealer-riichi) is not falsely rotated when their net
+  // points_delta lands at 0 or below — see lib/mahjong/dealer-rotation.ts.
+  const { round, kyoku, honba, dealerSeat, lastEventWasDealerWin } = useMemo(
+    () => computeNextHandStateFromEvents(game?.handEvents),
+    [game?.handEvents]
+  );
 
   // Player scores for scoreboard
   const playerScores = useMemo((): PlayerScore[] => {

@@ -3,3 +3,4 @@
  */
 
 export * from "./points";
+export * from "./dealer-rotation";
